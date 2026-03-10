@@ -39,4 +39,7 @@ const StageSchema = new Schema<IStage>(
   { timestamps: true },
 );
 
+if (process.env.NODE_ENV !== "production" && models.Stage) {
+  delete models.Stage;
+}
 export const Stage = models.Stage || model<IStage>("Stage", StageSchema);

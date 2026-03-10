@@ -28,6 +28,7 @@ export default function AdminStagesPage() {
   const [stageDate, setStageDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [resultsError, setResultsError] = useState("");
 
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [resultsRows, setResultsRows] = useState<ResultInputRow[]>([]);
@@ -66,6 +67,7 @@ export default function AdminStagesPage() {
   };
 
   const startEditResults = (stageId: string, existingResults?: StageResult[]) => {
+    setResultsError("");
     setEditingStageId(stageId);
     setResultsRows(
       pilots.map((p, i) => {
@@ -95,10 +97,10 @@ export default function AdminStagesPage() {
     const activeRows = resultsRows.filter((r) => !r.dnf && !r.dns);
     const positions = activeRows.map((r) => r.position);
     if (positions.length !== new Set(positions).size) {
-      setFormError("У двух или более пилотов одинаковое место. Исправьте результаты.");
+      setResultsError("У двух или более пилотов одинаковое место. Исправьте результаты.");
       return;
     }
-    setFormError("");
+    setResultsError("");
     setSubmitting(true);
     try {
       const enriched = resultsRows.map((r) => ({
@@ -108,7 +110,7 @@ export default function AdminStagesPage() {
       await saveStageResults(editingStageId, enriched);
       setEditingStageId(null);
     } catch (err) {
-      setFormError((err as Error).message);
+      setResultsError((err as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -116,6 +118,23 @@ export default function AdminStagesPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
+      {resultsError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-red-500/30 bg-zinc-900 p-6 shadow-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-400 mb-2">
+              Ошибка результатов
+            </p>
+            <h2 className="text-xl font-bold text-white mb-3">Не удалось сохранить результаты</h2>
+            <p className="text-sm leading-6 text-zinc-300">{resultsError}</p>
+            <div className="mt-5 flex justify-end">
+              <Button variant="secondary" onClick={() => setResultsError("")}>
+                Понятно
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Link href="/admin" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
         ← Админ-панель
       </Link>
@@ -243,7 +262,13 @@ export default function AdminStagesPage() {
                   <Button onClick={handleSaveResults} disabled={submitting}>
                     {submitting ? "Сохранение..." : "Сохранить результаты"}
                   </Button>
-                  <Button variant="ghost" onClick={() => setEditingStageId(null)}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setEditingStageId(null);
+                      setResultsError("");
+                    }}
+                  >
                     Отмена
                   </Button>
                 </div>
