@@ -1,0 +1,240 @@
+"use client";
+
+import { useState } from "react";
+import { useStages } from "@/app/hooks/useStages";
+import { usePilots } from "@/app/hooks/usePilots";
+import { useStagesStore } from "@/store/stagesStore";
+import { Loader } from "@/app/components/ui/Loader";
+import { Button } from "@/app/components/ui/Button";
+import { Badge } from "@/app/components/ui/Badge";
+import { getPointsByPosition } from "@/lib/utils/championship";
+import { StageResult } from "@/types";
+import Link from "next/link";
+
+interface ResultInputRow {
+  pilotId: string;
+  position: number;
+  dnf: boolean;
+  dns: boolean;
+}
+
+export default function AdminStagesPage() {
+  const { stages, isLoading, error, addStage, deleteStage } = useStages();
+  const { pilots } = usePilots();
+  const { saveStageResults } = useStagesStore();
+
+  const [stageName, setStageName] = useState("");
+  const [stageNumber, setStageNumber] = useState("");
+  const [stageDate, setStageDate] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const [editingStageId, setEditingStageId] = useState<string | null>(null);
+  const [resultsRows, setResultsRows] = useState<ResultInputRow[]>([]);
+
+  const handleAddStage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setFormError("");
+    try {
+      await addStage({
+        name: stageName.trim(),
+        number: Number(stageNumber),
+        date: stageDate,
+      });
+      setStageName("");
+      setStageNumber("");
+      setStageDate("");
+    } catch (err) {
+      setFormError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const extractPilotId = (result: StageResult): string => {
+    if (result.pilot?._id) return result.pilot._id;
+    const rid = result.pilotId as unknown;
+    if (rid !== null && typeof rid === "object" && "_id" in (rid as Record<string, unknown>)) {
+      return String((rid as { _id: unknown; })._id);
+    }
+    return String(result.pilotId);
+  };
+
+  const startEditResults = (stageId: string, existingResults?: StageResult[]) => {
+    setEditingStageId(stageId);
+    setResultsRows(
+      pilots.map((p, i) => {
+        const existing = existingResults?.find((r) => extractPilotId(r) === p._id);
+        if (existing) {
+          return { pilotId: p._id, position: existing.position, dnf: existing.dnf, dns: existing.dns };
+        }
+        return { pilotId: p._id, position: i + 1, dnf: false, dns: false };
+      })
+    );
+  };
+
+  const updateRow = (pilotId: string, field: keyof ResultInputRow, value: number | boolean) => {
+    setResultsRows((rows) =>
+      rows.map((r) => (r.pilotId === pilotId ? { ...r, [field]: value } : r))
+    );
+  };
+
+  const handleSaveResults = async () => {
+    if (!editingStageId) return;
+    setSubmitting(true);
+    try {
+      const enriched = resultsRows.map((r) => ({
+        ...r,
+        points: r.dnf || r.dns ? 0 : getPointsByPosition(r.position),
+      }));
+      await saveStageResults(editingStageId, enriched);
+      setEditingStageId(null);
+    } catch (err) {
+      setFormError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="max-w-4xl mx-auto px-4 py-8">
+      <Link href="/admin" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
+        ← Админ-панель
+      </Link>
+      <h1 className="text-3xl font-black text-white mb-8">Этапы</h1>
+
+      {/* Add stage form */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
+        <h2 className="text-lg font-bold text-white mb-4">Добавить этап</h2>
+        <form onSubmit={handleAddStage} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input
+            type="text"
+            placeholder="Название этапа *"
+            value={stageName}
+            onChange={(e) => setStageName(e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+            required
+          />
+          <input
+            type="number"
+            placeholder="Номер этапа *"
+            value={stageNumber}
+            onChange={(e) => setStageNumber(e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+            min={1}
+            required
+          />
+          <input
+            type="date"
+            value={stageDate}
+            onChange={(e) => setStageDate(e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+            required
+          />
+          <div className="sm:col-span-2 flex items-center gap-3">
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Добавление..." : "Добавить этап"}
+            </Button>
+            {formError && <p className="text-red-400 text-sm">{formError}</p>}
+          </div>
+        </form>
+      </div>
+
+      {isLoading && <Loader />}
+      {error && <p className="text-red-400 mb-4">{error}</p>}
+
+      {/* Stages list */}
+      <div className="space-y-4">
+        {stages.map((stage) => (
+          <div key={stage._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <span className="text-zinc-500 text-sm font-mono">Этап {stage.number}</span>
+                <span className="font-bold text-white">{stage.name}</span>
+                <Badge variant={stage.isCompleted ? "success" : "warning"}>
+                  {stage.isCompleted ? "Завершён" : "Ожидается"}
+                </Badge>
+              </div>
+              <div className="flex gap-2">
+                {pilots.length > 0 && (
+                  <Button variant="secondary" size="sm" onClick={() => startEditResults(stage._id, stage.results)}>
+                    {stage.isCompleted ? "Редактировать результаты" : "Внести результаты"}
+                  </Button>
+                )}
+                <Button variant="danger" size="sm" onClick={() => deleteStage(stage._id)}>
+                  Удалить
+                </Button>
+              </div>
+            </div>
+            <p className="text-zinc-500 text-sm">
+              � {new Date(stage.date).toLocaleDateString("ru-RU")}
+            </p>
+
+            {/* Inline results editor */}
+            {editingStageId === stage._id && (
+              <div className="mt-4 border-t border-zinc-700 pt-4">
+                <h3 className="text-white font-semibold mb-3">Результаты гонки</h3>
+                <div className="space-y-2">
+                  {resultsRows.map((row) => {
+                    const pilot = pilots.find((p) => p._id === row.pilotId);
+                    const pts = row.dnf || row.dns ? 0 : getPointsByPosition(row.position);
+                    return (
+                      <div key={row.pilotId} className="flex items-center gap-3 flex-wrap">
+                        <span className="text-white w-40 shrink-0 text-sm">
+                          #{pilot?.number} {pilot?.name}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-zinc-500 text-xs">Место:</span>
+                          <input
+                            type="number"
+                            value={row.position}
+                            min={1}
+                            max={pilots.length}
+                            onChange={(e) =>
+                              updateRow(row.pilotId, "position", Number(e.target.value))
+                            }
+                            className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center"
+                          />
+                        </div>
+                        <label className="flex items-center gap-1 text-sm text-zinc-400">
+                          <input
+                            type="checkbox"
+                            checked={row.dnf}
+                            onChange={(e) => updateRow(row.pilotId, "dnf", e.target.checked)}
+                            className="accent-red-500"
+                          />
+                          DNF
+                        </label>
+                        <label className="flex items-center gap-1 text-sm text-zinc-400">
+                          <input
+                            type="checkbox"
+                            checked={row.dns}
+                            onChange={(e) => updateRow(row.pilotId, "dns", e.target.checked)}
+                            className="accent-red-500"
+                          />
+                          DNS
+                        </label>
+                        <span className="text-zinc-500 text-xs ml-auto">
+                          {pts} оч.
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-3 mt-4">
+                  <Button onClick={handleSaveResults} disabled={submitting}>
+                    {submitting ? "Сохранение..." : "Сохранить результаты"}
+                  </Button>
+                  <Button variant="ghost" onClick={() => setEditingStageId(null)}>
+                    Отмена
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}

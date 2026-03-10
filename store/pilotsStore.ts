@@ -1,0 +1,65 @@
+import { create } from "zustand";
+import { Pilot } from "@/types";
+
+interface PilotsState {
+  pilots: Pilot[];
+  isLoading: boolean;
+  error: string | null;
+  fetchPilots: () => Promise<void>;
+  addPilot: (pilot: Omit<Pilot, "_id">) => Promise<void>;
+  updatePilot: (id: string, data: Partial<Pilot>) => Promise<void>;
+  deletePilot: (id: string) => Promise<void>;
+}
+
+export const usePilotsStore = create<PilotsState>((set) => ({
+  pilots: [],
+  isLoading: false,
+  error: null,
+
+  fetchPilots: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await fetch("/api/pilots");
+      if (!res.ok) throw new Error("Ошибка загрузки пилотов");
+      const data: Pilot[] = await res.json();
+      set({ pilots: data });
+    } catch (e) {
+      set({ error: (e as Error).message });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  addPilot: async (pilot) => {
+    const res = await fetch("/api/pilots", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pilot),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? "Ошибка добавления пилота");
+    }
+    const created: Pilot = await res.json();
+    set((state) => ({ pilots: [...state.pilots, created] }));
+  },
+
+  updatePilot: async (id, data) => {
+    const res = await fetch(`/api/pilots/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Ошибка обновления пилота");
+    const updated: Pilot = await res.json();
+    set((state) => ({
+      pilots: state.pilots.map((p) => (p._id === id ? updated : p)),
+    }));
+  },
+
+  deletePilot: async (id) => {
+    const res = await fetch(`/api/pilots/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Ошибка удаления пилота");
+    set((state) => ({ pilots: state.pilots.filter((p) => p._id !== id) }));
+  },
+}));
