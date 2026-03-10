@@ -60,7 +60,10 @@ export const useStagesStore = create<StagesState>((set) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(stage),
     });
-    if (!res.ok) throw new Error("Ошибка добавления этапа");
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? "Ошибка добавления этапа");
+    }
     const created: Stage = await res.json();
     set((state) => ({ stages: [...state.stages, created] }));
   },

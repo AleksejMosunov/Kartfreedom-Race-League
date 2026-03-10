@@ -14,6 +14,16 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   await connectToDatabase();
   const body = await req.json();
-  const stage = await Stage.create(body);
-  return NextResponse.json(stage, { status: 201 });
+  try {
+    const stage = await Stage.create(body);
+    return NextResponse.json(stage, { status: 201 });
+  } catch (err) {
+    if ((err as { code: number }).code === 11000) {
+      return NextResponse.json(
+        { error: `Этап с номером ${body.number} уже существует` },
+        { status: 409 },
+      );
+    }
+    throw err;
+  }
 }

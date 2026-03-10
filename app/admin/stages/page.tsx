@@ -34,6 +34,10 @@ export default function AdminStagesPage() {
 
   const handleAddStage = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (stages.some((s) => s.number === Number(stageNumber))) {
+      setFormError(`Этап с номером ${stageNumber} уже существует`);
+      return;
+    }
     setSubmitting(true);
     setFormError("");
     try {
@@ -76,12 +80,25 @@ export default function AdminStagesPage() {
 
   const updateRow = (pilotId: string, field: keyof ResultInputRow, value: number | boolean) => {
     setResultsRows((rows) =>
-      rows.map((r) => (r.pilotId === pilotId ? { ...r, [field]: value } : r))
+      rows.map((r) => {
+        if (r.pilotId !== pilotId) return r;
+        const updated = { ...r, [field]: value };
+        if (field === "dnf" && value) updated.dns = false;
+        if (field === "dns" && value) updated.dnf = false;
+        return updated;
+      })
     );
   };
 
   const handleSaveResults = async () => {
     if (!editingStageId) return;
+    const activeRows = resultsRows.filter((r) => !r.dnf && !r.dns);
+    const positions = activeRows.map((r) => r.position);
+    if (positions.length !== new Set(positions).size) {
+      setFormError("У двух или более пилотов одинаковое место. Исправьте результаты.");
+      return;
+    }
+    setFormError("");
     setSubmitting(true);
     try {
       const enriched = resultsRows.map((r) => ({
