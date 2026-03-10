@@ -29,6 +29,13 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     });
   }
 
-  cached.conn = await cached.promise;
-  return cached.conn;
+  try {
+    cached.conn = await cached.promise;
+    return cached.conn;
+  } catch (error) {
+    // Reset cached state so the next request can retry a fresh connection.
+    cached.promise = null;
+    cached.conn = null;
+    throw error;
+  }
 }

@@ -3,12 +3,19 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Stage } from "@/lib/models/Stage";
 
 export async function GET() {
-  await connectToDatabase();
-  const stages = await Stage.find()
-    .populate("results.pilotId", "name number team avatar")
-    .sort({ number: 1 })
-    .lean();
-  return NextResponse.json(stages);
+  try {
+    await connectToDatabase();
+    const stages = await Stage.find()
+      .populate("results.pilotId", "name number avatar")
+      .sort({ number: 1 })
+      .lean();
+    return NextResponse.json(stages);
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to load stages" },
+      { status: 503 },
+    );
+  }
 }
 
 export async function POST(req: NextRequest) {
