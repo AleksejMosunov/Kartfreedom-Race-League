@@ -21,14 +21,14 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
   if (!stage)
     return (
       <main className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <p className="text-zinc-400">Этап не найден.</p>
+        <p className="text-zinc-400">Етап не знайдено.</p>
         <Link href="/stages" className="text-red-500 underline mt-4 block">
-          ← Назад к этапам
+          ← Назад до етапів
         </Link>
       </main>
     );
 
-  const date = new Date(stage.date).toLocaleDateString("ru-RU", {
+  const date = new Date(stage.date).toLocaleDateString("uk-UA", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -37,13 +37,13 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
       <Link href="/stages" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
-        ← Все этапы
+        ← Усі етапи
       </Link>
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          <span className="text-zinc-500 text-sm font-mono">Этап {stage.number}</span>
+          <span className="text-zinc-500 text-sm font-mono">Етап {stage.number}</span>
           <Badge variant={stage.isCompleted ? "success" : "warning"}>
-            {stage.isCompleted ? "Завершён" : "Ожидается"}
+            {stage.isCompleted ? "Завершено" : "Очікується"}
           </Badge>
         </div>
         <h1 className="text-3xl font-black text-white">{stage.name}</h1>

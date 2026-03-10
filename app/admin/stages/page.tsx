@@ -36,7 +36,7 @@ export default function AdminStagesPage() {
   const handleAddStage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (stages.some((s) => s.number === Number(stageNumber))) {
-      setFormError(`Этап с номером ${stageNumber} уже существует`);
+      setFormError(`Етап з номером ${stageNumber} вже існує`);
       return;
     }
     setSubmitting(true);
@@ -97,7 +97,7 @@ export default function AdminStagesPage() {
     const activeRows = resultsRows.filter((r) => !r.dnf && !r.dns);
     const positions = activeRows.map((r) => r.position);
     if (positions.length !== new Set(positions).size) {
-      setResultsError("У двух или более пилотов одинаковое место. Исправьте результаты.");
+      setResultsError("У двох або більше пілотів однакове місце. Виправте результати.");
       return;
     }
     setResultsError("");
@@ -122,13 +122,13 @@ export default function AdminStagesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="w-full max-w-md rounded-2xl border border-red-500/30 bg-zinc-900 p-6 shadow-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-400 mb-2">
-              Ошибка результатов
+              Помилка результатів
             </p>
-            <h2 className="text-xl font-bold text-white mb-3">Не удалось сохранить результаты</h2>
+            <h2 className="text-xl font-bold text-white mb-3">Не вдалося зберегти результати</h2>
             <p className="text-sm leading-6 text-zinc-300">{resultsError}</p>
             <div className="mt-5 flex justify-end">
               <Button variant="secondary" onClick={() => setResultsError("")}>
-                Понятно
+                Зрозуміло
               </Button>
             </div>
           </div>
@@ -136,17 +136,17 @@ export default function AdminStagesPage() {
       )}
 
       <Link href="/admin" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
-        ← Админ-панель
+        ← Адмін-панель
       </Link>
-      <h1 className="text-3xl font-black text-white mb-8">Этапы</h1>
+      <h1 className="text-3xl font-black text-white mb-8">Етапи</h1>
 
       {/* Add stage form */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
-        <h2 className="text-lg font-bold text-white mb-4">Добавить этап</h2>
+        <h2 className="text-lg font-bold text-white mb-4">Додати етап</h2>
         <form onSubmit={handleAddStage} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input
             type="text"
-            placeholder="Название этапа *"
+            placeholder="Назва етапу *"
             value={stageName}
             onChange={(e) => setStageName(e.target.value)}
             className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
@@ -154,7 +154,7 @@ export default function AdminStagesPage() {
           />
           <input
             type="number"
-            placeholder="Номер этапа *"
+            placeholder="Номер етапу *"
             value={stageNumber}
             onChange={(e) => setStageNumber(e.target.value)}
             className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
@@ -170,7 +170,7 @@ export default function AdminStagesPage() {
           />
           <div className="sm:col-span-2 flex items-center gap-3">
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Добавление..." : "Добавить этап"}
+              {submitting ? "Додавання..." : "Додати етап"}
             </Button>
             {formError && <p className="text-red-400 text-sm">{formError}</p>}
           </div>
@@ -186,31 +186,31 @@ export default function AdminStagesPage() {
           <div key={stage._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
-                <span className="text-zinc-500 text-sm font-mono">Этап {stage.number}</span>
+                <span className="text-zinc-500 text-sm font-mono">Етап {stage.number}</span>
                 <span className="font-bold text-white">{stage.name}</span>
                 <Badge variant={stage.isCompleted ? "success" : "warning"}>
-                  {stage.isCompleted ? "Завершён" : "Ожидается"}
+                  {stage.isCompleted ? "Завершено" : "Очікується"}
                 </Badge>
               </div>
               <div className="flex gap-2">
                 {pilots.length > 0 && (
                   <Button variant="secondary" size="sm" onClick={() => startEditResults(stage._id, stage.results)}>
-                    {stage.isCompleted ? "Редактировать результаты" : "Внести результаты"}
+                    {stage.isCompleted ? "Редагувати результати" : "Внести результати"}
                   </Button>
                 )}
                 <Button variant="danger" size="sm" onClick={() => deleteStage(stage._id)}>
-                  Удалить
+                  Видалити
                 </Button>
               </div>
             </div>
             <p className="text-zinc-500 text-sm">
-              � {new Date(stage.date).toLocaleDateString("ru-RU")}
+              📅 {new Date(stage.date).toLocaleDateString("uk-UA")}
             </p>
 
             {/* Inline results editor */}
             {editingStageId === stage._id && (
               <div className="mt-4 border-t border-zinc-700 pt-4">
-                <h3 className="text-white font-semibold mb-3">Результаты гонки</h3>
+                <h3 className="text-white font-semibold mb-3">Результати гонки</h3>
                 <div className="space-y-2">
                   {resultsRows.map((row) => {
                     const pilot = pilots.find((p) => p._id === row.pilotId);
@@ -221,7 +221,7 @@ export default function AdminStagesPage() {
                           #{pilot?.number} {pilot?.name}
                         </span>
                         <div className="flex items-center gap-1">
-                          <span className="text-zinc-500 text-xs">Место:</span>
+                          <span className="text-zinc-500 text-xs">Місце:</span>
                           <input
                             type="number"
                             value={row.position}
@@ -252,7 +252,7 @@ export default function AdminStagesPage() {
                           DNS
                         </label>
                         <span className="text-zinc-500 text-xs ml-auto">
-                          {pts} оч.
+                          {pts} очк.
                         </span>
                       </div>
                     );
@@ -260,7 +260,7 @@ export default function AdminStagesPage() {
                 </div>
                 <div className="flex gap-3 mt-4">
                   <Button onClick={handleSaveResults} disabled={submitting}>
-                    {submitting ? "Сохранение..." : "Сохранить результаты"}
+                    {submitting ? "Збереження..." : "Зберегти результати"}
                   </Button>
                   <Button
                     variant="ghost"
@@ -269,7 +269,7 @@ export default function AdminStagesPage() {
                       setResultsError("");
                     }}
                   >
-                    Отмена
+                    Скасувати
                   </Button>
                 </div>
               </div>

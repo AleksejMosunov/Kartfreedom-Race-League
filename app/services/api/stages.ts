@@ -4,13 +4,13 @@ const BASE = "/api/stages";
 
 export async function fetchStages(): Promise<Stage[]> {
   const res = await fetch(BASE);
-  if (!res.ok) throw new Error("Не удалось загрузить этапы");
+  if (!res.ok) throw new Error("Не вдалося завантажити етапи");
   return res.json();
 }
 
 export async function fetchStageById(id: string): Promise<Stage> {
   const res = await fetch(`${BASE}/${id}`);
-  if (!res.ok) throw new Error("Этап не найден");
+  if (!res.ok) throw new Error("Етап не знайдено");
   return res.json();
 }
 
@@ -22,7 +22,7 @@ export async function createStage(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Ошибка создания этапа");
+  if (!res.ok) throw new Error("Помилка створення етапу");
   return res.json();
 }
 
@@ -35,13 +35,13 @@ export async function updateStage(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Ошибка обновления этапа");
+  if (!res.ok) throw new Error("Помилка оновлення етапу");
   return res.json();
 }
 
 export async function deleteStage(id: string): Promise<void> {
   const res = await fetch(`${BASE}/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Ошибка удаления этапа");
+  if (!res.ok) throw new Error("Помилка видалення етапу");
 }
 
 export async function saveStageResults(
@@ -53,6 +53,6 @@ export async function saveStageResults(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ results }),
   });
-  if (!res.ok) throw new Error("Ошибка сохранения результатов");
+  if (!res.ok) throw new Error("Помилка збереження результатів");
   return res.json();
 }

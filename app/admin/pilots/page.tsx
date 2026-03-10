@@ -17,7 +17,7 @@ export default function AdminPilotsPage() {
     e.preventDefault();
     if (!name.trim() || !number) return;
     if (pilots.some((p) => p.number === Number(number))) {
-      setFormError(`Пилот с номером #${number} уже существует`);
+      setFormError(`Пілот з номером #${number} вже існує`);
       return;
     }
     setSubmitting(true);
@@ -36,15 +36,15 @@ export default function AdminPilotsPage() {
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
       <Link href="/admin" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
-        ← Админ-панель
+        ← Адмін-панель
       </Link>
-      <h1 className="text-3xl font-black text-white mb-8">Пилоты</h1>
+      <h1 className="text-3xl font-black text-white mb-8">Пілоти</h1>
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
-        <h2 className="text-lg font-bold text-white mb-4">Добавить пилота</h2>
+        <h2 className="text-lg font-bold text-white mb-4">Додати пілота</h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input
             type="text"
-            placeholder="Имя пилота *"
+            placeholder="Ім'я пілота *"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
@@ -61,7 +61,7 @@ export default function AdminPilotsPage() {
           />
           <div className="sm:col-span-2 flex items-center gap-3">
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Добавление..." : "Добавить"}
+              {submitting ? "Додавання..." : "Додати"}
             </Button>
             {formError && <p className="text-red-400 text-sm">{formError}</p>}
           </div>
@@ -80,7 +80,7 @@ export default function AdminPilotsPage() {
               <span className="font-semibold text-white">{pilot.name}</span>
             </div>
             <Button variant="danger" size="sm" onClick={() => deletePilot(pilot._id)}>
-              Удалить
+              Видалити
             </Button>
           </div>
         ))}

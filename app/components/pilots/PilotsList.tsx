@@ -10,7 +10,7 @@ export function PilotsList() {
   if (isLoading) return <Loader />;
   if (error) return <p className="text-red-400 text-center py-8">{error}</p>;
   if (!pilots.length)
-    return <p className="text-zinc-500 text-center py-12">Пилоты ещё не добавлены.</p>;
+    return <p className="text-zinc-500 text-center py-12">Пілоти ще не додані.</p>;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

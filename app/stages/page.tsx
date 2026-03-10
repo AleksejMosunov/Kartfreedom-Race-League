@@ -10,13 +10,13 @@ export default function StagesPage() {
   return (
     <main className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white">Этапы чемпионата</h1>
-        <p className="text-zinc-400 mt-1">Расписание и результаты всех этапов</p>
+        <h1 className="text-3xl font-black text-white">Етапи чемпіонату</h1>
+        <p className="text-zinc-400 mt-1">Розклад і результати всіх етапів</p>
       </div>
       {isLoading && <Loader />}
       {error && <p className="text-red-400 text-center py-8">{error}</p>}
       {!isLoading && !error && !stages.length && (
-        <p className="text-zinc-500 text-center py-12">Этапы ещё не добавлены.</p>
+        <p className="text-zinc-500 text-center py-12">Етапи ще не додані.</p>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stages.map((stage) => (

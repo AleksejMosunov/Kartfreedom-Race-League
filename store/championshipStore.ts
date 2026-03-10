@@ -17,7 +17,7 @@ export const useChampionshipStore = create<ChampionshipState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await fetch("/api/championship");
-      if (!res.ok) throw new Error("Ошибка загрузки таблицы чемпионата");
+      if (!res.ok) throw new Error("Помилка завантаження таблиці чемпіонату");
       const data: ChampionshipStanding[] = await res.json();
       set({ standings: data });
     } catch (e) {

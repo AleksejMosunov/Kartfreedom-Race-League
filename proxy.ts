@@ -34,7 +34,7 @@ function unauthorizedPageResponse(request: NextRequest) {
 
 function unauthorizedApiResponse() {
   return NextResponse.json(
-    { error: "Требуется авторизация администратора" },
+    { error: "Admin authorization required" },
     { status: 401 },
   );
 }
@@ -50,7 +50,7 @@ export async function proxy(request: NextRequest) {
     const message =
       error instanceof Error
         ? error.message
-        : "Ошибка конфигурации авторизации";
+        : "Authentication configuration error";
     return request.nextUrl.pathname.startsWith("/api/")
       ? NextResponse.json({ error: message }, { status: 500 })
       : new NextResponse(message, { status: 500 });

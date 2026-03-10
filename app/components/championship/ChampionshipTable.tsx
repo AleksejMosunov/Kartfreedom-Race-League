@@ -19,7 +19,7 @@ export function ChampionshipTable() {
   if (!standings.length)
     return (
       <p className="text-zinc-500 text-center py-12">
-        Пока нет данных. Добавьте пилотов и результаты этапов.
+        Наразі немає даних. Додайте пілотів і результати етапів.
       </p>
     );
 
@@ -29,10 +29,10 @@ export function ChampionshipTable() {
         <thead>
           <tr className="bg-zinc-900 text-zinc-400 text-left">
             <th className="px-4 py-3 font-semibold w-12">#</th>
-            <th className="px-4 py-3 font-semibold">Пилот</th>
+            <th className="px-4 py-3 font-semibold">Пілот</th>
             {completedStages.map((stage) => (
               <th key={stage._id} className="px-3 py-3 font-semibold text-center whitespace-nowrap">
-                Эт.{stage.number}
+                Ет.{stage.number}
               </th>
             ))}
             <th className="px-4 py-3 font-semibold text-center">Очки</th>
@@ -83,13 +83,13 @@ export function ChampionshipTable() {
       </table>
       <div className="px-4 py-3 bg-zinc-900/50 border-t border-zinc-800 text-xs text-zinc-500 flex gap-4 flex-wrap">
         <span>
-          <Badge variant="dropped">0</Badge> — зачёркнутый этап (худший, не учитывается)
+          <Badge variant="dropped">0</Badge> — закреслений етап (найгірший, не враховується)
         </span>
         <span>
-          <Badge variant="warning">DNF</Badge> — не финишировал
+          <Badge variant="warning">DNF</Badge> — не фінішував
         </span>
         <span>
-          Система очков: {Object.entries(POINTS_TABLE).map(([pos, pts]) => `${pos}→${pts}`).join(", ")}
+          Система очок: {Object.entries(POINTS_TABLE).map(([pos, pts]) => `${pos}→${pts}`).join(", ")}
         </span>
       </div>
     </div>

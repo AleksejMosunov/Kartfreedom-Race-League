@@ -53,7 +53,7 @@ function LoginPageContent() {
 
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(body.error ?? "Не удалось войти");
+        throw new Error(body.error ?? "Не вдалося увійти");
       }
 
       router.replace(nextPath.startsWith("/") ? nextPath : "/admin");
@@ -72,16 +72,16 @@ function LoginPageContent() {
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-red-400">
             KartFreedom Admin
           </p>
-          <h1 className="mt-3 text-3xl font-black text-white">Вход в админку</h1>
+          <h1 className="mt-3 text-3xl font-black text-white">Вхід до адмінки</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-400">
-            Введите логин и пароль администратора для управления этапами и пилотами.
+            Введіть логін і пароль адміністратора для керування етапами та пілотами.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-2 block text-sm font-medium text-zinc-300">
-              Логин
+              Логін
             </label>
             <input
               type="text"
@@ -114,13 +114,13 @@ function LoginPageContent() {
           )}
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Вход..." : "Войти"}
+            {isSubmitting ? "Вхід..." : "Увійти"}
           </Button>
         </form>
 
         <div className="mt-6 text-center text-sm text-zinc-500">
           <Link href="/" className="transition-colors hover:text-white">
-            Вернуться на сайт
+            Повернутися на сайт
           </Link>
         </div>
       </div>

@@ -20,7 +20,7 @@ export const usePilotsStore = create<PilotsState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await fetch("/api/pilots");
-      if (!res.ok) throw new Error("Ошибка загрузки пилотов");
+      if (!res.ok) throw new Error("Помилка завантаження пілотів");
       const data: Pilot[] = await res.json();
       set({ pilots: data });
     } catch (e) {
@@ -38,7 +38,7 @@ export const usePilotsStore = create<PilotsState>((set) => ({
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.error ?? "Ошибка добавления пилота");
+      throw new Error(body.error ?? "Помилка додавання пілота");
     }
     const created: Pilot = await res.json();
     set((state) => ({ pilots: [...state.pilots, created] }));
@@ -50,7 +50,7 @@ export const usePilotsStore = create<PilotsState>((set) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Ошибка обновления пилота");
+    if (!res.ok) throw new Error("Помилка оновлення пілота");
     const updated: Pilot = await res.json();
     set((state) => ({
       pilots: state.pilots.map((p) => (p._id === id ? updated : p)),
@@ -59,7 +59,7 @@ export const usePilotsStore = create<PilotsState>((set) => ({
 
   deletePilot: async (id) => {
     const res = await fetch(`/api/pilots/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Ошибка удаления пилота");
+    if (!res.ok) throw new Error("Помилка видалення пілота");
     set((state) => ({ pilots: state.pilots.filter((p) => p._id !== id) }));
   },
 }));

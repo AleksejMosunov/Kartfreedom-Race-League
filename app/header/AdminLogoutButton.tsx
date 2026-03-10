@@ -21,7 +21,7 @@ export function AdminLogoutButton() {
 
   return (
     <Button variant="ghost" size="sm" onClick={handleLogout} disabled={isSubmitting}>
-      {isSubmitting ? "Выход..." : "Выйти"}
+      {isSubmitting ? "Вихід..." : "Вийти"}
     </Button>
   );
 }

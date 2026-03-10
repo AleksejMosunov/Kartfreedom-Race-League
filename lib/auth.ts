@@ -8,7 +8,7 @@ export function getAdminAuthConfig() {
 
   if (!adminUsername || !adminPassword || !sessionSecret) {
     throw new Error(
-      "Не настроены ADMIN_USERNAME, ADMIN_PASSWORD и ADMIN_SESSION_SECRET",
+      "ADMIN_USERNAME, ADMIN_PASSWORD, and ADMIN_SESSION_SECRET must be configured",
     );
   }
 

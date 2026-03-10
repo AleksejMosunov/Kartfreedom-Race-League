@@ -37,6 +37,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     .lean();
 
   if (!stage)
-    return NextResponse.json({ error: "Этап не найден" }, { status: 404 });
+    return NextResponse.json({ error: "Stage not found" }, { status: 404 });
   return NextResponse.json(stage);
 }

@@ -1,17 +1,17 @@
 import { ChampionshipTable } from "@/app/components/championship/ChampionshipTable";
 
 export const metadata = {
-  title: "KartFreedom Race League — Таблица чемпионата",
-  description: "Турнирная таблица картинг-чемпионата KartFreedom Race League",
+  title: "KartFreedom Race League — Таблиця чемпіонату",
+  description: "Турнірна таблиця картингового чемпіонату KartFreedom Race League",
 };
 
 export default function Home() {
   return (
     <main className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white">🏆 Таблица чемпионата</h1>
+        <h1 className="text-3xl font-black text-white">🏆 Таблиця чемпіонату</h1>
         <p className="text-zinc-400 mt-1">
-          Общий зачёт · наихудший этап каждого пилота не учитывается
+          Загальний залік · найгірший етап кожного пілота не враховується
         </p>
       </div>
       <ChampionshipTable />

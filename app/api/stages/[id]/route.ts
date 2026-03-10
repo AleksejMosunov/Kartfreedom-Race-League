@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .populate("results.pilotId", "name number team avatar")
     .lean();
   if (!stage)
-    return NextResponse.json({ error: "Этап не найден" }, { status: 404 });
+    return NextResponse.json({ error: "Stage not found" }, { status: 404 });
   return NextResponse.json(stage);
 }
 
@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     .populate("results.pilotId", "name number team avatar")
     .lean();
   if (!stage)
-    return NextResponse.json({ error: "Этап не найден" }, { status: 404 });
+    return NextResponse.json({ error: "Stage not found" }, { status: 404 });
   return NextResponse.json(stage);
 }
 
@@ -37,6 +37,6 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const { id } = await params;
   const stage = await Stage.findByIdAndDelete(id).lean();
   if (!stage)
-    return NextResponse.json({ error: "Этап не найден" }, { status: 404 });
+    return NextResponse.json({ error: "Stage not found" }, { status: 404 });
   return NextResponse.json({ success: true });
 }

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     if ((err as { code: number }).code === 11000) {
       return NextResponse.json(
-        { error: `Этап с номером ${body.number} уже существует` },
+        { error: `Stage with number ${body.number} already exists` },
         { status: 409 },
       );
     }

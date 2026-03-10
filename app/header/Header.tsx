@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import { AdminLogoutButton } from "@/app/header/AdminLogoutButton";
 
 const navLinks = [
-  { href: "/", label: "Чемпионат" },
-  { href: "/stages", label: "Этапы" },
-  { href: "/pilots", label: "Пилоты" },
+  { href: "/", label: "Чемпіонат" },
+  { href: "/stages", label: "Етапи" },
+  { href: "/pilots", label: "Пілоти" },
 ];
 
 export function Header() {
@@ -40,7 +40,7 @@ export function Header() {
             href="/admin"
             className="ml-4 px-3 py-2 rounded-md text-sm font-medium text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-700"
           >
-            Админ
+            Адмін
           </Link>
           {isAdminArea && <AdminLogoutButton />}
         </nav>

@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       (err as { code: number }).code === 11000
     ) {
       return NextResponse.json(
-        { error: `Пилот с номером ${body.number} уже существует` },
+        { error: `Pilot with number ${body.number} already exists` },
         { status: 409 },
       );
     }

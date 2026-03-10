@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     const { adminUsername, adminPassword } = getAdminAuthConfig();
     if (username !== adminUsername || password !== adminPassword) {
       return NextResponse.json(
-        { error: "Неверный логин или пароль" },
+        { error: "Invalid username or password" },
         { status: 401 },
       );
     }
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Ошибка авторизации";
+      error instanceof Error ? error.message : "Authentication failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

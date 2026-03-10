@@ -1,21 +1,21 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Админ-панель — KartFreedom Race League",
+  title: "Адмін-панель — KartFreedom Race League",
 };
 
 const sections = [
   {
     href: "/admin/pilots",
     icon: "🏎️",
-    title: "Управление пилотами",
-    description: "Добавить, редактировать и удалять пилотов",
+    title: "Керування пілотами",
+    description: "Додавати, редагувати та видаляти пілотів",
   },
   {
     href: "/admin/stages",
     icon: "🏁",
-    title: "Управление этапами",
-    description: "Создавать этапы и вносить результаты гонок",
+    title: "Керування етапами",
+    description: "Створювати етапи та вносити результати гонок",
   },
 ];
 
@@ -23,8 +23,8 @@ export default function AdminPage() {
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white">Админ-панель</h1>
-        <p className="text-zinc-400 mt-1">Управление чемпионатом KartFreedom Race League</p>
+        <h1 className="text-3xl font-black text-white">Адмін-панель</h1>
+        <p className="text-zinc-400 mt-1">Керування чемпіонатом KartFreedom Race League</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {sections.map((section) => (

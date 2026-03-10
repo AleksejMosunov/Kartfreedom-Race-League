@@ -30,7 +30,7 @@ export const useStagesStore = create<StagesState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await fetch("/api/stages");
-      if (!res.ok) throw new Error("Ошибка загрузки этапов");
+      if (!res.ok) throw new Error("Помилка завантаження етапів");
       const data: Stage[] = await res.json();
       set({ stages: data });
     } catch (e) {
@@ -44,7 +44,7 @@ export const useStagesStore = create<StagesState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await fetch(`/api/stages/${id}`);
-      if (!res.ok) throw new Error("Ошибка загрузки этапа");
+      if (!res.ok) throw new Error("Помилка завантаження етапу");
       const data: Stage = await res.json();
       set({ selectedStage: data });
     } catch (e) {
@@ -62,7 +62,7 @@ export const useStagesStore = create<StagesState>((set) => ({
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.error ?? "Ошибка добавления этапа");
+      throw new Error(body.error ?? "Помилка додавання етапу");
     }
     const created: Stage = await res.json();
     set((state) => ({ stages: [...state.stages, created] }));
@@ -74,7 +74,7 @@ export const useStagesStore = create<StagesState>((set) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Ошибка обновления этапа");
+    if (!res.ok) throw new Error("Помилка оновлення етапу");
     const updated: Stage = await res.json();
     set((state) => ({
       stages: state.stages.map((s) => (s._id === id ? updated : s)),
@@ -85,7 +85,7 @@ export const useStagesStore = create<StagesState>((set) => ({
 
   deleteStage: async (id) => {
     const res = await fetch(`/api/stages/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Ошибка удаления этапа");
+    if (!res.ok) throw new Error("Помилка видалення етапу");
     set((state) => ({ stages: state.stages.filter((s) => s._id !== id) }));
   },
 
@@ -95,7 +95,7 @@ export const useStagesStore = create<StagesState>((set) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ results }),
     });
-    if (!res.ok) throw new Error("Ошибка сохранения результатов этапа");
+    if (!res.ok) throw new Error("Помилка збереження результатів етапу");
     const updated: Stage = await res.json();
     set((state) => ({
       stages: state.stages.map((s) => (s._id === stageId ? updated : s)),

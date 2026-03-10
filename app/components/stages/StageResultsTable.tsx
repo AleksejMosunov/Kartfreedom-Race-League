@@ -11,7 +11,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
   const sorted = [...stage.results].sort((a, b) => a.position - b.position);
 
   if (!sorted.length) {
-    return <p className="text-zinc-500 text-center py-8">Результаты ещё не добавлены.</p>;
+    return <p className="text-zinc-500 text-center py-8">Результати ще не додані.</p>;
   }
 
   return (
@@ -19,8 +19,8 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
       <table className="min-w-full text-sm">
         <thead>
           <tr className="bg-zinc-900 text-zinc-400 text-left">
-            <th className="px-4 py-3 font-semibold w-16">Место</th>
-            <th className="px-4 py-3 font-semibold">Пилот</th>
+            <th className="px-4 py-3 font-semibold w-16">Місце</th>
+            <th className="px-4 py-3 font-semibold">Пілот</th>
             <th className="px-4 py-3 font-semibold text-center">Статус</th>
             <th className="px-4 py-3 font-semibold text-center">Очки</th>
           </tr>
