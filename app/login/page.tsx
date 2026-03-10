@@ -1,11 +1,34 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageFallback />}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageFallback() {
+  return (
+    <main className="min-h-[calc(100vh-8rem)] px-4 py-10 flex items-center justify-center">
+      <div className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-900/95 p-8 shadow-2xl shadow-black/30">
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 w-32 rounded bg-zinc-800" />
+          <div className="h-10 w-56 rounded bg-zinc-800" />
+          <div className="h-24 rounded bg-zinc-800" />
+          <div className="h-11 rounded bg-zinc-800" />
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
