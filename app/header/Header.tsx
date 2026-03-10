@@ -8,6 +8,7 @@ const navLinks = [
   { href: "/", label: "Чемпіонат" },
   { href: "/stages", label: "Етапи" },
   { href: "/pilots", label: "Пілоти" },
+  { href: "/register", label: "Реєстрація" },
 ];
 
 export function Header() {

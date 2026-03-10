@@ -1,37 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { usePilots } from "@/app/hooks/usePilots";
 import { Loader } from "@/app/components/ui/Loader";
 import { Button } from "@/app/components/ui/Button";
 import Link from "next/link";
 
 export default function AdminPilotsPage() {
-  const { pilots, isLoading, error, addPilot, deletePilot } = usePilots();
-  const [name, setName] = useState("");
-  const [number, setNumber] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !number) return;
-    if (pilots.some((p) => p.number === Number(number))) {
-      setFormError(`Пілот з номером #${number} вже існує`);
-      return;
-    }
-    setSubmitting(true);
-    setFormError("");
-    try {
-      await addPilot({ name: name.trim(), number: Number(number) });
-      setName("");
-      setNumber("");
-    } catch (err) {
-      setFormError((err as Error).message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const { pilots, isLoading, error, deletePilot } = usePilots();
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
@@ -40,32 +15,15 @@ export default function AdminPilotsPage() {
       </Link>
       <h1 className="text-3xl font-black text-white mb-8">Пілоти</h1>
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
-        <h2 className="text-lg font-bold text-white mb-4">Додати пілота</h2>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input
-            type="text"
-            placeholder="Ім'я пілота *"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-            required
-          />
-          <input
-            type="number"
-            placeholder="Номер *"
-            value={number}
-            onChange={(e) => setNumber(e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-            min={1}
-            required
-          />
-          <div className="sm:col-span-2 flex items-center gap-3">
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Додавання..." : "Додати"}
-            </Button>
-            {formError && <p className="text-red-400 text-sm">{formError}</p>}
-          </div>
-        </form>
+        <h2 className="text-lg font-bold text-white mb-2">Публічна реєстрація активна</h2>
+        <p className="text-sm text-zinc-400">
+          Нові пілоти реєструються самостійно через сторінку
+          {" "}
+          <Link href="/register" className="text-red-400 hover:text-red-300 underline">
+            /register
+          </Link>
+          .
+        </p>
       </div>
       {isLoading && <Loader />}
       {error && <p className="text-red-400">{error}</p>}
