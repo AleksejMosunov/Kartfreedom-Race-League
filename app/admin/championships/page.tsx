@@ -102,6 +102,25 @@ export default function AdminChampionshipsPage() {
     }
   };
 
+  const restoreArchivedChampionship = async (id: string) => {
+    setError("");
+    setSuccess("");
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/championships/${id}/restore`, {
+        method: "POST",
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; };
+      if (!res.ok) throw new Error(body.error ?? "Не вдалося відновити чемпіонат");
+      setSuccess("Чемпіонат відновлено з архіву та зроблено активним.");
+      await loadData();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const savePreseasonNews = async () => {
     setError("");
     setSuccess("");
@@ -317,13 +336,30 @@ export default function AdminChampionshipsPage() {
             ) : (
               <div className="space-y-2">
                 {archived.map((item) => (
-                  <div key={item._id} className="border border-zinc-800 rounded-lg px-4 py-3 flex justify-between items-center">
-                    <span className="text-white font-medium">{item.name}</span>
-                    <span className="text-zinc-500 text-sm">
-                      {item.startedAt ? new Date(item.startedAt).toLocaleDateString("uk-UA") : "—"}
-                      {" → "}
-                      {item.endedAt ? new Date(item.endedAt).toLocaleDateString("uk-UA") : "—"}
-                    </span>
+                  <div key={item._id} className="border border-zinc-800 rounded-lg px-4 py-3 flex justify-between items-center gap-4 flex-wrap">
+                    <div>
+                      <span className="text-white font-medium">{item.name}</span>
+                      <span className="ml-3 text-zinc-500 text-sm">
+                        {item.startedAt ? new Date(item.startedAt).toLocaleDateString("uk-UA") : "—"}
+                        {" → "}
+                        {item.endedAt ? new Date(item.endedAt).toLocaleDateString("uk-UA") : "—"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => void restoreArchivedChampionship(item._id)}
+                        disabled={Boolean(current) || isSubmitting}
+                      >
+                        Відновити
+                      </Button>
+                      <Link href={`/admin/championships/${item._id}`}>
+                        <Button type="button" variant="secondary" size="sm">
+                          Деталі
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 ))}
               </div>
