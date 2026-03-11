@@ -18,6 +18,7 @@ export function Header() {
   const isAdminArea = pathname.startsWith("/admin");
   const mobileMenuRef = useRef<HTMLDetailsElement>(null);
   const [hasActiveChampionship, setHasActiveChampionship] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const adminLinkClass =
     "px-3 py-2 rounded-md text-sm font-medium text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-700";
 
@@ -30,19 +31,21 @@ export function Header() {
   useEffect(() => {
     const loadStatus = async () => {
       try {
-        const res = await fetch("/api/championships");
+        const res = await fetch("/api/championships", { cache: "no-store" });
         if (!res.ok) return;
         const data = (await res.json()) as { current?: unknown; };
         setHasActiveChampionship(Boolean(data.current));
       } catch {
-        setHasActiveChampionship(true);
+        setHasActiveChampionship(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     void loadStatus();
-  }, []);
+  }, [pathname]);
 
-  const navLinks = hasActiveChampionship
+  const navLinks = !isLoading && hasActiveChampionship
     ? [...baseLinks, ...championshipLinks]
     : baseLinks;
 
