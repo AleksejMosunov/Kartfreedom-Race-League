@@ -46,10 +46,13 @@ export async function GET() {
     current.championshipType === "teams"
       ? (() => {
           const teamById = new Map(
-            (participants as Array<{ _id: string; name: string; number: number }>).map((team) => [
-              String(team._id),
-              team,
-            ]),
+            (
+              participants as Array<{
+                _id: string;
+                name: string;
+                number: number;
+              }>
+            ).map((team) => [String(team._id), team]),
           );
 
           return stages.map((stage) => ({

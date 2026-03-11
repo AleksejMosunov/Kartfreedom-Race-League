@@ -19,7 +19,7 @@ export function PilotsList() {
         const res = await fetch("/api/championships", { cache: "no-store" });
         if (!res.ok) return;
         const data = (await res.json()) as {
-          current?: { championshipType?: ChampionshipType } | null;
+          current?: { championshipType?: ChampionshipType; } | null;
         };
         setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");
       } catch {

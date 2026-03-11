@@ -53,7 +53,9 @@ export async function POST(req: NextRequest) {
         (err as { code: number }).code === 11000
       ) {
         return NextResponse.json(
-          { error: `Команда з назвою \"${teamName}\" або номером ${teamNumber} вже зареєстрована` },
+          {
+            error: `Команда з назвою \"${teamName}\" або номером ${teamNumber} вже зареєстрована`,
+          },
           { status: 409 },
         );
       }

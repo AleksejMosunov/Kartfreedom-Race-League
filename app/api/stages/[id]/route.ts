@@ -8,31 +8,36 @@ interface Params {
   params: Promise<{ id: string }>;
 }
 
-async function mapStageParticipantsForTeams(stage: Record<string, unknown>, championshipId: string) {
+async function mapStageParticipantsForTeams(
+  stage: Record<string, unknown>,
+  championshipId: string,
+) {
   const teams = await Team.find({ championshipId }).lean();
   const teamById = new Map(teams.map((team) => [String(team._id), team]));
 
   return {
     ...stage,
-    results: ((stage.results as Array<Record<string, unknown>>) ?? []).map((result) => {
-      const id =
-        result.pilotId !== null &&
-        typeof result.pilotId === "object" &&
-        "_id" in (result.pilotId as object)
-          ? String((result.pilotId as { _id: unknown })._id)
-          : String(result.pilotId);
-      const team = teamById.get(id);
-      if (!team) return result;
-      return {
-        ...result,
-        pilot: {
-          _id: String(team._id),
-          name: team.name,
-          surname: "",
-          number: team.number,
-        },
-      };
-    }),
+    results: ((stage.results as Array<Record<string, unknown>>) ?? []).map(
+      (result) => {
+        const id =
+          result.pilotId !== null &&
+          typeof result.pilotId === "object" &&
+          "_id" in (result.pilotId as object)
+            ? String((result.pilotId as { _id: unknown })._id)
+            : String(result.pilotId);
+        const team = teamById.get(id);
+        if (!team) return result;
+        return {
+          ...result,
+          pilot: {
+            _id: String(team._id),
+            name: team.name,
+            surname: "",
+            number: team.number,
+          },
+        };
+      },
+    ),
   };
 }
 
@@ -45,11 +50,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
   }
   const { id } = await params;
-  const stage = current.championshipType === "teams"
-    ? await Stage.findOne({ _id: id, championshipId: current._id }).lean()
-    : await Stage.findOne({ _id: id, championshipId: current._id })
-        .populate("results.pilotId", "name surname number team avatar")
-        .lean();
+  const stage =
+    current.championshipType === "teams"
+      ? await Stage.findOne({ _id: id, championshipId: current._id }).lean()
+      : await Stage.findOne({ _id: id, championshipId: current._id })
+          .populate("results.pilotId", "name surname number team avatar")
+          .lean();
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
 
@@ -78,25 +84,26 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
   const { id } = await params;
   const body = await req.json();
-  const stage = current.championshipType === "teams"
-    ? await Stage.findOneAndUpdate(
-        { _id: id, championshipId: current._id },
-        body,
-        {
-          new: true,
-          runValidators: true,
-        },
-      ).lean()
-    : await Stage.findOneAndUpdate(
-        { _id: id, championshipId: current._id },
-        body,
-        {
-          new: true,
-          runValidators: true,
-        },
-      )
-        .populate("results.pilotId", "name surname number team avatar")
-        .lean();
+  const stage =
+    current.championshipType === "teams"
+      ? await Stage.findOneAndUpdate(
+          { _id: id, championshipId: current._id },
+          body,
+          {
+            new: true,
+            runValidators: true,
+          },
+        ).lean()
+      : await Stage.findOneAndUpdate(
+          { _id: id, championshipId: current._id },
+          body,
+          {
+            new: true,
+            runValidators: true,
+          },
+        )
+          .populate("results.pilotId", "name surname number team avatar")
+          .lean();
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
 

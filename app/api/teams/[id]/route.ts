@@ -13,11 +13,17 @@ export async function PUT(req: NextRequest, { params }: Params) {
   try {
     current = await requireCurrentChampionship();
   } catch {
-    return NextResponse.json({ error: "Немає активного чемпіонату" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Немає активного чемпіонату" },
+      { status: 409 },
+    );
   }
 
   if (current.championshipType !== "teams") {
-    return NextResponse.json({ error: "Операція доступна лише для командного чемпіонату" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Операція доступна лише для командного чемпіонату" },
+      { status: 409 },
+    );
   }
 
   const { id } = await params;
@@ -30,7 +36,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (typeof body.name === "string") {
     const normalized = body.name.trim();
     if (normalized.length < 2 || normalized.length > 60) {
-      return NextResponse.json({ error: "Назва команди має бути від 2 до 60 символів" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Назва команди має бути від 2 до 60 символів" },
+        { status: 400 },
+      );
     }
     update.name = normalized;
   }
@@ -38,7 +47,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (body.number !== undefined) {
     const number = Number(body.number);
     if (!Number.isInteger(number) || number < 1 || number > 999) {
-      return NextResponse.json({ error: "Номер має бути цілим числом від 1 до 999" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Номер має бути цілим числом від 1 до 999" },
+        { status: 400 },
+      );
     }
     update.number = number;
   }
@@ -51,7 +63,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
     ).lean();
 
     if (!updated) {
-      return NextResponse.json({ error: "Команду не знайдено" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Команду не знайдено" },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json(updated);
@@ -67,7 +82,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
         { status: 409 },
       );
     }
-    return NextResponse.json({ error: "Не вдалося оновити команду" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Не вдалося оновити команду" },
+      { status: 500 },
+    );
   }
 }
 
@@ -77,11 +95,17 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     current = await requireCurrentChampionship();
   } catch {
-    return NextResponse.json({ error: "Немає активного чемпіонату" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Немає активного чемпіонату" },
+      { status: 409 },
+    );
   }
 
   if (current.championshipType !== "teams") {
-    return NextResponse.json({ error: "Операція доступна лише для командного чемпіонату" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Операція доступна лише для командного чемпіонату" },
+      { status: 409 },
+    );
   }
 
   const { id } = await params;

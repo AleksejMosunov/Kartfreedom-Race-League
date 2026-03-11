@@ -37,7 +37,10 @@ export async function POST(req: NextRequest) {
   try {
     current = await requireCurrentChampionship();
   } catch {
-    return NextResponse.json({ error: "Немає активного чемпіонату" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Немає активного чемпіонату" },
+      { status: 409 },
+    );
   }
 
   if (current.championshipType !== "teams") {
@@ -62,7 +65,9 @@ export async function POST(req: NextRequest) {
 
   const explicitNumber = Number(body.number);
   const number =
-    Number.isInteger(explicitNumber) && explicitNumber >= 1 && explicitNumber <= 999
+    Number.isInteger(explicitNumber) &&
+    explicitNumber >= 1 &&
+    explicitNumber <= 999
       ? explicitNumber
       : await getNextTeamNumber(String(current._id));
 
@@ -85,6 +90,9 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
-    return NextResponse.json({ error: "Не вдалося створити команду" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Не вдалося створити команду" },
+      { status: 500 },
+    );
   }
 }

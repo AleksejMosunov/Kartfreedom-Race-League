@@ -49,7 +49,10 @@ export async function POST(req: NextRequest) {
 
   if (current.championshipType === "teams") {
     return NextResponse.json(
-      { error: "У командному чемпіонаті учасників додають у розділі 'Керування командами'" },
+      {
+        error:
+          "У командному чемпіонаті учасників додають у розділі 'Керування командами'",
+      },
       { status: 409 },
     );
   }

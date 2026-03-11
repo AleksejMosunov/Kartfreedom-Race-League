@@ -68,19 +68,20 @@ export async function POST(req: NextRequest, { params }: Params) {
     };
   });
 
-  const stage = current.championshipType === "teams"
-    ? await Stage.findOneAndUpdate(
-        { _id: id, championshipId: current._id },
-        { results: enrichedResults, isCompleted: true },
-        { new: true, runValidators: true },
-      ).lean()
-    : await Stage.findOneAndUpdate(
-        { _id: id, championshipId: current._id },
-        { results: enrichedResults, isCompleted: true },
-        { new: true, runValidators: true },
-      )
-        .populate("results.pilotId", "name surname number team avatar")
-        .lean();
+  const stage =
+    current.championshipType === "teams"
+      ? await Stage.findOneAndUpdate(
+          { _id: id, championshipId: current._id },
+          { results: enrichedResults, isCompleted: true },
+          { new: true, runValidators: true },
+        ).lean()
+      : await Stage.findOneAndUpdate(
+          { _id: id, championshipId: current._id },
+          { results: enrichedResults, isCompleted: true },
+          { new: true, runValidators: true },
+        )
+          .populate("results.pilotId", "name surname number team avatar")
+          .lean();
 
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });

@@ -35,9 +35,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
           )
       : Pilot.find({ championshipId: id }).sort({ number: 1 }).lean(),
     championship.championshipType === "teams"
-      ? Stage.find({ championshipId: id })
-          .sort({ number: 1 })
-          .lean()
+      ? Stage.find({ championshipId: id }).sort({ number: 1 }).lean()
       : Stage.find({ championshipId: id })
           .populate("results.pilotId", "name surname number team avatar")
           .sort({ number: 1 })
@@ -48,32 +46,37 @@ export async function GET(_req: NextRequest, { params }: Params) {
     championship.championshipType === "teams"
       ? (() => {
           const teamById = new Map(
-            (participants as Array<{ _id: string; name: string; number: number }>).map((team) => [
-              String(team._id),
-              team,
-            ]),
+            (
+              participants as Array<{
+                _id: string;
+                name: string;
+                number: number;
+              }>
+            ).map((team) => [String(team._id), team]),
           );
           return stages.map((stage) => ({
             ...stage,
-            results: (stage.results ?? []).map((result: Record<string, unknown>) => {
-              const idStr =
-                result.pilotId !== null &&
-                typeof result.pilotId === "object" &&
-                "_id" in (result.pilotId as object)
-                  ? String((result.pilotId as { _id: unknown })._id)
-                  : String(result.pilotId);
-              const team = teamById.get(idStr);
-              if (!team) return result;
-              return {
-                ...result,
-                pilot: {
-                  _id: team._id,
-                  name: team.name,
-                  surname: "",
-                  number: team.number,
-                },
-              };
-            }),
+            results: (stage.results ?? []).map(
+              (result: Record<string, unknown>) => {
+                const idStr =
+                  result.pilotId !== null &&
+                  typeof result.pilotId === "object" &&
+                  "_id" in (result.pilotId as object)
+                    ? String((result.pilotId as { _id: unknown })._id)
+                    : String(result.pilotId);
+                const team = teamById.get(idStr);
+                if (!team) return result;
+                return {
+                  ...result,
+                  pilot: {
+                    _id: team._id,
+                    name: team.name,
+                    surname: "",
+                    number: team.number,
+                  },
+                };
+              },
+            ),
           }));
         })()
       : stages;

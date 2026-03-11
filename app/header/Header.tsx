@@ -30,7 +30,7 @@ export function Header() {
         const res = await fetch("/api/championships", { cache: "no-store" });
         if (!res.ok) return;
         const data = (await res.json()) as {
-          current?: { championshipType?: ChampionshipType } | null;
+          current?: { championshipType?: ChampionshipType; } | null;
         };
         setHasActiveChampionship(Boolean(data.current));
         setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");

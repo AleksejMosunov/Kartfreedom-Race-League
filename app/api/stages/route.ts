@@ -8,24 +8,23 @@ export async function GET() {
   try {
     await connectToDatabase();
     const current = await requireCurrentChampionship();
-    const stages = current.championshipType === "teams"
-      ? await Stage.find()
-          .where("championshipId")
-          .equals(current._id)
-          .sort({ number: 1 })
-          .lean()
-      : await Stage.find()
-          .where("championshipId")
-          .equals(current._id)
-          .populate("results.pilotId", "name surname number avatar")
-          .sort({ number: 1 })
-          .lean();
+    const stages =
+      current.championshipType === "teams"
+        ? await Stage.find()
+            .where("championshipId")
+            .equals(current._id)
+            .sort({ number: 1 })
+            .lean()
+        : await Stage.find()
+            .where("championshipId")
+            .equals(current._id)
+            .populate("results.pilotId", "name surname number avatar")
+            .sort({ number: 1 })
+            .lean();
 
     if (current.championshipType === "teams") {
       const teams = await Team.find({ championshipId: current._id }).lean();
-      const teamById = new Map(
-        teams.map((team) => [String(team._id), team]),
-      );
+      const teamById = new Map(teams.map((team) => [String(team._id), team]));
 
       const mappedStages = stages.map((stage) => ({
         ...stage,

@@ -22,9 +22,9 @@ export default function AdminTeamsPage() {
     setError("");
     try {
       const res = await fetch("/api/teams", { cache: "no-store" });
-      const body = (await res.json().catch(() => [])) as Team[] | { error?: string };
+      const body = (await res.json().catch(() => [])) as Team[] | { error?: string; };
       if (!res.ok) {
-        throw new Error((body as { error?: string }).error ?? "Не вдалося завантажити команди");
+        throw new Error((body as { error?: string; }).error ?? "Не вдалося завантажити команди");
       }
       setTeams(Array.isArray(body) ? body : []);
     } catch (err) {
@@ -50,7 +50,7 @@ export default function AdminTeamsPage() {
           number: Number(number) || undefined,
         }),
       });
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      const body = (await res.json().catch(() => ({}))) as { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося створити команду");
       setName("");
       setNumber("");
@@ -66,7 +66,7 @@ export default function AdminTeamsPage() {
     setError("");
     try {
       const res = await fetch(`/api/teams/${id}`, { method: "DELETE" });
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      const body = (await res.json().catch(() => ({}))) as { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося видалити команду");
       setTeams((prev) => prev.filter((team) => team._id !== id));
     } catch (err) {
@@ -87,7 +87,7 @@ export default function AdminTeamsPage() {
           number: Number(editingNumber),
         }),
       });
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      const body = (await res.json().catch(() => ({}))) as { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося оновити команду");
       setEditingId(null);
       setEditingName("");
