@@ -17,7 +17,7 @@ export function Header() {
   const pathname = usePathname();
   const isAdminArea = pathname.startsWith("/admin");
   const mobileMenuRef = useRef<HTMLDetailsElement>(null);
-  const [hasActiveChampionship, setHasActiveChampionship] = useState(true);
+  const [hasActiveChampionship, setHasActiveChampionship] = useState(false);
   const adminLinkClass =
     "px-3 py-2 rounded-md text-sm font-medium text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-700";
 
