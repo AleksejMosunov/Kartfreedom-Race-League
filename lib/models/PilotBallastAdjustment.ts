@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema, model, models } from "mongoose";
 
 export interface IPilotBallastAdjustment extends Document {
+  championshipId: mongoose.Types.ObjectId;
   pilotId: mongoose.Types.ObjectId;
   kg: number;
   reason: string;
@@ -9,6 +10,12 @@ export interface IPilotBallastAdjustment extends Document {
 
 const PilotBallastAdjustmentSchema = new Schema<IPilotBallastAdjustment>(
   {
+    championshipId: {
+      type: Schema.Types.ObjectId,
+      ref: "Championship",
+      required: true,
+      index: true,
+    },
     pilotId: {
       type: Schema.Types.ObjectId,
       ref: "Pilot",
@@ -20,6 +27,10 @@ const PilotBallastAdjustmentSchema = new Schema<IPilotBallastAdjustment>(
   },
   { timestamps: true },
 );
+
+if (process.env.NODE_ENV !== "production" && models.PilotBallastAdjustment) {
+  delete models.PilotBallastAdjustment;
+}
 
 export const PilotBallastAdjustment =
   models.PilotBallastAdjustment ||

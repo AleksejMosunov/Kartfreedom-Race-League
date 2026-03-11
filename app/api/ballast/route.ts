@@ -10,17 +10,23 @@ import {
   normalizeBallastRules,
 } from "@/lib/utils/ballast";
 import { BallastRule, Pilot as PilotType, Stage as StageType } from "@/types";
-
-const BALLAST_SLUG = "main";
+import { getCurrentChampionship } from "@/lib/championship/current";
 
 export async function GET() {
   await connectToDatabase();
+  const current = await getCurrentChampionship();
+
+  if (!current) {
+    return NextResponse.json({ rules: initialBallastRules, summaries: [] });
+  }
 
   const [pilots, stages, config, adjustments] = await Promise.all([
-    Pilot.find().sort({ number: 1 }).lean(),
-    Stage.find().sort({ number: 1 }).lean(),
-    BallastConfig.findOne({ slug: BALLAST_SLUG }).lean(),
-    PilotBallastAdjustment.find().sort({ createdAt: -1 }).lean(),
+    Pilot.find({ championshipId: current._id }).sort({ number: 1 }).lean(),
+    Stage.find({ championshipId: current._id }).sort({ number: 1 }).lean(),
+    BallastConfig.findOne({ championshipId: current._id }).lean(),
+    PilotBallastAdjustment.find({ championshipId: current._id })
+      .sort({ createdAt: -1 })
+      .lean(),
   ]);
 
   const rules = normalizeBallastRules(

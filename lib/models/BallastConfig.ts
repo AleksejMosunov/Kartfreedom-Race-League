@@ -6,7 +6,7 @@ interface IBallastRule {
 }
 
 export interface IBallastConfig extends Document {
-  slug: string;
+  championshipId: string;
   rules: IBallastRule[];
 }
 
@@ -18,13 +18,23 @@ const BallastRuleSchema = new Schema<IBallastRule>(
   { _id: false },
 );
 
-const BallastConfigSchema = new Schema<IBallastConfig>(
+const BallastConfigSchema = new Schema(
   {
-    slug: { type: String, required: true, unique: true, default: "main" },
+    championshipId: {
+      type: Schema.Types.ObjectId,
+      ref: "Championship",
+      required: true,
+      unique: true,
+      index: true,
+    },
     rules: { type: [BallastRuleSchema], default: [] },
   },
   { timestamps: true },
 );
+
+if (process.env.NODE_ENV !== "production" && models.BallastConfig) {
+  delete models.BallastConfig;
+}
 
 export const BallastConfig =
   models.BallastConfig ||

@@ -22,7 +22,7 @@ interface ResultInputRow {
 }
 
 export default function AdminStagesPage() {
-  const { stages, isLoading, error, addStage, deleteStage } = useStages();
+  const { stages, isLoading, error, addStage, deleteStage, updateStage } = useStages();
   const { pilots } = usePilots();
   const { saveStageResults } = useStagesStore();
 
@@ -227,6 +227,15 @@ export default function AdminStagesPage() {
                 {pilots.length > 0 && (
                   <Button variant="secondary" size="sm" onClick={() => startEditResults(stage._id, stage.results)}>
                     {stage.isCompleted ? "Редагувати результати" : "Внести результати"}
+                  </Button>
+                )}
+                {!stage.isCompleted && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => updateStage(stage._id, { isCompleted: true })}
+                  >
+                    Завершити етап
                   </Button>
                 )}
                 <Button variant="danger" size="sm" onClick={() => deleteStage(stage._id)}>

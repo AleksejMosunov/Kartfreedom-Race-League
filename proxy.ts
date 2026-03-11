@@ -22,7 +22,8 @@ function isProtectedRequest(request: NextRequest) {
     pathname.startsWith("/api/pilots") ||
     pathname.startsWith("/api/stages") ||
     pathname.startsWith("/api/regulations") ||
-    pathname.startsWith("/api/ballast")
+    pathname.startsWith("/api/ballast") ||
+    pathname.startsWith("/api/championships")
   );
 }
 
@@ -78,5 +79,6 @@ export const config = {
     "/api/stages/:path*",
     "/api/regulations/:path*",
     "/api/ballast/:path*",
+    "/api/championships/:path*",
   ],
 };

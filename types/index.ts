@@ -61,6 +61,17 @@ export interface RegulationsContent {
   sections: RegulationSection[];
 }
 
+export interface Championship {
+  _id: string;
+  name: string;
+  status: "active" | "archived";
+  startedAt: string;
+  endedAt?: string;
+  regulations?: RegulationsContent;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface BallastRule {
   position: number;
   kg: number;

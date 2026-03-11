@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Pilot } from "@/lib/models/Pilot";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
+import { requireCurrentChampionship } from "@/lib/championship/current";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -9,8 +10,17 @@ interface Params {
 
 export async function GET(_req: NextRequest, { params }: Params) {
   await connectToDatabase();
+  let current;
+  try {
+    current = await requireCurrentChampionship();
+  } catch {
+    return NextResponse.json({ error: "Pilot not found" }, { status: 404 });
+  }
   const { id } = await params;
-  const pilot = await Pilot.findById(id).lean();
+  const pilot = await Pilot.findOne({
+    _id: id,
+    championshipId: current._id,
+  }).lean();
   if (!pilot)
     return NextResponse.json({ error: "Pilot not found" }, { status: 404 });
   return NextResponse.json(pilot);
@@ -18,6 +28,15 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function PUT(req: NextRequest, { params }: Params) {
   await connectToDatabase();
+  let current;
+  try {
+    current = await requireCurrentChampionship();
+  } catch {
+    return NextResponse.json(
+      { error: "Немає активного чемпіонату" },
+      { status: 409 },
+    );
+  }
   const { id } = await params;
   const body = await req.json();
 
@@ -58,10 +77,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
     body.number = normalizedNumber;
   }
 
-  const pilot = await Pilot.findByIdAndUpdate(id, body, {
-    new: true,
-    runValidators: true,
-  }).lean();
+  const pilot = await Pilot.findOneAndUpdate(
+    { _id: id, championshipId: current._id },
+    body,
+    {
+      new: true,
+      runValidators: true,
+    },
+  ).lean();
   if (!pilot)
     return NextResponse.json({ error: "Pilot not found" }, { status: 404 });
   return NextResponse.json(pilot);
@@ -69,8 +92,20 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   await connectToDatabase();
+  let current;
+  try {
+    current = await requireCurrentChampionship();
+  } catch {
+    return NextResponse.json(
+      { error: "Немає активного чемпіонату" },
+      { status: 409 },
+    );
+  }
   const { id } = await params;
-  const pilot = await Pilot.findByIdAndDelete(id).lean();
+  const pilot = await Pilot.findOneAndDelete({
+    _id: id,
+    championshipId: current._id,
+  }).lean();
   if (!pilot)
     return NextResponse.json({ error: "Pilot not found" }, { status: 404 });
   return NextResponse.json({ success: true });

@@ -2,15 +2,33 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Pilot } from "@/lib/models/Pilot";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
+import { requireCurrentChampionship } from "@/lib/championship/current";
 
 export async function GET() {
   await connectToDatabase();
-  const pilots = await Pilot.find().sort({ number: 1 }).lean();
+  let current;
+  try {
+    current = await requireCurrentChampionship();
+  } catch {
+    return NextResponse.json([]);
+  }
+  const pilots = await Pilot.find({ championshipId: current._id })
+    .sort({ number: 1 })
+    .lean();
   return NextResponse.json(pilots);
 }
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
+  let current;
+  try {
+    current = await requireCurrentChampionship();
+  } catch {
+    return NextResponse.json(
+      { error: "Немає активного чемпіонату" },
+      { status: 409 },
+    );
+  }
   const body = await req.json();
 
   const name =
@@ -35,6 +53,7 @@ export async function POST(req: NextRequest) {
   try {
     const pilot = await Pilot.create({
       ...body,
+      championshipId: current._id,
       name,
       surname,
       number,

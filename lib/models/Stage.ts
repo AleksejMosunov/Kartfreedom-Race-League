@@ -11,6 +11,7 @@ export interface IStageResult {
 }
 
 export interface IStage extends Document {
+  championshipId: mongoose.Types.ObjectId;
   name: string;
   number: number;
   date: Date;
@@ -34,14 +35,22 @@ const StageResultSchema = new Schema<IStageResult>(
 
 const StageSchema = new Schema<IStage>(
   {
+    championshipId: {
+      type: Schema.Types.ObjectId,
+      ref: "Championship",
+      required: true,
+      index: true,
+    },
     name: { type: String, required: true, trim: true },
-    number: { type: Number, required: true, unique: true },
+    number: { type: Number, required: true },
     date: { type: Date, required: true },
     isCompleted: { type: Boolean, default: false },
     results: { type: [StageResultSchema], default: [] },
   },
   { timestamps: true },
 );
+
+StageSchema.index({ championshipId: 1, number: 1 }, { unique: true });
 
 if (process.env.NODE_ENV !== "production" && models.Stage) {
   delete models.Stage;

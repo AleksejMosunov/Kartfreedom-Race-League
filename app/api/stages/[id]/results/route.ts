@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Stage } from "@/lib/models/Stage";
 import { getPointsByPosition } from "@/lib/utils/championship";
+import { requireCurrentChampionship } from "@/lib/championship/current";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -18,6 +19,15 @@ interface ResultInput {
 
 export async function POST(req: NextRequest, { params }: Params) {
   await connectToDatabase();
+  let current;
+  try {
+    current = await requireCurrentChampionship();
+  } catch {
+    return NextResponse.json(
+      { error: "Немає активного чемпіонату" },
+      { status: 409 },
+    );
+  }
   const { id } = await params;
   const body = await req.json();
   const { results }: { results: ResultInput[] } = body;
@@ -57,8 +67,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     };
   });
 
-  const stage = await Stage.findByIdAndUpdate(
-    id,
+  const stage = await Stage.findOneAndUpdate(
+    { _id: id, championshipId: current._id },
     { results: enrichedResults, isCompleted: true },
     { new: true, runValidators: true },
   )

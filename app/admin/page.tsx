@@ -18,10 +18,10 @@ const sections = [
     description: "Створювати етапи та вносити результати гонок",
   },
   {
-    href: "/admin/regulations",
-    icon: "📘",
-    title: "Керування регламентом",
-    description: "Редагувати текст розділу регламенту на сайті",
+    href: "/admin/championships",
+    icon: "🏆",
+    title: "Керування чемпіонатами",
+    description: "Старт нового чемпіонату та архів завершених",
   },
 ];
 

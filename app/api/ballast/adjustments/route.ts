@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { PilotBallastAdjustment } from "@/lib/models/PilotBallastAdjustment";
+import { requireCurrentChampionship } from "@/lib/championship/current";
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
+  let current;
+  try {
+    current = await requireCurrentChampionship();
+  } catch {
+    return NextResponse.json(
+      { error: "Немає активного чемпіонату" },
+      { status: 409 },
+    );
+  }
 
   const body = (await req.json()) as {
     pilotId?: string;
@@ -23,6 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   const created = await PilotBallastAdjustment.create({
+    championshipId: current._id,
     pilotId,
     kg,
     reason,

@@ -4,11 +4,19 @@ import { BallastConfig } from "@/lib/models/BallastConfig";
 import { initialBallastRules } from "@/lib/ballast/defaultConfig";
 import { BallastRule } from "@/types";
 import { normalizeBallastRules } from "@/lib/utils/ballast";
-
-const BALLAST_SLUG = "main";
+import { requireCurrentChampionship } from "@/lib/championship/current";
 
 export async function PUT(req: NextRequest) {
   await connectToDatabase();
+  let current;
+  try {
+    current = await requireCurrentChampionship();
+  } catch {
+    return NextResponse.json(
+      { error: "Немає активного чемпіонату" },
+      { status: 409 },
+    );
+  }
   const body = (await req.json()) as { rules?: BallastRule[] };
 
   if (!Array.isArray(body.rules) || body.rules.length === 0) {
@@ -31,9 +39,9 @@ export async function PUT(req: NextRequest) {
   );
 
   await BallastConfig.findOneAndUpdate(
-    { slug: BALLAST_SLUG },
+    { championshipId: current._id },
     {
-      slug: BALLAST_SLUG,
+      championshipId: current._id,
       rules: finalRules.length ? finalRules : initialBallastRules,
     },
     { upsert: true, new: true, setDefaultsOnInsert: true },

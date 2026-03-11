@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, model, models } from "mongoose";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 
 export interface IPilot extends Document {
+  championshipId: mongoose.Types.ObjectId;
   name: string;
   surname: string;
   number: number;
@@ -11,6 +12,12 @@ export interface IPilot extends Document {
 
 const PilotSchema = new Schema<IPilot>(
   {
+    championshipId: {
+      type: Schema.Types.ObjectId,
+      ref: "Championship",
+      required: true,
+      index: true,
+    },
     name: {
       type: String,
       required: true,
@@ -34,7 +41,6 @@ const PilotSchema = new Schema<IPilot>(
     number: {
       type: Number,
       required: true,
-      unique: true,
       min: 1,
       max: 999,
       validate: {
@@ -46,6 +52,8 @@ const PilotSchema = new Schema<IPilot>(
   },
   { timestamps: true },
 );
+
+PilotSchema.index({ championshipId: 1, number: 1 }, { unique: true });
 
 if (process.env.NODE_ENV !== "production" && models.Pilot) {
   delete models.Pilot;
