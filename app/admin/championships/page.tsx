@@ -17,6 +17,7 @@ export default function AdminChampionshipsPage() {
   const [current, setCurrent] = useState<Championship | null>(null);
   const [archived, setArchived] = useState<Championship[]>([]);
   const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState<"solo" | "teams">("solo");
   const [preseasonNews, setPreseasonNews] = useState("");
   const [regulations, setRegulations] = useState<RegulationsContent>({
     title: "",
@@ -68,11 +69,12 @@ export default function AdminChampionshipsPage() {
       const res = await fetch("/api/championships", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName.trim() }),
+        body: JSON.stringify({ name: newName.trim(), championshipType: newType }),
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося створити чемпіонат");
       setNewName("");
+      setNewType("solo");
       setSuccess("Новий чемпіонат створено. Дані починаються з нуля.");
       await loadData();
     } catch (err) {
@@ -230,6 +232,9 @@ export default function AdminChampionshipsPage() {
             {current ? (
               <>
                 <p className="text-zinc-200 font-semibold">{current.name}</p>
+                <p className="text-zinc-400 text-sm">
+                  Формат: {current.championshipType === "teams" ? "Команди" : "Соло (пілоти)"}
+                </p>
                 <p className="text-zinc-500 text-sm">
                   Старт: {new Date(current.startedAt).toLocaleDateString("uk-UA")}
                 </p>
@@ -251,6 +256,17 @@ export default function AdminChampionshipsPage() {
               placeholder="Назва чемпіонату"
               className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
             />
+            <div>
+              <label className="block text-zinc-400 text-sm mb-2">Формат чемпіонату</label>
+              <select
+                value={newType}
+                onChange={(e) => setNewType(e.target.value as "solo" | "teams")}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+              >
+                <option value="solo">Соло (пілоти)</option>
+                <option value="teams">Команди</option>
+              </select>
+            </div>
             <Button type="button" onClick={startNewChampionship} disabled={Boolean(current) || isSubmitting}>
               {isSubmitting ? "Створення..." : "Стартувати новий чемпіонат"}
             </Button>
@@ -343,6 +359,9 @@ export default function AdminChampionshipsPage() {
                         {item.startedAt ? new Date(item.startedAt).toLocaleDateString("uk-UA") : "—"}
                         {" → "}
                         {item.endedAt ? new Date(item.endedAt).toLocaleDateString("uk-UA") : "—"}
+                      </span>
+                      <span className="ml-3 text-zinc-600 text-xs">
+                        {item.championshipType === "teams" ? "Команди" : "Соло"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

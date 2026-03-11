@@ -6,18 +6,14 @@ import { usePathname } from "next/navigation";
 import { AdminLogoutButton } from "@/app/header/AdminLogoutButton";
 
 const baseLinks = [{ href: "/", label: "Чемпіонат" }];
-const championshipLinks = [
-  { href: "/stages", label: "Етапи" },
-  { href: "/pilots", label: "Пілоти" },
-  { href: "/regulations", label: "Регламент" },
-  { href: "/register", label: "Реєстрація" },
-];
+type ChampionshipType = "solo" | "teams";
 
 export function Header() {
   const pathname = usePathname();
   const isAdminArea = pathname.startsWith("/admin");
   const mobileMenuRef = useRef<HTMLDetailsElement>(null);
   const [hasActiveChampionship, setHasActiveChampionship] = useState(false);
+  const [championshipType, setChampionshipType] = useState<ChampionshipType>("solo");
   const [isLoading, setIsLoading] = useState(true);
   const adminLinkClass =
     "px-3 py-2 rounded-md text-sm font-medium text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-700";
@@ -33,10 +29,14 @@ export function Header() {
       try {
         const res = await fetch("/api/championships", { cache: "no-store" });
         if (!res.ok) return;
-        const data = (await res.json()) as { current?: unknown; };
+        const data = (await res.json()) as {
+          current?: { championshipType?: ChampionshipType } | null;
+        };
         setHasActiveChampionship(Boolean(data.current));
+        setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");
       } catch {
         setHasActiveChampionship(false);
+        setChampionshipType("solo");
       } finally {
         setIsLoading(false);
       }
@@ -44,6 +44,13 @@ export function Header() {
 
     void loadStatus();
   }, [pathname]);
+
+  const championshipLinks = [
+    { href: "/stages", label: "Етапи" },
+    { href: "/pilots", label: championshipType === "teams" ? "Команди" : "Пілоти" },
+    { href: "/regulations", label: "Регламент" },
+    { href: "/register", label: "Реєстрація" },
+  ];
 
   const navLinks = !isLoading && hasActiveChampionship
     ? [...baseLinks, ...championshipLinks]

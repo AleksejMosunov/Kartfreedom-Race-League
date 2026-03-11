@@ -8,12 +8,16 @@ import Link from "next/link";
 import { BallastRule, PilotBallastSummary } from "@/types";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
+type ChampionshipType = "solo" | "teams";
+
 function formatKg(kg: number) {
   return `${kg.toLocaleString("uk-UA", { minimumFractionDigits: Number.isInteger(kg) ? 0 : 1, maximumFractionDigits: 1 })} кг`;
 }
 
 export default function AdminPilotsPage() {
   const { pilots, isLoading, error, deletePilot, updatePilot } = usePilots();
+  const [championshipType, setChampionshipType] = useState<ChampionshipType>("solo");
+  const [modeLoading, setModeLoading] = useState(true);
   const [rules, setRules] = useState<BallastRule[]>([]);
   const [ballastByPilot, setBallastByPilot] = useState<Record<string, PilotBallastSummary>>({});
   const [selectedPilotId, setSelectedPilotId] = useState("");
@@ -36,6 +40,29 @@ export default function AdminPilotsPage() {
   );
 
   useEffect(() => {
+    const loadChampionshipType = async () => {
+      try {
+        const res = await fetch("/api/championships", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          current?: { championshipType?: ChampionshipType } | null;
+        };
+        setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");
+      } finally {
+        setModeLoading(false);
+      }
+    };
+
+    void loadChampionshipType();
+  }, []);
+
+  useEffect(() => {
+    if (championshipType === "teams") {
+      setRules([]);
+      setBallastByPilot({});
+      return;
+    }
+
     const loadBallast = async () => {
       try {
         const res = await fetch("/api/ballast");
@@ -59,7 +86,7 @@ export default function AdminPilotsPage() {
     };
 
     void loadBallast();
-  }, []);
+  }, [championshipType]);
 
   const refreshBallast = async () => {
     const res = await fetch("/api/ballast");
@@ -216,6 +243,34 @@ export default function AdminPilotsPage() {
       setIsSavingPilot(false);
     }
   };
+
+  if (modeLoading) {
+    return (
+      <main className="max-w-3xl mx-auto px-4 py-8">
+        <Loader />
+      </main>
+    );
+  }
+
+  if (championshipType === "teams") {
+    return (
+      <main className="max-w-3xl mx-auto px-4 py-8">
+        <Link href="/admin" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
+          ← Адмін-панель
+        </Link>
+        <h1 className="text-3xl font-black text-white mb-8">Пілоти</h1>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <h2 className="text-lg font-bold text-white mb-2">Недоступно в командному чемпіонаті</h2>
+          <p className="text-zinc-400 text-sm mb-4">
+            У командному чемпіонаті доваження не використовується, а керування учасниками виконується через розділ команд.
+          </p>
+          <Link href="/admin/teams" className="text-red-400 hover:text-red-300 underline text-sm">
+            Перейти до керування командами
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">

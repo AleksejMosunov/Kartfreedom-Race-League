@@ -18,6 +18,12 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       { status: 409 },
     );
   }
+  if (current.championshipType === "teams") {
+    return NextResponse.json(
+      { error: "Доваження доступне лише для соло-чемпіонату" },
+      { status: 409 },
+    );
+  }
   const { id } = await params;
 
   const deleted = await PilotBallastAdjustment.findOneAndDelete({

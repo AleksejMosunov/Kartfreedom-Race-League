@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Stage } from "@/lib/models/Stage";
+import { Team } from "@/lib/models/Team";
 import { getPointsByPosition } from "@/lib/utils/championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 
@@ -67,15 +68,50 @@ export async function POST(req: NextRequest, { params }: Params) {
     };
   });
 
-  const stage = await Stage.findOneAndUpdate(
-    { _id: id, championshipId: current._id },
-    { results: enrichedResults, isCompleted: true },
-    { new: true, runValidators: true },
-  )
-    .populate("results.pilotId", "name surname number team avatar")
-    .lean();
+  const stage = current.championshipType === "teams"
+    ? await Stage.findOneAndUpdate(
+        { _id: id, championshipId: current._id },
+        { results: enrichedResults, isCompleted: true },
+        { new: true, runValidators: true },
+      ).lean()
+    : await Stage.findOneAndUpdate(
+        { _id: id, championshipId: current._id },
+        { results: enrichedResults, isCompleted: true },
+        { new: true, runValidators: true },
+      )
+        .populate("results.pilotId", "name surname number team avatar")
+        .lean();
 
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
+
+  if (current.championshipType === "teams") {
+    const teams = await Team.find({ championshipId: current._id }).lean();
+    const teamById = new Map(teams.map((team) => [String(team._id), team]));
+    const mappedStage = {
+      ...stage,
+      results: (stage.results ?? []).map((result) => {
+        const id =
+          result.pilotId !== null &&
+          typeof result.pilotId === "object" &&
+          "_id" in (result.pilotId as object)
+            ? String((result.pilotId as { _id: unknown })._id)
+            : String(result.pilotId);
+        const team = teamById.get(id);
+        if (!team) return result;
+        return {
+          ...result,
+          pilot: {
+            _id: String(team._id),
+            name: team.name,
+            surname: "",
+            number: team.number,
+          },
+        };
+      }),
+    };
+    return NextResponse.json(mappedStage);
+  }
+
   return NextResponse.json(stage);
 }

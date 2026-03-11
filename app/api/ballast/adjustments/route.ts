@@ -15,6 +15,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (current.championshipType === "teams") {
+    return NextResponse.json(
+      { error: "Доваження доступне лише для соло-чемпіонату" },
+      { status: 409 },
+    );
+  }
+
   const body = (await req.json()) as {
     pilotId?: string;
     kg?: number;

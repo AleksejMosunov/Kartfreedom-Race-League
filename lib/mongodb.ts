@@ -5,6 +5,7 @@ import { BallastConfig } from "@/lib/models/BallastConfig";
 import { PilotBallastAdjustment } from "@/lib/models/PilotBallastAdjustment";
 import { Championship } from "@/lib/models/Championship";
 import { LeagueSettings } from "@/lib/models/LeagueSettings";
+import { Team } from "@/lib/models/Team";
 
 const MONGODB_URI = process.env.MONGODB_URI as string;
 
@@ -51,6 +52,7 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
         BallastConfig.syncIndexes(),
         PilotBallastAdjustment.syncIndexes(),
         LeagueSettings.syncIndexes(),
+        Team.syncIndexes(),
       ]);
       cached.indexesSynced = true;
     }

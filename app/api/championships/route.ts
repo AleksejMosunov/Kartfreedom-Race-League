@@ -34,15 +34,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const body = (await req.json().catch(() => ({}))) as { name?: string };
+  const body = (await req.json().catch(() => ({}))) as {
+    name?: string;
+    championshipType?: "solo" | "teams";
+  };
   const name =
     typeof body.name === "string" && body.name.trim()
       ? body.name.trim()
       : `Чемпіонат ${new Date().toLocaleDateString("uk-UA")}`;
+  if (body.championshipType !== "solo" && body.championshipType !== "teams") {
+    return NextResponse.json(
+      { error: "Оберіть формат чемпіонату: соло або команди" },
+      { status: 400 },
+    );
+  }
+
+  const championshipType = body.championshipType;
 
   const created = await Championship.create({
     name,
     status: "active",
+    championshipType,
     startedAt: new Date(),
   });
 

@@ -5,14 +5,14 @@ import { formatPilotFullName } from "@/lib/utils/pilotName";
 interface PilotCardProps {
   pilot: Pilot;
   ballastKg?: number;
+  showBallast?: boolean;
 }
 
 function formatKg(kg: number) {
   return `${kg.toLocaleString("uk-UA", { minimumFractionDigits: Number.isInteger(kg) ? 0 : 1, maximumFractionDigits: 1 })} кг`;
 }
 
-export function PilotCard({ pilot, ballastKg = 0 }: PilotCardProps) {
-  console.log(pilot);
+export function PilotCard({ pilot, ballastKg = 0, showBallast = true }: PilotCardProps) {
   const fullName = formatPilotFullName(pilot.name, pilot.surname);
 
   return (
@@ -27,7 +27,7 @@ export function PilotCard({ pilot, ballastKg = 0 }: PilotCardProps) {
         </div>
         <div>
           <p className="font-bold text-white">{fullName}</p>
-          <p className="text-zinc-300 text-xs mt-1">Доваження: {formatKg(ballastKg)}</p>
+          {showBallast && <p className="text-zinc-300 text-xs mt-1">Доваження: {formatKg(ballastKg)}</p>}
         </div>
       </div>
     </Link>

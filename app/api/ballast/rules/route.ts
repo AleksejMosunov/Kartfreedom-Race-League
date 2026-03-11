@@ -17,6 +17,12 @@ export async function PUT(req: NextRequest) {
       { status: 409 },
     );
   }
+  if (current.championshipType === "teams") {
+    return NextResponse.json(
+      { error: "Доваження доступне лише для соло-чемпіонату" },
+      { status: 409 },
+    );
+  }
   const body = (await req.json()) as { rules?: BallastRule[] };
 
   if (!Array.isArray(body.rules) || body.rules.length === 0) {

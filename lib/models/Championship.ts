@@ -15,6 +15,7 @@ interface IRegulations {
 export interface IChampionship extends Document {
   name: string;
   status: "active" | "archived";
+  championshipType: "solo" | "teams";
   startedAt: Date;
   endedAt?: Date;
   regulations: IRegulations;
@@ -47,6 +48,13 @@ const ChampionshipSchema = new Schema<IChampionship>(
       enum: ["active", "archived"],
       required: true,
       default: "active",
+      index: true,
+    },
+    championshipType: {
+      type: String,
+      enum: ["solo", "teams"],
+      required: true,
+      default: "solo",
       index: true,
     },
     startedAt: { type: Date, required: true, default: Date.now },

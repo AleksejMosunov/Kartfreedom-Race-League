@@ -13,11 +13,15 @@ export default async function PilotsPage() {
     return <NoActiveChampionshipBlock news={preseasonNews} />;
   }
 
+  const isTeams = current.championshipType === "teams";
+
   return (
     <main className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white">Пілоти</h1>
-        <p className="text-zinc-400 mt-1">Усі учасники чемпіонату</p>
+        <h1 className="text-3xl font-black text-white">{isTeams ? "Команди" : "Пілоти"}</h1>
+        <p className="text-zinc-400 mt-1">
+          {isTeams ? "Усі команди-учасники чемпіонату" : "Усі учасники чемпіонату"}
+        </p>
       </div>
       <PilotsList />
     </main>

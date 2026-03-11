@@ -65,9 +65,19 @@ export interface Championship {
   _id: string;
   name: string;
   status: "active" | "archived";
+  championshipType: "solo" | "teams";
   startedAt: string;
   endedAt?: string;
   regulations?: RegulationsContent;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Team {
+  _id: string;
+  championshipId: string;
+  name: string;
+  number: number;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Pilot } from "@/lib/models/Pilot";
+import { Team } from "@/lib/models/Team";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 
@@ -12,6 +13,22 @@ export async function GET() {
   } catch {
     return NextResponse.json([]);
   }
+
+  if (current.championshipType === "teams") {
+    const teams = await Team.find({ championshipId: current._id })
+      .sort({ number: 1, name: 1 })
+      .lean();
+    const participants = teams.map((team) => ({
+      _id: String(team._id),
+      name: team.name,
+      surname: "",
+      number: team.number,
+      createdAt: team.createdAt,
+      updatedAt: team.updatedAt,
+    }));
+    return NextResponse.json(participants);
+  }
+
   const pilots = await Pilot.find({ championshipId: current._id })
     .sort({ number: 1 })
     .lean();
@@ -29,6 +46,14 @@ export async function POST(req: NextRequest) {
       { status: 409 },
     );
   }
+
+  if (current.championshipType === "teams") {
+    return NextResponse.json(
+      { error: "У командному чемпіонаті учасників додають у розділі 'Керування командами'" },
+      { status: 409 },
+    );
+  }
+
   const body = await req.json();
 
   const name =

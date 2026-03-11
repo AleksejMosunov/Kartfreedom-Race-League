@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Stage } from "@/types";
 import { Badge } from "@/app/components/ui/Badge";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
@@ -8,7 +9,28 @@ interface StageResultsTableProps {
 
 const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
+type ChampionshipType = "solo" | "teams";
+
 export function StageResultsTable({ stage }: StageResultsTableProps) {
+  const [championshipType, setChampionshipType] = useState<ChampionshipType>("solo");
+
+  useEffect(() => {
+    const loadType = async () => {
+      try {
+        const res = await fetch("/api/championships", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          current?: { championshipType?: ChampionshipType } | null;
+        };
+        setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");
+      } catch {
+        setChampionshipType("solo");
+      }
+    };
+
+    void loadType();
+  }, []);
+
   const sorted = [...stage.results].sort((a, b) => a.position - b.position);
 
   if (!sorted.length) {
@@ -21,7 +43,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
         <thead>
           <tr className="bg-zinc-900 text-zinc-400 text-left">
             <th className="px-4 py-3 font-semibold w-16">Місце</th>
-            <th className="px-4 py-3 font-semibold">Пілот</th>
+            <th className="px-4 py-3 font-semibold">{championshipType === "teams" ? "Команда" : "Пілот"}</th>
             <th className="px-4 py-3 font-semibold text-center">Статус</th>
             <th className="px-4 py-3 font-semibold text-center">Штраф</th>
             <th className="px-4 py-3 font-semibold text-center">Очки</th>

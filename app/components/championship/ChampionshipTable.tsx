@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useChampionship } from "@/app/hooks/useChampionship";
 import { useStages } from "@/app/hooks/useStages";
 import { Badge } from "@/app/components/ui/Badge";
@@ -9,9 +10,29 @@ import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
+type ChampionshipType = "solo" | "teams";
+
 export function ChampionshipTable() {
   const { standings, isLoading, error } = useChampionship();
   const { stages } = useStages();
+  const [championshipType, setChampionshipType] = useState<ChampionshipType>("solo");
+
+  useEffect(() => {
+    const loadType = async () => {
+      try {
+        const res = await fetch("/api/championships", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          current?: { championshipType?: ChampionshipType } | null;
+        };
+        setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");
+      } catch {
+        setChampionshipType("solo");
+      }
+    };
+
+    void loadType();
+  }, []);
 
   const completedStages = stages.filter((s) => s.isCompleted);
 
@@ -30,7 +51,7 @@ export function ChampionshipTable() {
         <thead>
           <tr className="bg-zinc-900 text-zinc-400 text-left">
             <th className="px-4 py-3 font-semibold w-12">#</th>
-            <th className="px-4 py-3 font-semibold">Пілот</th>
+            <th className="px-4 py-3 font-semibold">{championshipType === "teams" ? "Команда" : "Пілот"}</th>
             {completedStages.map((stage) => (
               <th key={stage._id} className="px-3 py-3 font-semibold text-center whitespace-nowrap">
                 Ет.{stage.number}

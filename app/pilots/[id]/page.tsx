@@ -9,6 +9,8 @@ import Link from "next/link";
 import { PilotBallastSummary } from "@/types";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
+type ChampionshipType = "solo" | "teams";
+
 function formatKg(kg: number) {
   return `${kg.toLocaleString("uk-UA", { minimumFractionDigits: Number.isInteger(kg) ? 0 : 1, maximumFractionDigits: 1 })} кг`;
 }
@@ -18,6 +20,7 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
   const { pilots, fetchPilots, isLoading } = usePilotsStore();
   const { standings, fetchStandings } = useChampionshipStore();
   const [ballast, setBallast] = useState<PilotBallastSummary | null>(null);
+  const [championshipType, setChampionshipType] = useState<ChampionshipType>("solo");
 
   useEffect(() => {
     fetchPilots();
@@ -25,6 +28,28 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
   }, [fetchPilots, fetchStandings]);
 
   useEffect(() => {
+    const loadChampionshipType = async () => {
+      try {
+        const res = await fetch("/api/championships", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          current?: { championshipType?: ChampionshipType } | null;
+        };
+        setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");
+      } catch {
+        setChampionshipType("solo");
+      }
+    };
+
+    void loadChampionshipType();
+  }, []);
+
+  useEffect(() => {
+    if (championshipType === "teams") {
+      setBallast(null);
+      return;
+    }
+
     const loadBallast = async () => {
       try {
         const res = await fetch("/api/ballast");
@@ -38,7 +63,7 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
     };
 
     void loadBallast();
-  }, [id]);
+  }, [championshipType, id]);
 
   const hasBallastDetails = useMemo(
     () => Boolean(ballast && (ballast.autoEntries.length > 0 || ballast.manualEntries.length > 0)),
@@ -48,14 +73,15 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
   const pilot = pilots.find((p) => p._id === id);
   const standing = standings.find((s) => s.pilot._id === id);
   const pilotFullName = pilot ? formatPilotFullName(pilot.name, pilot.surname) : "";
+  const isTeams = championshipType === "teams";
 
   if (isLoading) return <Loader />;
   if (!pilot)
     return (
       <main className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <p className="text-zinc-400">Пілота не знайдено.</p>
+        <p className="text-zinc-400">{isTeams ? "Команду не знайдено." : "Пілота не знайдено."}</p>
         <Link href="/pilots" className="text-red-500 underline mt-4 block">
-          ← Назад до пілотів
+          ← Назад до {isTeams ? "команд" : "пілотів"}
         </Link>
       </main>
     );
@@ -63,7 +89,7 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
       <Link href="/pilots" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
-        ← Усі пілоти
+        ← Усі {isTeams ? "команди" : "пілоти"}
       </Link>
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-6 flex items-center gap-5">
         <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-2xl shrink-0">
@@ -77,11 +103,11 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
             <p className="text-4xl font-black text-white">{standing.totalPoints}</p>
             <p className="text-zinc-500 text-sm">очок</p>
             <p className="text-zinc-400 text-sm">#{standing.position} у чемпіонаті</p>
-            <p className="text-zinc-300 text-sm mt-2">Доваження: {formatKg(ballast?.totalKg ?? 0)}</p>
+            {!isTeams && <p className="text-zinc-300 text-sm mt-2">Доваження: {formatKg(ballast?.totalKg ?? 0)}</p>}
           </div>
         )}
       </div>
-      {hasBallastDetails && ballast && (
+      {!isTeams && hasBallastDetails && ballast && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-6">
           <h2 className="text-lg font-bold text-white mb-3">Деталі доваження</h2>
           <p className="text-sm text-zinc-300 mb-4">

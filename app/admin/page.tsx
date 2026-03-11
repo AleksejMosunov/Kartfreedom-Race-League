@@ -1,31 +1,39 @@
 import Link from "next/link";
+import { connectToDatabase } from "@/lib/mongodb";
+import { getCurrentChampionship } from "@/lib/championship/current";
 
 export const metadata = {
   title: "Адмін-панель — KartFreedom Race League",
 };
 
-const sections = [
-  {
-    href: "/admin/pilots",
-    icon: "🏎️",
-    title: "Керування пілотами",
-    description: "Додавати, редагувати та видаляти пілотів",
-  },
-  {
-    href: "/admin/stages",
-    icon: "🏁",
-    title: "Керування етапами",
-    description: "Створювати етапи та вносити результати гонок",
-  },
-  {
-    href: "/admin/championships",
-    icon: "🏆",
-    title: "Керування чемпіонатами",
-    description: "Старт нового чемпіонату та архів завершених",
-  },
-];
+export default async function AdminPage() {
+  await connectToDatabase();
+  const current = await getCurrentChampionship();
+  const isTeams = current?.championshipType === "teams";
 
-export default function AdminPage() {
+  const sections = [
+    {
+      href: isTeams ? "/admin/teams" : "/admin/pilots",
+      icon: isTeams ? "👥" : "🏎️",
+      title: isTeams ? "Керування командами" : "Керування пілотами",
+      description: isTeams
+        ? "Додавати, редагувати та видаляти команди"
+        : "Додавати, редагувати та видаляти пілотів",
+    },
+    {
+      href: "/admin/stages",
+      icon: "🏁",
+      title: "Керування етапами",
+      description: "Створювати етапи та вносити результати гонок",
+    },
+    {
+      href: "/admin/championships",
+      icon: "🏆",
+      title: "Керування чемпіонатами",
+      description: "Старт нового чемпіонату та архів завершених",
+    },
+  ];
+
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
       <div className="mb-8">

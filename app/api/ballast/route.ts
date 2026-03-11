@@ -20,6 +20,10 @@ export async function GET() {
     return NextResponse.json({ rules: initialBallastRules, summaries: [] });
   }
 
+  if (current.championshipType === "teams") {
+    return NextResponse.json({ rules: [], summaries: [], disabled: true });
+  }
+
   const [pilots, stages, config, adjustments] = await Promise.all([
     Pilot.find({ championshipId: current._id }).sort({ number: 1 }).lean(),
     Stage.find({ championshipId: current._id }).sort({ number: 1 }).lean(),

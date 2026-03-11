@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Pilot } from "@/lib/models/Pilot";
+import { Team } from "@/lib/models/Team";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 
@@ -17,6 +18,53 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
+
+  if (current.championshipType === "teams") {
+    const teamName =
+      typeof body.teamName === "string" ? body.teamName.trim() : "";
+    const teamNumber = Number(body.number);
+
+    if (
+      teamName.length < 2 ||
+      teamName.length > 60 ||
+      !Number.isInteger(teamNumber) ||
+      teamNumber < 1 ||
+      teamNumber > 999
+    ) {
+      return NextResponse.json(
+        { error: "Вкажіть назву команди і номер від 1 до 999" },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const team = await Team.create({
+        championshipId: current._id,
+        name: teamName,
+        number: teamNumber,
+      });
+
+      return NextResponse.json(team, { status: 201 });
+    } catch (err: unknown) {
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        (err as { code: number }).code === 11000
+      ) {
+        return NextResponse.json(
+          { error: `Команда з назвою \"${teamName}\" або номером ${teamNumber} вже зареєстрована` },
+          { status: 409 },
+        );
+      }
+
+      return NextResponse.json(
+        { error: "Не вдалося зареєструвати команду" },
+        { status: 500 },
+      );
+    }
+  }
+
   const name =
     typeof body.name === "string" ? normalizeNamePart(body.name) : "";
   const surname =

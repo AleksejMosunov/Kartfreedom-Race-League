@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
 import { Pilot } from "@/lib/models/Pilot";
 import { Stage } from "@/lib/models/Stage";
+import { Team } from "@/lib/models/Team";
 import { calculateChampionshipStandings } from "@/lib/utils/championship";
 import { Pilot as IPilotType, Stage as IStageType } from "@/types";
 
@@ -19,20 +20,75 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const [pilots, stages] = await Promise.all([
-    Pilot.find({ championshipId: id }).sort({ number: 1 }).lean(),
-    Stage.find({ championshipId: id })
-      .populate("results.pilotId", "name surname number team avatar")
-      .sort({ number: 1 })
-      .lean(),
+  const [participants, stages] = await Promise.all([
+    championship.championshipType === "teams"
+      ? Team.find({ championshipId: id })
+          .sort({ number: 1, name: 1 })
+          .lean()
+          .then((teams) =>
+            teams.map((team) => ({
+              _id: String(team._id),
+              name: team.name,
+              surname: "",
+              number: team.number,
+            })),
+          )
+      : Pilot.find({ championshipId: id }).sort({ number: 1 }).lean(),
+    championship.championshipType === "teams"
+      ? Stage.find({ championshipId: id })
+          .sort({ number: 1 })
+          .lean()
+      : Stage.find({ championshipId: id })
+          .populate("results.pilotId", "name surname number team avatar")
+          .sort({ number: 1 })
+          .lean(),
   ]);
 
+  const mappedStages =
+    championship.championshipType === "teams"
+      ? (() => {
+          const teamById = new Map(
+            (participants as Array<{ _id: string; name: string; number: number }>).map((team) => [
+              String(team._id),
+              team,
+            ]),
+          );
+          return stages.map((stage) => ({
+            ...stage,
+            results: (stage.results ?? []).map((result: Record<string, unknown>) => {
+              const idStr =
+                result.pilotId !== null &&
+                typeof result.pilotId === "object" &&
+                "_id" in (result.pilotId as object)
+                  ? String((result.pilotId as { _id: unknown })._id)
+                  : String(result.pilotId);
+              const team = teamById.get(idStr);
+              if (!team) return result;
+              return {
+                ...result,
+                pilot: {
+                  _id: team._id,
+                  name: team.name,
+                  surname: "",
+                  number: team.number,
+                },
+              };
+            }),
+          }));
+        })()
+      : stages;
+
   const standings = calculateChampionshipStandings(
-    pilots as unknown as IPilotType[],
-    stages as unknown as IStageType[],
+    participants as unknown as IPilotType[],
+    mappedStages as unknown as IStageType[],
   );
 
-  return NextResponse.json({ championship, pilots, stages, standings });
+  return NextResponse.json({
+    championship,
+    pilots: participants,
+    stages: mappedStages,
+    standings,
+  });
 }
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
