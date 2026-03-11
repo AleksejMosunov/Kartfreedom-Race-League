@@ -58,10 +58,27 @@ export function ChampionshipTable() {
               </td>
               {completedStages.map((stage) => {
                 const stageStanding = row.standings.find((s) => String(s.stageId) === String(stage._id));
+                const hasPenalty = Boolean(stageStanding && stageStanding.penaltyPoints > 0);
                 return (
                   <td key={stage._id} className="px-3 py-3 text-center">
                     {stageStanding ? (
-                      <Badge variant={stageStanding.isDropped ? "dropped" : stageStanding.dnf || stageStanding.dns ? "warning" : "default"}>
+                      <Badge
+                        variant={
+                          stageStanding.isDropped
+                            ? "dropped"
+                            : stageStanding.dnf || stageStanding.dns
+                              ? "warning"
+                              : hasPenalty
+                                ? "danger"
+                                : "default"
+                        }
+                        className={hasPenalty ? "cursor-help" : ""}
+                        title={
+                          hasPenalty
+                            ? `Штраф: -${stageStanding.penaltyPoints}. Причина: ${stageStanding.penaltyReason}`
+                            : undefined
+                        }
+                      >
                         {stageStanding.dnf
                           ? "DNF"
                           : stageStanding.dns
@@ -87,6 +104,9 @@ export function ChampionshipTable() {
         </span>
         <span>
           <Badge variant="warning">DNF</Badge> — не фінішував
+        </span>
+        <span>
+          <Badge variant="danger">Штраф</Badge> — штрафні очки віднімаються із загального заліку навіть у drop round
         </span>
         <span>
           Система очок: {Object.entries(POINTS_TABLE).map(([pos, pts]) => `${pos}→${pts}`).join(", ")}

@@ -19,7 +19,10 @@ function isProtectedRequest(request: NextRequest) {
   }
 
   return (
-    pathname.startsWith("/api/pilots") || pathname.startsWith("/api/stages")
+    pathname.startsWith("/api/pilots") ||
+    pathname.startsWith("/api/stages") ||
+    pathname.startsWith("/api/regulations") ||
+    pathname.startsWith("/api/ballast")
   );
 }
 
@@ -69,5 +72,11 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/pilots/:path*", "/api/stages/:path*"],
+  matcher: [
+    "/admin/:path*",
+    "/api/pilots/:path*",
+    "/api/stages/:path*",
+    "/api/regulations/:path*",
+    "/api/ballast/:path*",
+  ],
 };

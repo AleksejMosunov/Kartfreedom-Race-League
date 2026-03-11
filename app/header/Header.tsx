@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdminLogoutButton } from "@/app/header/AdminLogoutButton";
@@ -8,12 +9,22 @@ const navLinks = [
   { href: "/", label: "Чемпіонат" },
   { href: "/stages", label: "Етапи" },
   { href: "/pilots", label: "Пілоти" },
+  { href: "/regulations", label: "Регламент" },
   { href: "/register", label: "Реєстрація" },
 ];
 
 export function Header() {
   const pathname = usePathname();
   const isAdminArea = pathname.startsWith("/admin");
+  const mobileMenuRef = useRef<HTMLDetailsElement>(null);
+  const adminLinkClass =
+    "px-3 py-2 rounded-md text-sm font-medium text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-700";
+
+  const closeMobileMenu = () => {
+    if (mobileMenuRef.current) {
+      mobileMenuRef.current.open = false;
+    }
+  };
 
   return (
     <header className="bg-zinc-950 border-b border-zinc-800 sticky top-0 z-50">
@@ -24,7 +35,8 @@ export function Header() {
             Kart<span className="text-red-500">Freedom</span>
           </span>
         </Link>
-        <nav className="flex items-center gap-1">
+
+        <nav className="hidden min-[800px]:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -37,14 +49,37 @@ export function Header() {
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/admin"
-            className="ml-4 px-3 py-2 rounded-md text-sm font-medium text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-700"
-          >
+          <Link href="/admin" className={`ml-4 ${adminLinkClass}`}>
             Адмін
           </Link>
           {isAdminArea && <AdminLogoutButton />}
         </nav>
+
+        <details ref={mobileMenuRef} className="min-[800px]:hidden relative">
+          <summary className="list-none cursor-pointer px-3 py-2 rounded-md text-sm font-medium text-zinc-300 border border-zinc-700 hover:bg-zinc-800 hover:text-white transition-colors">
+            Меню
+          </summary>
+          <div className="absolute right-0 mt-2 w-56 rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl p-2 flex flex-col gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={closeMobileMenu}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${pathname === link.href
+                  ? "bg-red-600 text-white"
+                  : "text-zinc-300 hover:text-white hover:bg-zinc-800"
+                  }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="my-1 border-t border-zinc-800" />
+            <Link href="/admin" onClick={closeMobileMenu} className={adminLinkClass}>
+              Адмін
+            </Link>
+            {isAdminArea && <AdminLogoutButton />}
+          </div>
+        </details>
       </div>
     </header>
   );

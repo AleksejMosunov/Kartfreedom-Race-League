@@ -20,7 +20,8 @@ export function getPointsByPosition(position: number): number {
 
 /**
  * Calculates full championship standings.
- * The worst 1 stage result per pilot is dropped (not counted).
+ * The worst 1 stage result per pilot is dropped.
+ * Penalties are always counted in total, even if a stage is dropped.
  */
 export function calculateChampionshipStandings(
   pilots: Pilot[],
@@ -51,6 +52,8 @@ export function calculateChampionshipStandings(
         isDropped: false,
         dnf: result?.dnf ?? false,
         dns: result?.dns ?? false,
+        penaltyPoints: result?.penaltyPoints ?? 0,
+        penaltyReason: result?.penaltyReason ?? "",
       };
     });
 
@@ -69,9 +72,16 @@ export function calculateChampionshipStandings(
       pilotStandings[worstIndex].isDropped = true;
     }
 
-    const totalPoints = pilotStandings
+    const nonDroppedPoints = pilotStandings
       .filter((s) => !s.isDropped)
       .reduce((sum, s) => sum + s.points, 0);
+
+    const droppedPenalties = pilotStandings
+      .filter((s) => s.isDropped)
+      .reduce((sum, s) => sum + s.penaltyPoints, 0);
+
+    // Penalty points from dropped rounds still reduce the championship total.
+    const totalPoints = nonDroppedPoints - droppedPenalties;
 
     return {
       pilot,

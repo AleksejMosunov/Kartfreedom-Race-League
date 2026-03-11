@@ -16,6 +16,8 @@ interface ResultInputRow {
   position: number;
   dnf: boolean;
   dns: boolean;
+  penaltyPoints: number;
+  penaltyReason: string;
 }
 
 export default function AdminStagesPage() {
@@ -73,14 +75,32 @@ export default function AdminStagesPage() {
       pilots.map((p, i) => {
         const existing = existingResults?.find((r) => extractPilotId(r) === p._id);
         if (existing) {
-          return { pilotId: p._id, position: existing.position, dnf: existing.dnf, dns: existing.dns };
+          return {
+            pilotId: p._id,
+            position: existing.position,
+            dnf: existing.dnf,
+            dns: existing.dns,
+            penaltyPoints: existing.penaltyPoints ?? 0,
+            penaltyReason: existing.penaltyReason ?? "",
+          };
         }
-        return { pilotId: p._id, position: i + 1, dnf: false, dns: false };
+        return {
+          pilotId: p._id,
+          position: i + 1,
+          dnf: false,
+          dns: false,
+          penaltyPoints: 0,
+          penaltyReason: "",
+        };
       })
     );
   };
 
-  const updateRow = (pilotId: string, field: keyof ResultInputRow, value: number | boolean) => {
+  const updateRow = (
+    pilotId: string,
+    field: keyof ResultInputRow,
+    value: number | boolean | string,
+  ) => {
     setResultsRows((rows) =>
       rows.map((r) => {
         if (r.pilotId !== pilotId) return r;
@@ -98,6 +118,16 @@ export default function AdminStagesPage() {
     const positions = activeRows.map((r) => r.position);
     if (positions.length !== new Set(positions).size) {
       setResultsError("У двох або більше пілотів однакове місце. Виправте результати.");
+      return;
+    }
+    const invalidPenaltyRow = resultsRows.find(
+      (r) => r.penaltyPoints > 0 && !r.penaltyReason.trim(),
+    );
+    if (invalidPenaltyRow) {
+      const pilot = pilots.find((p) => p._id === invalidPenaltyRow.pilotId);
+      setResultsError(
+        `Для штрафу пілота #${pilot?.number ?? "?"} ${pilot?.name ?? ""} потрібно вказати причину.`,
+      );
       return;
     }
     setResultsError("");
@@ -214,7 +244,8 @@ export default function AdminStagesPage() {
                 <div className="space-y-2">
                   {resultsRows.map((row) => {
                     const pilot = pilots.find((p) => p._id === row.pilotId);
-                    const pts = row.dnf || row.dns ? 0 : getPointsByPosition(row.position);
+                    const basePoints = row.dnf || row.dns ? 0 : getPointsByPosition(row.position);
+                    const pts = basePoints - row.penaltyPoints;
                     return (
                       <div key={row.pilotId} className="flex items-center gap-3 flex-wrap">
                         <span className="text-white w-40 shrink-0 text-sm">
@@ -251,6 +282,29 @@ export default function AdminStagesPage() {
                           />
                           DNS
                         </label>
+                        <div className="flex items-center gap-1">
+                          <span className="text-zinc-500 text-xs">Штраф:</span>
+                          <input
+                            type="number"
+                            value={row.penaltyPoints}
+                            min={0}
+                            onChange={(e) =>
+                              updateRow(
+                                row.pilotId,
+                                "penaltyPoints",
+                                Math.max(0, Number(e.target.value) || 0),
+                              )
+                            }
+                            className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center"
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          value={row.penaltyReason}
+                          onChange={(e) => updateRow(row.pilotId, "penaltyReason", e.target.value)}
+                          placeholder="Причина штрафу"
+                          className="min-w-44 flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm"
+                        />
                         <span className="text-zinc-500 text-xs ml-auto">
                           {pts} очк.
                         </span>

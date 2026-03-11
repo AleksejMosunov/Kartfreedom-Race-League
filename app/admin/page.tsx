@@ -17,6 +17,12 @@ const sections = [
     title: "Керування етапами",
     description: "Створювати етапи та вносити результати гонок",
   },
+  {
+    href: "/admin/regulations",
+    icon: "📘",
+    title: "Керування регламентом",
+    description: "Редагувати текст розділу регламенту на сайті",
+  },
 ];
 
 export default function AdminPage() {

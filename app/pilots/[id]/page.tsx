@@ -1,21 +1,48 @@
 "use client";
 
 import { use } from "react";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePilotsStore } from "@/store/pilotsStore";
 import { useChampionshipStore } from "@/store/championshipStore";
 import { Loader } from "@/app/components/ui/Loader";
 import Link from "next/link";
+import { PilotBallastSummary } from "@/types";
+
+function formatKg(kg: number) {
+  return `${kg.toLocaleString("uk-UA", { minimumFractionDigits: Number.isInteger(kg) ? 0 : 1, maximumFractionDigits: 1 })} кг`;
+}
 
 export default function PilotDetailPage({ params }: { params: Promise<{ id: string; }>; }) {
   const { id } = use(params);
   const { pilots, fetchPilots, isLoading } = usePilotsStore();
   const { standings, fetchStandings } = useChampionshipStore();
+  const [ballast, setBallast] = useState<PilotBallastSummary | null>(null);
 
   useEffect(() => {
     fetchPilots();
     fetchStandings();
   }, [fetchPilots, fetchStandings]);
+
+  useEffect(() => {
+    const loadBallast = async () => {
+      try {
+        const res = await fetch("/api/ballast");
+        if (!res.ok) return;
+        const data = (await res.json()) as { summaries?: PilotBallastSummary[]; };
+        const summary = (data.summaries ?? []).find((row) => row.pilotId === id) ?? null;
+        setBallast(summary);
+      } catch {
+        setBallast(null);
+      }
+    };
+
+    void loadBallast();
+  }, [id]);
+
+  const hasBallastDetails = useMemo(
+    () => Boolean(ballast && (ballast.autoEntries.length > 0 || ballast.manualEntries.length > 0)),
+    [ballast],
+  );
 
   const pilot = pilots.find((p) => p._id === id);
   const standing = standings.find((s) => s.pilot._id === id);
@@ -48,9 +75,34 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
             <p className="text-4xl font-black text-white">{standing.totalPoints}</p>
             <p className="text-zinc-500 text-sm">очок</p>
             <p className="text-zinc-400 text-sm">#{standing.position} у чемпіонаті</p>
+            <p className="text-zinc-300 text-sm mt-2">Доваження: {formatKg(ballast?.totalKg ?? 0)}</p>
           </div>
         )}
       </div>
+      {hasBallastDetails && ballast && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-6">
+          <h2 className="text-lg font-bold text-white mb-3">Деталі доваження</h2>
+          <p className="text-sm text-zinc-300 mb-4">
+            Авто: {formatKg(ballast.autoKg)} · Ручне: {formatKg(ballast.manualKg)} · Разом: {formatKg(ballast.totalKg)}
+          </p>
+          <div className="space-y-2">
+            {ballast.autoEntries.map((entry) => (
+              <div key={`${entry.stageId}-${entry.position}`} className="text-sm text-zinc-300 flex justify-between gap-3">
+                <span>
+                  Етап {entry.stageNumber} ({entry.stageName}) · {entry.position}-е місце
+                </span>
+                <span>+{formatKg(entry.kg)}</span>
+              </div>
+            ))}
+            {ballast.manualEntries.map((entry) => (
+              <div key={entry._id} className="text-sm text-zinc-300 flex justify-between gap-3">
+                <span>Ручне: {entry.reason}</span>
+                <span>{entry.kg > 0 ? "+" : ""}{formatKg(entry.kg)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {standing && standing.standings.length > 0 && (
         <div>
           <h2 className="text-xl font-bold text-white mb-4">Результати за етапами</h2>

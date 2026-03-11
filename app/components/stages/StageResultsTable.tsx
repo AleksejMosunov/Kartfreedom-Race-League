@@ -22,6 +22,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
             <th className="px-4 py-3 font-semibold w-16">Місце</th>
             <th className="px-4 py-3 font-semibold">Пілот</th>
             <th className="px-4 py-3 font-semibold text-center">Статус</th>
+            <th className="px-4 py-3 font-semibold text-center">Штраф</th>
             <th className="px-4 py-3 font-semibold text-center">Очки</th>
           </tr>
         </thead>
@@ -66,6 +67,20 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
                     <Badge variant="danger">DNS</Badge>
                   ) : (
                     <Badge variant="success">FIN</Badge>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  {result.penaltyPoints ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <Badge variant="danger">-{result.penaltyPoints}</Badge>
+                      {result.penaltyReason ? (
+                        <span className="text-xs text-zinc-500 max-w-40 truncate" title={result.penaltyReason}>
+                          {result.penaltyReason}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <span className="text-zinc-600">—</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-center font-bold text-white">
