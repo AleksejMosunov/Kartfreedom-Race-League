@@ -8,6 +8,7 @@ import { Loader } from "@/app/components/ui/Loader";
 import { Button } from "@/app/components/ui/Button";
 import { Badge } from "@/app/components/ui/Badge";
 import { getPointsByPosition } from "@/lib/utils/championship";
+import { formatPilotFullName } from "@/lib/utils/pilotName";
 import { StageResult } from "@/types";
 import Link from "next/link";
 
@@ -126,7 +127,7 @@ export default function AdminStagesPage() {
     if (invalidPenaltyRow) {
       const pilot = pilots.find((p) => p._id === invalidPenaltyRow.pilotId);
       setResultsError(
-        `Для штрафу пілота #${pilot?.number ?? "?"} ${pilot?.name ?? ""} потрібно вказати причину.`,
+        `Для штрафу пілота #${pilot?.number ?? "?"} ${pilot ? formatPilotFullName(pilot.name, pilot.surname) : ""} потрібно вказати причину.`,
       );
       return;
     }
@@ -249,7 +250,7 @@ export default function AdminStagesPage() {
                     return (
                       <div key={row.pilotId} className="flex items-center gap-3 flex-wrap">
                         <span className="text-white w-40 shrink-0 text-sm">
-                          #{pilot?.number} {pilot?.name}
+                          #{pilot?.number} {pilot ? formatPilotFullName(pilot.name, pilot.surname) : ""}
                         </span>
                         <div className="flex items-center gap-1">
                           <span className="text-zinc-500 text-xs">Місце:</span>

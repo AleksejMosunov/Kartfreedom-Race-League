@@ -6,13 +6,14 @@ import { Loader } from "@/app/components/ui/Loader";
 import { Button } from "@/app/components/ui/Button";
 import Link from "next/link";
 import { BallastRule, PilotBallastSummary } from "@/types";
+import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 function formatKg(kg: number) {
   return `${kg.toLocaleString("uk-UA", { minimumFractionDigits: Number.isInteger(kg) ? 0 : 1, maximumFractionDigits: 1 })} кг`;
 }
 
 export default function AdminPilotsPage() {
-  const { pilots, isLoading, error, deletePilot } = usePilots();
+  const { pilots, isLoading, error, deletePilot, updatePilot } = usePilots();
   const [rules, setRules] = useState<BallastRule[]>([]);
   const [ballastByPilot, setBallastByPilot] = useState<Record<string, PilotBallastSummary>>({});
   const [selectedPilotId, setSelectedPilotId] = useState("");
@@ -22,6 +23,12 @@ export default function AdminPilotsPage() {
   const [ballastSuccess, setBallastSuccess] = useState("");
   const [isSavingRules, setIsSavingRules] = useState(false);
   const [isSavingManual, setIsSavingManual] = useState(false);
+  const [editingPilotId, setEditingPilotId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [editingSurname, setEditingSurname] = useState("");
+  const [editingNumber, setEditingNumber] = useState("");
+  const [isSavingPilot, setIsSavingPilot] = useState(false);
+  const [pilotEditError, setPilotEditError] = useState("");
 
   const manualEntries = useMemo(
     () => Object.values(ballastByPilot).flatMap((summary) => summary.manualEntries),
@@ -163,6 +170,53 @@ export default function AdminPilotsPage() {
     }
   };
 
+  const startEditPilot = (pilotId: string) => {
+    const pilot = pilots.find((item) => item._id === pilotId);
+    if (!pilot) return;
+    setPilotEditError("");
+    setEditingPilotId(pilotId);
+    setEditingName(pilot.name);
+    setEditingSurname(pilot.surname);
+    setEditingNumber(String(pilot.number));
+  };
+
+  const cancelEditPilot = () => {
+    setEditingPilotId(null);
+    setEditingName("");
+    setEditingSurname("");
+    setEditingNumber("");
+    setPilotEditError("");
+  };
+
+  const savePilotChanges = async () => {
+    if (!editingPilotId) return;
+
+    const parsedNumber = Number(editingNumber);
+    if (!editingName.trim() || !editingSurname.trim()) {
+      setPilotEditError("Вкажіть ім'я та прізвище");
+      return;
+    }
+    if (!Number.isInteger(parsedNumber) || parsedNumber < 1 || parsedNumber > 999) {
+      setPilotEditError("Номер має бути цілим числом від 1 до 999");
+      return;
+    }
+
+    setPilotEditError("");
+    setIsSavingPilot(true);
+    try {
+      await updatePilot(editingPilotId, {
+        name: editingName.trim(),
+        surname: editingSurname.trim(),
+        number: parsedNumber,
+      });
+      cancelEditPilot();
+    } catch (err) {
+      setPilotEditError((err as Error).message);
+    } finally {
+      setIsSavingPilot(false);
+    }
+  };
+
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
       <Link href="/admin" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
@@ -231,7 +285,7 @@ export default function AdminPilotsPage() {
             <option value="">Оберіть пілота</option>
             {pilots.map((pilot) => (
               <option key={pilot._id} value={pilot._id}>
-                #{pilot.number} {pilot.name}
+                #{pilot.number} {formatPilotFullName(pilot.name, pilot.surname)}
               </option>
             ))}
           </select>
@@ -262,7 +316,7 @@ export default function AdminPilotsPage() {
               return (
                 <div key={entry._id} className="flex items-center justify-between gap-3 bg-zinc-800/60 rounded-md px-3 py-2">
                   <div className="text-sm text-zinc-200">
-                    #{pilot?.number ?? "?"} {pilot?.name ?? "Пілот"}: {entry.reason}
+                    #{pilot?.number ?? "?"} {pilot ? formatPilotFullName(pilot.name, pilot.surname) : "Пілот"}: {entry.reason}
                     <span className="ml-2 text-zinc-400">({entry.kg > 0 ? "+" : ""}{formatKg(entry.kg)})</span>
                   </div>
                   <Button type="button" variant="danger" size="sm" onClick={() => deleteManualAdjustment(entry._id)}>
@@ -286,16 +340,67 @@ export default function AdminPilotsPage() {
             key={pilot._id}
             className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 flex items-center justify-between"
           >
-            <div className="flex items-center gap-3">
-              <span className="text-zinc-500 font-mono text-sm w-8">#{pilot.number}</span>
-              <span className="font-semibold text-white">{pilot.name}</span>
-              <span className="text-zinc-400 text-sm">
-                {formatKg(ballastByPilot[pilot._id]?.totalKg ?? 0)}
-              </span>
-            </div>
-            <Button variant="danger" size="sm" onClick={() => deletePilot(pilot._id)}>
-              Видалити
-            </Button>
+            {editingPilotId === pilot._id ? (
+              <div className="w-full space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <input
+                    type="text"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                    placeholder="Ім'я"
+                  />
+                  <input
+                    type="text"
+                    value={editingSurname}
+                    onChange={(e) => setEditingSurname(e.target.value)}
+                    className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                    placeholder="Прізвище"
+                  />
+                  <input
+                    type="text"
+                    value={editingNumber}
+                    onChange={(e) => {
+                      const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 3);
+                      setEditingNumber(onlyDigits);
+                    }}
+                    inputMode="numeric"
+                    maxLength={3}
+                    className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                    placeholder="Номер"
+                  />
+                </div>
+                {pilotEditError && <p className="text-red-400 text-sm">{pilotEditError}</p>}
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={cancelEditPilot}>
+                    Скасувати
+                  </Button>
+                  <Button size="sm" onClick={savePilotChanges} disabled={isSavingPilot}>
+                    {isSavingPilot ? "Збереження..." : "Зберегти"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="text-zinc-500 font-mono text-sm w-8">#{pilot.number}</span>
+                  <span className="font-semibold text-white">
+                    {formatPilotFullName(pilot.name, pilot.surname)}
+                  </span>
+                  <span className="text-zinc-400 text-sm">
+                    {formatKg(ballastByPilot[pilot._id]?.totalKg ?? 0)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => startEditPilot(pilot._id)}>
+                    Редагувати
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={() => deletePilot(pilot._id)}>
+                    Видалити
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         ))}
       </div>

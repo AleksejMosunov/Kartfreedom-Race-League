@@ -62,7 +62,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     { results: enrichedResults, isCompleted: true },
     { new: true, runValidators: true },
   )
-    .populate("results.pilotId", "name number team avatar")
+    .populate("results.pilotId", "name surname number team avatar")
     .lean();
 
   if (!stage)

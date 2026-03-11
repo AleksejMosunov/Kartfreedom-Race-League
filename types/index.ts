@@ -1,6 +1,7 @@
 export interface Pilot {
   _id: string;
   name: string;
+  surname: string;
   number: number;
   avatar?: string;
   createdAt?: string;

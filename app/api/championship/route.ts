@@ -11,7 +11,7 @@ export async function GET() {
   const [pilots, stages] = await Promise.all([
     Pilot.find().sort({ number: 1 }).lean(),
     Stage.find()
-      .populate("results.pilotId", "name number team avatar")
+      .populate("results.pilotId", "name surname number team avatar")
       .sort({ number: 1 })
       .lean(),
   ]);

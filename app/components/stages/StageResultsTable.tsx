@@ -1,5 +1,6 @@
 import { Stage } from "@/types";
 import { Badge } from "@/app/components/ui/Badge";
+import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 interface StageResultsTableProps {
   stage: Stage;
@@ -54,7 +55,9 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
                       <span className="text-zinc-500 text-xs font-mono w-6">
                         #{pilotObj.number}
                       </span>
-                      <span className="font-semibold text-white">{pilotObj.name}</span>
+                      <span className="font-semibold text-white">
+                        {formatPilotFullName(pilotObj.name, pilotObj.surname)}
+                      </span>
                     </div>
                   ) : (
                     <span className="text-zinc-500">{pilotIdStr}</span>

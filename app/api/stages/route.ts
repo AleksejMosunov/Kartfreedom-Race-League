@@ -6,7 +6,7 @@ export async function GET() {
   try {
     await connectToDatabase();
     const stages = await Stage.find()
-      .populate("results.pilotId", "name number avatar")
+      .populate("results.pilotId", "name surname number avatar")
       .sort({ number: 1 })
       .lean();
     return NextResponse.json(stages);

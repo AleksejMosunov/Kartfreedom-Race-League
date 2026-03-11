@@ -6,6 +6,7 @@ import { Button } from "@/app/components/ui/Button";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
+  const [surname, setSurname] = useState("");
   const [number, setNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -23,6 +24,7 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
+          surname: surname.trim(),
           number: Number(number),
         }),
       });
@@ -33,6 +35,7 @@ export default function RegisterPage() {
       }
 
       setName("");
+      setSurname("");
       setNumber("");
       setSuccess("Реєстрацію успішно завершено. До зустрічі на етапах!");
     } catch (err) {
@@ -55,19 +58,37 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input
             type="text"
-            placeholder="Ім'я пілота *"
+            placeholder="Ім'я *"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+            pattern="[A-Za-zА-Яа-яІіЇїЄєҐґ'’ -]+"
+            title="Лише літери, пробіл, дефіс або апостроф"
             required
           />
           <input
-            type="number"
+            type="text"
+            placeholder="Прізвище *"
+            value={surname}
+            onChange={(e) => setSurname(e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+            pattern="[A-Za-zА-Яа-яІіЇїЄєҐґ'’ -]+"
+            title="Лише літери, пробіл, дефіс або апостроф"
+            required
+          />
+          <input
+            type="text"
             placeholder="Номер *"
             value={number}
-            onChange={(e) => setNumber(e.target.value)}
+            onChange={(e) => {
+              const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 3);
+              setNumber(onlyDigits);
+            }}
             className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-            min={1}
+            inputMode="numeric"
+            pattern="\d{1,3}"
+            maxLength={3}
+            title="Введіть номер від 1 до 999"
             required
           />
 

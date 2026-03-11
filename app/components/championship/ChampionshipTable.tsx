@@ -5,6 +5,7 @@ import { useStages } from "@/app/hooks/useStages";
 import { Badge } from "@/app/components/ui/Badge";
 import { Loader } from "@/app/components/ui/Loader";
 import { POINTS_TABLE } from "@/lib/utils/championship";
+import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
@@ -53,7 +54,9 @@ export function ChampionshipTable() {
                   <span className="text-zinc-500 text-xs font-mono w-6">
                     #{row.pilot.number}
                   </span>
-                  <span className="font-semibold text-white">{row.pilot.name}</span>
+                  <span className="font-semibold text-white">
+                    {formatPilotFullName(row.pilot.name, row.pilot.surname)}
+                  </span>
                 </div>
               </td>
               {completedStages.map((stage) => {

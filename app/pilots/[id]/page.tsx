@@ -7,6 +7,7 @@ import { useChampionshipStore } from "@/store/championshipStore";
 import { Loader } from "@/app/components/ui/Loader";
 import Link from "next/link";
 import { PilotBallastSummary } from "@/types";
+import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 function formatKg(kg: number) {
   return `${kg.toLocaleString("uk-UA", { minimumFractionDigits: Number.isInteger(kg) ? 0 : 1, maximumFractionDigits: 1 })} кг`;
@@ -46,6 +47,7 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
 
   const pilot = pilots.find((p) => p._id === id);
   const standing = standings.find((s) => s.pilot._id === id);
+  const pilotFullName = pilot ? formatPilotFullName(pilot.name, pilot.surname) : "";
 
   if (isLoading) return <Loader />;
   if (!pilot)
@@ -68,7 +70,7 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
           #{pilot.number}
         </div>
         <div>
-          <h1 className="text-2xl font-black text-white">{pilot.name}</h1>
+          <h1 className="text-2xl font-black text-white">{pilotFullName}</h1>
         </div>
         {standing && (
           <div className="ml-auto text-right">
