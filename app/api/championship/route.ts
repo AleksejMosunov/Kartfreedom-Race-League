@@ -57,25 +57,27 @@ export async function GET() {
 
           return stages.map((stage) => ({
             ...stage,
-            results: (stage.results ?? []).map((result: Record<string, unknown>) => {
-              const resultId =
-                result.pilotId !== null &&
-                typeof result.pilotId === "object" &&
-                "_id" in (result.pilotId as object)
-                  ? String((result.pilotId as { _id: unknown })._id)
-                  : String(result.pilotId);
-              const team = teamById.get(resultId);
-              if (!team) return result;
-              return {
-                ...result,
-                pilot: {
-                  _id: team._id,
-                  name: team.name,
-                  surname: "",
-                  number: team.number,
-                },
-              };
-            }),
+            results: (stage.results ?? []).map(
+              (result: Record<string, unknown>) => {
+                const resultId =
+                  result.pilotId !== null &&
+                  typeof result.pilotId === "object" &&
+                  "_id" in (result.pilotId as object)
+                    ? String((result.pilotId as { _id: unknown })._id)
+                    : String(result.pilotId);
+                const team = teamById.get(resultId);
+                if (!team) return result;
+                return {
+                  ...result,
+                  pilot: {
+                    _id: team._id,
+                    name: team.name,
+                    surname: "",
+                    number: team.number,
+                  },
+                };
+              },
+            ),
           }));
         })()
       : stages;
