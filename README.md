@@ -16,6 +16,24 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Telegram Notifications (Admin)
+
+You can send league news to Telegram directly from the admin panel.
+
+Add these variables to `.env.local`:
+
+```bash
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
+```
+
+Available admin actions:
+
+- Send start-of-championship news
+- Send "new stage added" news
+- Send stage results with winner and podium congratulation
+- Send championship finish news with final podium
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as {
     name?: string;
     championshipType?: "solo" | "teams";
+    fastestLapBonusEnabled?: boolean;
   };
   const name =
     typeof body.name === "string" && body.name.trim()
@@ -50,11 +51,13 @@ export async function POST(req: NextRequest) {
   }
 
   const championshipType = body.championshipType;
+  const fastestLapBonusEnabled = Boolean(body.fastestLapBonusEnabled);
 
   const created = await Championship.create({
     name,
     status: "active",
     championshipType,
+    fastestLapBonusEnabled,
     startedAt: new Date(),
   });
 

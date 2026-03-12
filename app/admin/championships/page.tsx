@@ -18,6 +18,8 @@ export default function AdminChampionshipsPage() {
   const [archived, setArchived] = useState<Championship[]>([]);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<"solo" | "teams">("solo");
+  const [newFastestLapBonusEnabled, setNewFastestLapBonusEnabled] = useState(false);
+  const [currentFastestLapBonusEnabled, setCurrentFastestLapBonusEnabled] = useState(false);
   const [preseasonNews, setPreseasonNews] = useState("");
   const [regulations, setRegulations] = useState<RegulationsContent>({
     title: "",
@@ -28,6 +30,16 @@ export default function AdminChampionshipsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [restorePreview, setRestorePreview] = useState<{
+    id: string;
+    name: string;
+    participantsCount: number;
+    stagesCount: number;
+    leaders: string[];
+  } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [notifyStartInTelegram, setNotifyStartInTelegram] = useState(true);
+  const [notifyFinishInTelegram, setNotifyFinishInTelegram] = useState(true);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -36,6 +48,7 @@ export default function AdminChampionshipsPage() {
       if (!res.ok) throw new Error("Не вдалося завантажити чемпіонати");
       const payload = (await res.json()) as ChampionshipsResponse;
       setCurrent(payload.current);
+      setCurrentFastestLapBonusEnabled(Boolean(payload.current?.fastestLapBonusEnabled));
       setArchived(payload.archived ?? []);
       setPreseasonNews(payload.preseasonNews ?? "");
       if (payload.current?.regulations) {
@@ -69,13 +82,60 @@ export default function AdminChampionshipsPage() {
       const res = await fetch("/api/championships", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName.trim(), championshipType: newType }),
+        body: JSON.stringify({
+          name: newName.trim(),
+          championshipType: newType,
+          fastestLapBonusEnabled: newFastestLapBonusEnabled,
+        }),
       });
-      const body = (await res.json().catch(() => ({}))) as { error?: string; };
+      const body = (await res.json().catch(() => ({}))) as { error?: string; _id?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося створити чемпіонат");
+
+      let telegramWarning = "";
+      if (notifyStartInTelegram && body._id) {
+        try {
+          const tgRes = await fetch("/api/telegram/championship/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ championshipId: body._id }),
+          });
+          const tgBody = (await tgRes.json().catch(() => ({}))) as { error?: string; };
+          if (!tgRes.ok) {
+            telegramWarning = ` Чемпіонат створено, але Telegram-новину не відправлено: ${tgBody.error ?? "невідома помилка"}.`;
+          }
+        } catch (err) {
+          telegramWarning = ` Чемпіонат створено, але Telegram-новину не відправлено: ${(err as Error).message}.`;
+        }
+      }
+
       setNewName("");
       setNewType("solo");
-      setSuccess("Новий чемпіонат створено. Дані починаються з нуля.");
+      setNewFastestLapBonusEnabled(false);
+      setSuccess(`Новий чемпіонат створено. Дані починаються з нуля.${telegramWarning}`);
+      await loadData();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const saveCurrentChampionshipSettings = async () => {
+    if (!current) return;
+    setError("");
+    setSuccess("");
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/championships/${current._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fastestLapBonusEnabled: currentFastestLapBonusEnabled,
+        }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; };
+      if (!res.ok) throw new Error(body.error ?? "Не вдалося зберегти налаштування чемпіонату");
+      setSuccess("Налаштування чемпіонату оновлено.");
       await loadData();
     } catch (err) {
       setError((err as Error).message);
@@ -86,6 +146,7 @@ export default function AdminChampionshipsPage() {
 
   const finishCurrentChampionship = async () => {
     if (!current) return;
+    const finishedChampionshipId = current._id;
     setError("");
     setSuccess("");
     setIsSubmitting(true);
@@ -95,7 +156,25 @@ export default function AdminChampionshipsPage() {
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося завершити чемпіонат");
-      setSuccess("Чемпіонат завершено та перенесено в архів.");
+
+      let telegramWarning = "";
+      if (notifyFinishInTelegram) {
+        try {
+          const tgRes = await fetch("/api/telegram/championship/finish", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ championshipId: finishedChampionshipId }),
+          });
+          const tgBody = (await tgRes.json().catch(() => ({}))) as { error?: string; };
+          if (!tgRes.ok) {
+            telegramWarning = ` Telegram-новину про завершення не відправлено: ${tgBody.error ?? "невідома помилка"}.`;
+          }
+        } catch (err) {
+          telegramWarning = ` Telegram-новину про завершення не відправлено: ${(err as Error).message}.`;
+        }
+      }
+
+      setSuccess(`Чемпіонат завершено та перенесено в архів.${telegramWarning}`);
       await loadData();
     } catch (err) {
       setError((err as Error).message);
@@ -120,6 +199,33 @@ export default function AdminChampionshipsPage() {
       setError((err as Error).message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const openRestorePreview = async (id: string) => {
+    setPreviewLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/championships/${id}`);
+      if (!res.ok) throw new Error("Не вдалося завантажити preview");
+      const body = (await res.json()) as {
+        championship: { _id: string; name: string; };
+        pilots: Array<{ name: string; surname?: string; }>;
+        stages: Array<unknown>;
+        standings: Array<{ pilot: { name: string; surname?: string; }; totalPoints: number; }>;
+      };
+
+      setRestorePreview({
+        id: body.championship._id,
+        name: body.championship.name,
+        participantsCount: body.pilots.length,
+        stagesCount: body.stages.length,
+        leaders: body.standings.slice(0, 3).map((row) => `${row.pilot.name} ${row.pilot.surname ?? ""}`.trim()),
+      });
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -223,6 +329,38 @@ export default function AdminChampionshipsPage() {
 
       <h1 className="text-3xl font-black text-white mb-8">Чемпіонати</h1>
 
+      {restorePreview && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
+          <div className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+            <p className="text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">Підтвердження відновлення</p>
+            <h2 className="text-xl font-bold text-white mb-2">{restorePreview.name}</h2>
+            <p className="text-zinc-300 text-sm mb-4">
+              Після відновлення цей чемпіонат стане активним, а поточний активний (якщо є) повинен бути завершений.
+            </p>
+            <div className="rounded-lg border border-zinc-800 p-3 text-sm text-zinc-300 space-y-1">
+              <p>Учасників: {restorePreview.participantsCount}</p>
+              <p>Етапів: {restorePreview.stagesCount}</p>
+              <p>Топ-3: {restorePreview.leaders.length > 0 ? restorePreview.leaders.join(", ") : "немає"}</p>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={() => setRestorePreview(null)}>
+                Скасувати
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  void restoreArchivedChampionship(restorePreview.id);
+                  setRestorePreview(null);
+                }}
+                disabled={Boolean(current) || isSubmitting}
+              >
+                Підтвердити відновлення
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <p className="text-zinc-400">Завантаження...</p>
       ) : (
@@ -235,9 +373,35 @@ export default function AdminChampionshipsPage() {
                 <p className="text-zinc-400 text-sm">
                   Формат: {current.championshipType === "teams" ? "Команди" : "Соло (пілоти)"}
                 </p>
+                <label className="flex items-center gap-2 text-sm text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={currentFastestLapBonusEnabled}
+                    onChange={(e) => setCurrentFastestLapBonusEnabled(e.target.checked)}
+                    className="accent-red-500"
+                  />
+                  Best lap бонус (+1 очко)
+                </label>
                 <p className="text-zinc-500 text-sm">
                   Старт: {new Date(current.startedAt).toLocaleDateString("uk-UA")}
                 </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={saveCurrentChampionshipSettings}
+                  disabled={isSubmitting}
+                >
+                  Зберегти налаштування
+                </Button>
+                <label className="flex items-center gap-2 text-sm text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={notifyFinishInTelegram}
+                    onChange={(e) => setNotifyFinishInTelegram(e.target.checked)}
+                    className="accent-red-500"
+                  />
+                  Надіслати новину в Telegram при завершенні
+                </label>
                 <Button type="button" variant="danger" onClick={finishCurrentChampionship} disabled={isSubmitting}>
                   {isSubmitting ? "Завершення..." : "Завершити чемпіонат"}
                 </Button>
@@ -267,6 +431,24 @@ export default function AdminChampionshipsPage() {
                 <option value="teams">Команди</option>
               </select>
             </div>
+            <label className="flex items-center gap-2 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={newFastestLapBonusEnabled}
+                onChange={(e) => setNewFastestLapBonusEnabled(e.target.checked)}
+                className="accent-red-500"
+              />
+              Увімкнути Best lap бонус (+1 очко)
+            </label>
+            <label className="flex items-center gap-2 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={notifyStartInTelegram}
+                onChange={(e) => setNotifyStartInTelegram(e.target.checked)}
+                className="accent-red-500"
+              />
+              Надіслати новину в Telegram про старт
+            </label>
             <Button type="button" onClick={startNewChampionship} disabled={Boolean(current) || isSubmitting}>
               {isSubmitting ? "Створення..." : "Стартувати новий чемпіонат"}
             </Button>
@@ -368,10 +550,10 @@ export default function AdminChampionshipsPage() {
                       <Button
                         type="button"
                         size="sm"
-                        onClick={() => void restoreArchivedChampionship(item._id)}
+                        onClick={() => void openRestorePreview(item._id)}
                         disabled={Boolean(current) || isSubmitting}
                       >
-                        Відновити
+                        {previewLoading ? "Завантаження..." : "Відновити"}
                       </Button>
                       <Link href={`/admin/championships/${item._id}`}>
                         <Button type="button" variant="secondary" size="sm">

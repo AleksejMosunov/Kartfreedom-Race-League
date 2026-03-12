@@ -6,6 +6,7 @@ export interface IStageResult {
   points: number;
   dnf: boolean;
   dns: boolean;
+  bestLap?: boolean;
   penaltyPoints: number;
   penaltyReason: string;
 }
@@ -27,6 +28,7 @@ const StageResultSchema = new Schema<IStageResult>(
     points: { type: Number, required: true, default: 0 },
     dnf: { type: Boolean, default: false },
     dns: { type: Boolean, default: false },
+    bestLap: { type: Boolean, default: false },
     penaltyPoints: { type: Number, default: 0, min: 0 },
     penaltyReason: { type: String, default: "", trim: true },
   },

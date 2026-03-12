@@ -87,5 +87,28 @@ export async function GET() {
     mappedStages as unknown as IStageType[],
   );
 
+  const completedStages = (mappedStages as unknown as IStageType[])
+    .filter((stage) => stage.isCompleted)
+    .sort((a, b) => a.number - b.number);
+
+  if (completedStages.length > 1) {
+    const previousStages = completedStages.slice(0, -1);
+    const previousStandings = calculateChampionshipStandings(
+      participants as unknown as IPilotType[],
+      previousStages,
+    );
+    const previousPositionById = new Map(
+      previousStandings.map((row) => [String(row.pilot._id), row.position]),
+    );
+
+    standings.forEach((row) => {
+      const previousPosition = previousPositionById.get(String(row.pilot._id));
+      row.positionDelta =
+        typeof previousPosition === "number"
+          ? previousPosition - row.position
+          : 0;
+    });
+  }
+
   return NextResponse.json(standings);
 }

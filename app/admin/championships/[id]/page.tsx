@@ -28,7 +28,7 @@ export default function AdminChampionshipDetailsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [error, setError] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [actionModal, setActionModal] = useState<"delete" | "restore" | null>(null);
   const [expandedStageId, setExpandedStageId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,10 +48,6 @@ export default function AdminChampionshipDetailsPage() {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     setIsDeleting(true);
     try {
       const res = await fetch(`/api/championships/${id}`, { method: "DELETE" });
@@ -61,7 +57,6 @@ export default function AdminChampionshipDetailsPage() {
     } catch (err) {
       setError((err as Error).message);
       setIsDeleting(false);
-      setConfirmDelete(false);
     }
   };
 
@@ -96,6 +91,56 @@ export default function AdminChampionshipDetailsPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
+      {actionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+            <p className="text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">Підтвердження дії</p>
+            <h2 className="text-xl font-bold text-white mb-2">{championship.name}</h2>
+            <p className="text-zinc-300 text-sm mb-4">
+              {actionModal === "delete"
+                ? "Чемпіонат буде остаточно видалений з архіву разом з етапами, учасниками і результатами."
+                : "Чемпіонат буде відновлено в активний статус з усією історією результатів."}
+            </p>
+            <div className="rounded-lg border border-zinc-800 p-3 text-sm text-zinc-300 space-y-1 mb-4">
+              <p>Учасників: {pilots.length}</p>
+              <p>Етапів: {stages.length}</p>
+              <p>
+                Топ-3: {standings.slice(0, 3).map((row) => formatPilotFullName(row.pilot.name, row.pilot.surname)).join(", ") || "немає"}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setActionModal(null)}>
+                Скасувати
+              </Button>
+              {actionModal === "restore" ? (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setActionModal(null);
+                    void handleRestore();
+                  }}
+                  disabled={isRestoring}
+                >
+                  {isRestoring ? "Відновлення..." : "Підтвердити відновлення"}
+                </Button>
+              ) : (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => {
+                    setActionModal(null);
+                    void handleDelete();
+                  }}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Видалення..." : "Підтвердити видалення"}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <Link href="/admin/championships" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
         ← Чемпіонати
       </Link>
@@ -117,28 +162,14 @@ export default function AdminChampionshipDetailsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {confirmDelete ? (
-            <>
-              <span className="text-red-400 text-sm">Точно видалити?</span>
-              <Button type="button" variant="danger" size="sm" onClick={handleDelete} disabled={isDeleting}>
-                {isDeleting ? "Видалення..." : "Так, видалити"}
-              </Button>
-              <Button type="button" variant="secondary" size="sm" onClick={() => setConfirmDelete(false)}>
-                Скасувати
-              </Button>
-            </>
-          ) : (
-            <>
-              {championship.status === "archived" && (
-                <Button type="button" size="sm" onClick={handleRestore} disabled={isRestoring}>
-                  {isRestoring ? "Відновлення..." : "Відновити в активний"}
-                </Button>
-              )}
-              <Button type="button" variant="danger" size="sm" onClick={handleDelete}>
-                Видалити з архіву
-              </Button>
-            </>
+          {championship.status === "archived" && (
+            <Button type="button" size="sm" onClick={() => setActionModal("restore")} disabled={isRestoring}>
+              {isRestoring ? "Відновлення..." : "Відновити в активний"}
+            </Button>
           )}
+          <Button type="button" variant="danger" size="sm" onClick={() => setActionModal("delete")}>
+            Видалити з архіву
+          </Button>
         </div>
       </div>
 

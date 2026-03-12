@@ -16,6 +16,7 @@ export interface IChampionship extends Document {
   name: string;
   status: "active" | "archived";
   championshipType: "solo" | "teams";
+  fastestLapBonusEnabled: boolean;
   startedAt: Date;
   endedAt?: Date;
   regulations: IRegulations;
@@ -56,6 +57,11 @@ const ChampionshipSchema = new Schema<IChampionship>(
       required: true,
       default: "solo",
       index: true,
+    },
+    fastestLapBonusEnabled: {
+      type: Boolean,
+      required: true,
+      default: false,
     },
     startedAt: { type: Date, required: true, default: Date.now },
     endedAt: { type: Date },

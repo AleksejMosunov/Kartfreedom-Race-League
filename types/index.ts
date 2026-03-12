@@ -14,6 +14,7 @@ export interface StageResult {
   points: number;
   dnf: boolean;
   dns: boolean;
+  bestLap?: boolean;
   penaltyPoints?: number;
   penaltyReason?: string;
 }
@@ -48,6 +49,7 @@ export interface ChampionshipStanding {
   stagesCount: number;
   standings: PilotStanding[];
   position: number;
+  positionDelta?: number;
 }
 
 export interface RegulationSection {
@@ -66,6 +68,7 @@ export interface Championship {
   name: string;
   status: "active" | "archived";
   championshipType: "solo" | "teams";
+  fastestLapBonusEnabled?: boolean;
   startedAt: string;
   endedAt?: string;
   regulations?: RegulationsContent;

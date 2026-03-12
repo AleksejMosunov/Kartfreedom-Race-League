@@ -48,8 +48,9 @@ export function Header() {
   const championshipLinks = [
     { href: "/stages", label: "Етапи" },
     { href: "/pilots", label: championshipType === "teams" ? "Команди" : "Пілоти" },
+    { href: "/stats", label: "Статистика" },
     { href: "/regulations", label: "Регламент" },
-    { href: "/register", label: "Реєстрація" },
+    // { href: "/register", label: "Реєстрація" },
   ];
 
   const navLinks = !isLoading && hasActiveChampionship

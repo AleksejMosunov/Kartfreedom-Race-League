@@ -14,6 +14,7 @@ interface ResultInput {
   position: number;
   dnf?: boolean;
   dns?: boolean;
+  bestLap?: boolean;
   penaltyPoints?: number;
   penaltyReason?: string;
 }
@@ -51,7 +52,17 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
   }
 
+  const fastestLapRows = results.filter((row) => Boolean(row.bestLap));
+  if (current.fastestLapBonusEnabled && fastestLapRows.length > 1) {
+    return NextResponse.json(
+      { error: "Best lap може бути лише у одного учасника" },
+      { status: 400 },
+    );
+  }
+
   const enrichedResults = results.map((r) => {
+    const fastestLapBonus =
+      current.fastestLapBonusEnabled && r.bestLap && !r.dnf && !r.dns ? 1 : 0;
     const basePoints = r.dnf || r.dns ? 0 : getPointsByPosition(r.position);
     const penaltyPoints = Math.max(0, Number(r.penaltyPoints ?? 0));
     const penaltyReason =
@@ -60,9 +71,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     return {
       pilotId: r.pilotId,
       position: r.position,
-      points: basePoints - penaltyPoints,
+      points: basePoints + fastestLapBonus - penaltyPoints,
       dnf: r.dnf ?? false,
       dns: r.dns ?? false,
+      bestLap: current.fastestLapBonusEnabled ? Boolean(r.bestLap) : false,
       penaltyPoints,
       penaltyReason,
     };

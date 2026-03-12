@@ -115,3 +115,31 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
   return NextResponse.json({ ok: true });
 }
+
+export async function PUT(req: NextRequest, { params }: Params) {
+  await connectToDatabase();
+  const { id } = await params;
+
+  const body = (await req.json().catch(() => ({}))) as {
+    fastestLapBonusEnabled?: boolean;
+  };
+
+  if (typeof body.fastestLapBonusEnabled !== "boolean") {
+    return NextResponse.json(
+      { error: "Поле fastestLapBonusEnabled має бути boolean" },
+      { status: 400 },
+    );
+  }
+
+  const updated = await Championship.findByIdAndUpdate(
+    id,
+    { fastestLapBonusEnabled: body.fastestLapBonusEnabled },
+    { new: true },
+  ).lean();
+
+  if (!updated) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(updated);
+}
