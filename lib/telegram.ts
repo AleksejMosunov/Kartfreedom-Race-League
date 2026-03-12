@@ -1,5 +1,6 @@
 const TELEGRAM_API_BASE = "https://api.telegram.org";
-export const WEB_APP_URL = "https://kartfreedom-race-league.vercel.app/";
+export const WEB_APP_URL =
+  "https://kartfreedom-race-league.vercel.app/register";
 
 function requiredEnv(name: string) {
   const value = process.env[name];

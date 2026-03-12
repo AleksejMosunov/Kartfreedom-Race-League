@@ -21,7 +21,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   if (current.championshipType !== "teams") {
     return NextResponse.json(
-      { error: "Операція доступна лише для командного чемпіонату" },
+      { error: "Операція доступна лише для Endurance-чемпіонату" },
       { status: 409 },
     );
   }
@@ -103,7 +103,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
   if (current.championshipType !== "teams") {
     return NextResponse.json(
-      { error: "Операція доступна лише для командного чемпіонату" },
+      { error: "Операція доступна лише для Endurance-чемпіонату" },
       { status: 409 },
     );
   }

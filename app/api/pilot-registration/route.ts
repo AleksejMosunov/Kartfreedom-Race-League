@@ -5,6 +5,17 @@ import { Team } from "@/lib/models/Team";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 
+function normalizePhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("380") && digits.length === 12) return `+${digits}`;
+  if (digits.startsWith("0") && digits.length === 10) return `+38${digits}`;
+  return `+${digits}`;
+}
+
+function isValidUkrPhone(phone: string): boolean {
+  return /^\+380\d{9}$/.test(phone);
+}
+
 export async function POST(req: NextRequest) {
   await connectToDatabase();
   let current;
@@ -23,6 +34,9 @@ export async function POST(req: NextRequest) {
     const teamName =
       typeof body.teamName === "string" ? body.teamName.trim() : "";
     const teamNumber = Number(body.number);
+    const teamPhone = normalizePhone(
+      typeof body.phone === "string" ? body.phone : "",
+    );
 
     if (
       teamName.length < 2 ||
@@ -37,11 +51,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!isValidUkrPhone(teamPhone)) {
+      return NextResponse.json(
+        { error: "Вкажіть дійсний номер телефону у форматі +380XXXXXXXXX" },
+        { status: 400 },
+      );
+    }
+
     try {
       const team = await Team.create({
         championshipId: current._id,
         name: teamName,
         number: teamNumber,
+        phone: teamPhone,
       });
 
       return NextResponse.json(team, { status: 201 });
@@ -72,6 +94,16 @@ export async function POST(req: NextRequest) {
   const surname =
     typeof body.surname === "string" ? normalizeNamePart(body.surname) : "";
   const number = Number(body.number);
+  const phone = normalizePhone(
+    typeof body.phone === "string" ? body.phone : "",
+  );
+
+  if (!isValidUkrPhone(phone)) {
+    return NextResponse.json(
+      { error: "Вкажіть дійсний номер телефону у форматі +380XXXXXXXXX" },
+      { status: 400 },
+    );
+  }
 
   if (
     !isValidNamePart(name) ||
@@ -92,6 +124,7 @@ export async function POST(req: NextRequest) {
       name,
       surname,
       number,
+      phone,
       avatar: typeof body.avatar === "string" ? body.avatar : undefined,
     });
 

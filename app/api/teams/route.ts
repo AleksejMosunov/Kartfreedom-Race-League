@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   if (current.championshipType !== "teams") {
     return NextResponse.json(
-      { error: "Реєстрація команд доступна лише в командному чемпіонаті" },
+      { error: "Реєстрація команд доступна лише в Endurance-чемпіонаті" },
       { status: 409 },
     );
   }

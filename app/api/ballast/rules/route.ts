@@ -19,7 +19,7 @@ export async function PUT(req: NextRequest) {
   }
   if (current.championshipType === "teams") {
     return NextResponse.json(
-      { error: "Доваження доступне лише для соло-чемпіонату" },
+      { error: "Доваження доступне лише для Sprint-чемпіонату" },
       { status: 409 },
     );
   }

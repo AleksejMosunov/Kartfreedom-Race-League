@@ -260,9 +260,9 @@ export default function AdminPilotsPage() {
         </Link>
         <h1 className="text-3xl font-black text-white mb-8">Пілоти</h1>
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-          <h2 className="text-lg font-bold text-white mb-2">Недоступно в командному чемпіонаті</h2>
+          <h2 className="text-lg font-bold text-white mb-2">Недоступно в Endurance-чемпіонаті</h2>
           <p className="text-zinc-400 text-sm mb-4">
-            У командному чемпіонаті доваження не використовується, а керування учасниками виконується через розділ команд.
+            В Endurance-чемпіонаті доваження не використовується, а керування учасниками виконується через розділ команд.
           </p>
           <Link href="/admin/teams" className="text-red-400 hover:text-red-300 underline text-sm">
             Перейти до керування командами

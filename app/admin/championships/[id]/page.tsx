@@ -149,7 +149,7 @@ export default function AdminChampionshipDetailsPage() {
         <div>
           <h1 className="text-3xl font-black text-white">{championship.name}</h1>
           <p className="text-zinc-400 text-sm mt-1">
-            Формат: {championship.championshipType === "teams" ? "Команди" : "Соло (пілоти)"}
+            Формат: {championship.championshipType === "teams" ? "Endurance" : "Sprint"}
           </p>
           <p className="text-zinc-500 text-sm mt-1">
             {championship.startedAt ? new Date(championship.startedAt).toLocaleDateString("uk-UA") : "—"}

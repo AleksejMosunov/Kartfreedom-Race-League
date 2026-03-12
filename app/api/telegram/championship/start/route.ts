@@ -4,6 +4,7 @@ import { Championship } from "@/lib/models/Championship";
 import {
   escapeHtml,
   sendTelegramMessage,
+  WEB_APP_URL,
   webAppLinkLine,
 } from "@/lib/telegram";
 
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
   const message = [
     "🏁 <b>Старт нового чемпіонату!</b>",
     `Назва: <b>${escapeHtml(championship.name)}</b>`,
-    `Формат: <b>${championship.championshipType === "teams" ? "Команди" : "Соло"}</b>`,
+    `Формат: <b>${championship.championshipType === "teams" ? "Endurance" : "Sprint"}</b>`,
     `Дата старту: <b>${new Date(championship.startedAt).toLocaleDateString("uk-UA")}</b>`,
     championship.fastestLapBonusEnabled
       ? "Правило: <b>Best lap +1 очко</b> увімкнено"
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     "",
     "Реєстрацію відкрито. Успіхів усім учасникам! 🔥",
     "",
-    webAppLinkLine(),
+    `🔗 <a href="${WEB_APP_URL}">Реєстрація KartFreedom Race League</a>`,
   ].join("\n");
 
   await sendTelegramMessage(message);

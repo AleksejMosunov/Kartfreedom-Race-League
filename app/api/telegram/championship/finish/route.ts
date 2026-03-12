@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   const message = [
     "🏆 <b>Чемпіонат завершено!</b>",
     `Назва: <b>${escapeHtml(championship.name)}</b>`,
-    `Формат: <b>${championship.championshipType === "teams" ? "Команди" : "Соло"}</b>`,
+    `Формат: <b>${championship.championshipType === "teams" ? "Endurance" : "Sprint"}</b>`,
     "",
     ...podium,
     "",

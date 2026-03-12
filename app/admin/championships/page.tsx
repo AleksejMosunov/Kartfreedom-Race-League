@@ -371,7 +371,7 @@ export default function AdminChampionshipsPage() {
               <>
                 <p className="text-zinc-200 font-semibold">{current.name}</p>
                 <p className="text-zinc-400 text-sm">
-                  Формат: {current.championshipType === "teams" ? "Команди" : "Соло (пілоти)"}
+                  Формат: {current.championshipType === "teams" ? "Endurance" : "Sprint"}
                 </p>
                 <label className="flex items-center gap-2 text-sm text-zinc-300">
                   <input
@@ -427,8 +427,8 @@ export default function AdminChampionshipsPage() {
                 onChange={(e) => setNewType(e.target.value as "solo" | "teams")}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
               >
-                <option value="solo">Соло (пілоти)</option>
-                <option value="teams">Команди</option>
+                <option value="solo">Sprint</option>
+                <option value="teams">Endurance</option>
               </select>
             </div>
             <label className="flex items-center gap-2 text-sm text-zinc-300">
@@ -543,7 +543,7 @@ export default function AdminChampionshipsPage() {
                         {item.endedAt ? new Date(item.endedAt).toLocaleDateString("uk-UA") : "—"}
                       </span>
                       <span className="ml-3 text-zinc-600 text-xs">
-                        {item.championshipType === "teams" ? "Команди" : "Соло"}
+                        {item.championshipType === "teams" ? "Endurance" : "Sprint"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

@@ -4,6 +4,7 @@ export interface ITeam extends Document {
   championshipId: Types.ObjectId;
   name: string;
   number: number;
+  phone?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +28,7 @@ const TeamSchema = new Schema<ITeam>(
         message: "Team number must be an integer",
       },
     },
+    phone: { type: String, trim: true },
   },
   { timestamps: true },
 );

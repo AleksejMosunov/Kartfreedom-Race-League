@@ -6,6 +6,7 @@ export interface IPilot extends Document {
   name: string;
   surname: string;
   number: number;
+  phone?: string;
   avatar?: string;
   createdAt: Date;
 }
@@ -48,6 +49,7 @@ const PilotSchema = new Schema<IPilot>(
         message: "Pilot number must be an integer",
       },
     },
+    phone: { type: String, trim: true },
     avatar: { type: String },
   },
   { timestamps: true },

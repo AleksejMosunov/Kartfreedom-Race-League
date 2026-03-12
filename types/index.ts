@@ -3,6 +3,7 @@ export interface Pilot {
   name: string;
   surname: string;
   number: number;
+  phone?: string;
   avatar?: string;
   createdAt?: string;
 }

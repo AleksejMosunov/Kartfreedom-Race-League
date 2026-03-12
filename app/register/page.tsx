@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [number, setNumber] = useState("");
   const [teamName, setTeamName] = useState("");
   const [teamNumber, setTeamNumber] = useState("");
+  const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -52,11 +53,13 @@ export default function RegisterPage() {
             ? {
               teamName: teamName.trim(),
               number: Number(teamNumber),
+              phone: phone.trim(),
             }
             : {
               name: name.trim(),
               surname: surname.trim(),
               number: Number(number),
+              phone: phone.trim(),
             },
         ),
       });
@@ -69,11 +72,13 @@ export default function RegisterPage() {
       if (championshipMode === "teams") {
         setTeamName("");
         setTeamNumber("");
+        setPhone("");
         setSuccess("Команду успішно зареєстровано.");
       } else {
         setName("");
         setSurname("");
         setNumber("");
+        setPhone("");
         setSuccess("Реєстрацію успішно завершено. До зустрічі на етапах!");
       }
     } catch (err) {
@@ -130,6 +135,25 @@ export default function RegisterPage() {
                       title="Введіть номер від 1 до 999"
                       required
                     />
+                    <input
+                      type="tel"
+                      placeholder="Телефон +380XXXXXXXXX *"
+                      value={phone}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, "");
+                        if (!digits) { setPhone(""); return; }
+                        let normalized: string;
+                        if (digits.startsWith("380")) normalized = "+" + digits.slice(0, 12);
+                        else if (digits.startsWith("0")) normalized = "+38" + digits.slice(0, 10);
+                        else normalized = "+" + digits.slice(0, 12);
+                        setPhone(normalized);
+                      }}
+                      className="sm:col-span-2 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                      inputMode="tel"
+                      pattern="\+380\d{9}"
+                      title="Тільки українські номери: +380XXXXXXXXX"
+                      required
+                    />
                   </>
                 ) : (
                   <>
@@ -166,6 +190,25 @@ export default function RegisterPage() {
                       pattern="\d{1,3}"
                       maxLength={3}
                       title="Введіть номер від 1 до 999"
+                      required
+                    />
+                    <input
+                      type="tel"
+                      placeholder="Телефон +380XXXXXXXXX *"
+                      value={phone}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, "");
+                        if (!digits) { setPhone(""); return; }
+                        let normalized: string;
+                        if (digits.startsWith("380")) normalized = "+" + digits.slice(0, 12);
+                        else if (digits.startsWith("0")) normalized = "+38" + digits.slice(0, 10);
+                        else normalized = "+" + digits.slice(0, 12);
+                        setPhone(normalized);
+                      }}
+                      className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                      inputMode="tel"
+                      pattern="\+380\d{9}"
+                      title="Тільки українські номери: +380XXXXXXXXX"
                       required
                     />
                   </>

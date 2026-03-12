@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "У командному чемпіонаті учасників додають у розділі 'Керування командами'",
+          "В Endurance-чемпіонаті учасників додають у розділі 'Керування командами'",
       },
       { status: 409 },
     );

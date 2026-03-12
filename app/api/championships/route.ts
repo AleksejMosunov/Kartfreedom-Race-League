@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       : `Чемпіонат ${new Date().toLocaleDateString("uk-UA")}`;
   if (body.championshipType !== "solo" && body.championshipType !== "teams") {
     return NextResponse.json(
-      { error: "Оберіть формат чемпіонату: соло або команди" },
+      { error: "Оберіть формат чемпіонату: Sprint або Endurance" },
       { status: 400 },
     );
   }
