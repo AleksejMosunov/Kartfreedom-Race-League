@@ -437,14 +437,19 @@ export default function AdminPilotsPage() {
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-3">
-                  <span className="text-zinc-500 font-mono text-sm w-8">#{pilot.number}</span>
-                  <span className="font-semibold text-white">
-                    {formatPilotFullName(pilot.name, pilot.surname)}
-                  </span>
-                  <span className="text-zinc-400 text-sm">
-                    {formatKg(ballastByPilot[pilot._id]?.totalKg ?? 0)}
-                  </span>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-3">
+                    <span className="text-zinc-500 font-mono text-sm w-8">#{pilot.number}</span>
+                    <span className="font-semibold text-white">
+                      {formatPilotFullName(pilot.name, pilot.surname)}
+                    </span>
+                    <span className="text-zinc-400 text-sm">
+                      {formatKg(ballastByPilot[pilot._id]?.totalKg ?? 0)}
+                    </span>
+                  </div>
+                  {pilot.phone && (
+                    <span className="text-zinc-500 text-xs pl-11">{pilot.phone}</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="secondary" size="sm" onClick={() => startEditPilot(pilot._id)}>
