@@ -91,7 +91,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const teamById = new Map(teams.map((team) => [String(team._id), team]));
     const mappedStage = {
       ...stage,
-      results: (stage.results ?? []).map((result) => {
+      results: (stage.results ?? []).map((result: Record<string, unknown>) => {
         const id =
           result.pilotId !== null &&
           typeof result.pilotId === "object" &&

@@ -28,25 +28,27 @@ export async function GET() {
 
       const mappedStages = stages.map((stage) => ({
         ...stage,
-        results: (stage.results ?? []).map((result) => {
-          const id =
-            result.pilotId !== null &&
-            typeof result.pilotId === "object" &&
-            "_id" in (result.pilotId as object)
-              ? String((result.pilotId as { _id: unknown })._id)
-              : String(result.pilotId);
-          const team = teamById.get(id);
-          if (!team) return result;
-          return {
-            ...result,
-            pilot: {
-              _id: String(team._id),
-              name: team.name,
-              surname: "",
-              number: team.number,
-            },
-          };
-        }),
+        results: (stage.results ?? []).map(
+          (result: Record<string, unknown>) => {
+            const id =
+              result.pilotId !== null &&
+              typeof result.pilotId === "object" &&
+              "_id" in (result.pilotId as object)
+                ? String((result.pilotId as { _id: unknown })._id)
+                : String(result.pilotId);
+            const team = teamById.get(id);
+            if (!team) return result;
+            return {
+              ...result,
+              pilot: {
+                _id: String(team._id),
+                name: team.name,
+                surname: "",
+                number: team.number,
+              },
+            };
+          },
+        ),
       }));
 
       return NextResponse.json(mappedStages);
