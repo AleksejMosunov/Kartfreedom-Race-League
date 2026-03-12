@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --brand-primary: #75039a;
+  --brand-accent: #b9fe00;
 }
 
 @theme inline {
@@ -23,4 +25,24 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Brand remap for existing red Tailwind utilities used across the app. */
+.bg-red-600 {
+  background-color: var(--brand-primary) !important;
+}
+
+.border-red-600,
+.focus\:border-red-500:focus,
+.hover\:border-red-600:hover {
+  border-color: var(--brand-primary) !important;
+}
+
+.text-red-500,
+.accent-red-500 {
+  color: var(--brand-accent) !important;
+}
+
+.accent-red-500 {
+  accent-color: var(--brand-primary) !important;
 }

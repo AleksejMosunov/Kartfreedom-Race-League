@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "KartFreedom Race League",
   description: "Картинговий чемпіонат KartFreedom Race League",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
