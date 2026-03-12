@@ -1,4 +1,4 @@
-import { defaultRegulationsContent } from "@/lib/regulations/defaultContent";
+import { buildDefaultRegulations } from "@/lib/regulations/defaultContent";
 
 export function normalizeRegulationsPayload(input: {
   title?: string;
@@ -24,11 +24,14 @@ export function normalizeRegulationsPayload(input: {
   return { title, intro, sections };
 }
 
-export function defaultRegulationsForNewChampionship() {
+export function defaultRegulationsForNewChampionship(
+  fastestLapBonusEnabled = false,
+) {
+  const content = buildDefaultRegulations(fastestLapBonusEnabled);
   return {
-    title: defaultRegulationsContent.title,
-    intro: defaultRegulationsContent.intro,
-    sections: defaultRegulationsContent.sections.map((section) => ({
+    title: content.title,
+    intro: content.intro,
+    sections: content.sections.map((section) => ({
       title: section.title,
       content: section.content,
     })),

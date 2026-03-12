@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/Button";
 import { RegulationSection, RegulationsContent } from "@/types";
+import { buildDefaultRegulations } from "@/lib/regulations/defaultContent";
 
 const emptySection: RegulationSection = { title: "", content: "" };
 
@@ -18,20 +19,30 @@ export default function AdminRegulationsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [fastestLapBonusEnabled, setFastestLapBonusEnabled] = useState(false);
+
   useEffect(() => {
-    const loadRegulations = async () => {
+    const loadData = async () => {
       setIsLoading(true);
       setError("");
-
       try {
-        const res = await fetch("/api/regulations");
-        if (!res.ok) throw new Error("Не вдалося завантажити регламент");
-        const payload = (await res.json()) as RegulationsContent;
+        const [regRes, champRes] = await Promise.all([
+          fetch("/api/regulations"),
+          fetch("/api/championships", { cache: "no-store" }),
+        ]);
+        if (!regRes.ok) throw new Error("Не вдалося завантажити регламент");
+        const payload = (await regRes.json()) as RegulationsContent;
         setData({
           title: payload.title,
           intro: payload.intro,
           sections: payload.sections.length > 0 ? payload.sections : [emptySection],
         });
+        if (champRes.ok) {
+          const champData = (await champRes.json()) as {
+            current?: { fastestLapBonusEnabled?: boolean; } | null;
+          };
+          setFastestLapBonusEnabled(Boolean(champData.current?.fastestLapBonusEnabled));
+        }
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -39,8 +50,17 @@ export default function AdminRegulationsPage() {
       }
     };
 
-    void loadRegulations();
+    void loadData();
   }, []);
+
+  const fillDefaults = useCallback(() => {
+    const defaults = buildDefaultRegulations(fastestLapBonusEnabled);
+    setData({
+      title: defaults.title,
+      intro: defaults.intro,
+      sections: defaults.sections,
+    });
+  }, [fastestLapBonusEnabled]);
 
   const updateSection = (index: number, field: keyof RegulationSection, value: string) => {
     setData((prev) => ({
@@ -123,6 +143,11 @@ export default function AdminRegulationsPage() {
         <p className="text-zinc-400">Завантаження...</p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex justify-end">
+            <Button type="button" variant="secondary" size="sm" onClick={fillDefaults}>
+              Заповнити типовими даними
+            </Button>
+          </div>
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
             <h2 className="text-lg font-bold text-white">Загальна інформація</h2>
             <input

@@ -1,3 +1,4 @@
+import { defaultRegulationsForNewChampionship } from "@/lib/championship/regulations";
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
     championshipType,
     fastestLapBonusEnabled,
     startedAt: new Date(),
+    regulations: defaultRegulationsForNewChampionship(fastestLapBonusEnabled),
   });
 
   return NextResponse.json(created, { status: 201 });
