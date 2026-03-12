@@ -57,7 +57,7 @@ export async function GET() {
 
           return stages.map((stage) => ({
             ...stage,
-            results: (stage.results ?? []).map((result) => {
+            results: (stage.results ?? []).map((result: Record<string, unknown>) => {
               const resultId =
                 result.pilotId !== null &&
                 typeof result.pilotId === "object" &&
