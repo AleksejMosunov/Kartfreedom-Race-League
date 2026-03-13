@@ -5,7 +5,7 @@ interface ChampionshipState {
   standings: ChampionshipStanding[];
   isLoading: boolean;
   error: string | null;
-  fetchStandings: () => Promise<void>;
+  fetchStandings: (championshipId?: string) => Promise<void>;
 }
 
 export const useChampionshipStore = create<ChampionshipState>((set) => ({
@@ -13,10 +13,13 @@ export const useChampionshipStore = create<ChampionshipState>((set) => ({
   isLoading: false,
   error: null,
 
-  fetchStandings: async () => {
+  fetchStandings: async (championshipId?: string) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await fetch("/api/championship");
+      const url = championshipId
+        ? `/api/championship?championship=${encodeURIComponent(championshipId)}`
+        : "/api/championship";
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Помилка завантаження таблиці чемпіонату");
       const data: ChampionshipStanding[] = await res.json();
       set({ standings: data });

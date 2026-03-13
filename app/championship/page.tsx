@@ -1,5 +1,6 @@
 import { ChampionshipTable } from "@/app/components/championship/ChampionshipTable";
 import { NoActiveChampionshipBlock } from "@/app/components/championship/NoActiveChampionshipBlock";
+import { MultiChampionshipTabs } from "@/app/components/championship/MultiChampionshipTabs";
 import { getPublicChampionshipStatus } from "@/lib/championship/public";
 
 export const revalidate = 0;
@@ -10,9 +11,9 @@ export const metadata = {
 };
 
 export default async function ChampionshipPage() {
-  const { current, preseasonNews } = await getPublicChampionshipStatus();
+  const { active, preseasonNews } = await getPublicChampionshipStatus();
 
-  if (!current) {
+  if (!active.length) {
     return (
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-8">
@@ -26,6 +27,27 @@ export default async function ChampionshipPage() {
     );
   }
 
+  if (active.length === 1) {
+    return (
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-black text-white">Таблиця чемпіонату</h1>
+          <p className="text-zinc-400 mt-1">
+            Загальний залік · найгірший етап кожного пілота не враховується
+          </p>
+        </div>
+        <ChampionshipTable />
+      </main>
+    );
+  }
+
+  // Multiple active championships — render tab selector on client
+  const championships = active.map((c) => ({
+    _id: String(c._id),
+    name: c.name,
+    championshipType: c.championshipType,
+  }));
+
   return (
     <main className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8">
@@ -34,7 +56,7 @@ export default async function ChampionshipPage() {
           Загальний залік · найгірший етап кожного пілота не враховується
         </p>
       </div>
-      <ChampionshipTable />
+      <MultiChampionshipTabs championships={championships} />
     </main>
   );
 }

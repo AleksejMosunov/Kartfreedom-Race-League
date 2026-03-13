@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Pilot } from "@/lib/models/Pilot";
 import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
+import { Championship } from "@/lib/models/Championship";
 import { getCurrentChampionship } from "@/lib/championship/current";
 
 type Participant = {
@@ -41,16 +42,19 @@ function calcStdDev(values: number[]) {
   return Math.sqrt(variance);
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   await connectToDatabase();
 
-  const current = await getCurrentChampionship();
+  const championshipId = req.nextUrl.searchParams.get("championship");
+  const current = championshipId
+    ? await Championship.findById(championshipId).lean()
+    : await getCurrentChampionship();
+
   if (!current) {
     return NextResponse.json({
       championshipType: "solo",
       participants: [],
       stageLabels: [],
-      headToHead: [],
     });
   }
 
@@ -171,51 +175,9 @@ export async function GET() {
     };
   });
 
-  const headToHead: Array<{
-    aId: string;
-    bId: string;
-    aName: string;
-    bName: string;
-    aWins: number;
-    bWins: number;
-    ties: number;
-  }> = [];
-
-  for (let i = 0; i < participants.length; i += 1) {
-    for (let j = i + 1; j < participants.length; j += 1) {
-      const a = participants[i];
-      const b = participants[j];
-      let aWins = 0;
-      let bWins = 0;
-      let ties = 0;
-
-      for (const stage of completedStages) {
-        const ra = stage.results.find((row) => String(row.pilotId) === a._id);
-        const rb = stage.results.find((row) => String(row.pilotId) === b._id);
-
-        if (!ra || !rb || ra.dns || rb.dns) continue;
-
-        if (ra.position < rb.position) aWins += 1;
-        else if (rb.position < ra.position) bWins += 1;
-        else ties += 1;
-      }
-
-      headToHead.push({
-        aId: a._id,
-        bId: b._id,
-        aName: participantLabel(a),
-        bName: participantLabel(b),
-        aWins,
-        bWins,
-        ties,
-      });
-    }
-  }
-
   return NextResponse.json({
     championshipType: current.championshipType,
     participants: participantStats,
     stageLabels,
-    headToHead,
   });
 }

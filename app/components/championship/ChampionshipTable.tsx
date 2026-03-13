@@ -12,36 +12,56 @@ const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉"
 
 type ChampionshipType = "solo" | "teams";
 
-export function ChampionshipTable() {
-  const { standings, isLoading, error } = useChampionship();
-  const { stages } = useStages();
+export function ChampionshipTable({ championshipId }: { championshipId?: string; }) {
+  const { standings, isLoading, error } = useChampionship(championshipId);
+  const { stages } = useStages(championshipId);
+
   const [championshipType, setChampionshipType] = useState<ChampionshipType>("solo");
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [classFilter, setClassFilter] = useState<"all" | "top" | "mid" | "tail">("all");
   const [teamFilter, setTeamFilter] = useState("");
 
   useEffect(() => {
-    const loadType = async () => {
-      try {
-        const res = await fetch("/api/championships", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          current?: { championshipType?: ChampionshipType; } | null;
-        };
-        setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");
-      } catch {
-        setChampionshipType("solo");
-      }
-    };
-
-    void loadType();
-  }, []);
+    if (championshipId) {
+      const load = async () => {
+        try {
+          const res = await fetch(`/api/championships/${championshipId}`);
+          if (!res.ok) return;
+          const data = (await res.json()) as {
+            championship?: { championshipType?: ChampionshipType; };
+          };
+          setChampionshipType(data.championship?.championshipType === "teams" ? "teams" : "solo");
+        } catch {
+          setChampionshipType("solo");
+        }
+      };
+      void load();
+    } else {
+      const loadType = async () => {
+        try {
+          const res = await fetch("/api/championships", { cache: "no-store" });
+          if (!res.ok) return;
+          const data = (await res.json()) as {
+            current?: { championshipType?: ChampionshipType; } | null;
+          };
+          setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");
+        } catch {
+          setChampionshipType("solo");
+        }
+      };
+      void loadType();
+    }
+  }, [championshipId]);
 
   const completedStages = stages.filter((s) => s.isCompleted);
+  const normalizedStageFilter =
+    stageFilter === "all" || completedStages.some((stage) => stage._id === stageFilter)
+      ? stageFilter
+      : "all";
   const visibleStages =
-    stageFilter === "all"
+    normalizedStageFilter === "all"
       ? completedStages
-      : completedStages.filter((stage) => stage._id === stageFilter);
+      : completedStages.filter((stage) => stage._id === normalizedStageFilter);
 
   const filteredStandings = standings.filter((row) => {
     const search = teamFilter.trim().toLowerCase();
@@ -78,7 +98,7 @@ export function ChampionshipTable() {
         <label className="text-sm text-zinc-300">
           Етап
           <select
-            value={stageFilter}
+            value={normalizedStageFilter}
             onChange={(e) => setStageFilter(e.target.value)}
             className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
           >

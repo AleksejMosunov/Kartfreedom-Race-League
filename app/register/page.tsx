@@ -8,9 +8,15 @@ import { Loader } from "@/app/components/ui/Loader";
 import { useEffect } from "react";
 
 type ChampionshipMode = "solo" | "teams";
+type ActiveChampionship = {
+  _id: string;
+  name: string;
+  championshipType: ChampionshipMode;
+};
 
 export default function RegisterPage() {
-  const [championshipMode, setChampionshipMode] = useState<ChampionshipMode>("solo");
+  const [activeChampionships, setActiveChampionships] = useState<ActiveChampionship[]>([]);
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState("");
   const [modeLoading, setModeLoading] = useState(true);
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
@@ -22,15 +28,23 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const selectedChampionship =
+    activeChampionships.find((item) => item._id === selectedChampionshipId) ??
+    activeChampionships[0] ??
+    null;
+  const championshipMode = selectedChampionship?.championshipType ?? "solo";
+
   useEffect(() => {
     const loadChampionshipMode = async () => {
       try {
         const res = await fetch("/api/championships", { cache: "no-store" });
         if (!res.ok) return;
         const data = (await res.json()) as {
-          current?: { championshipType?: ChampionshipMode; } | null;
+          active?: ActiveChampionship[];
         };
-        setChampionshipMode(data.current?.championshipType === "teams" ? "teams" : "solo");
+        const championships = data.active ?? [];
+        setActiveChampionships(championships);
+        setSelectedChampionshipId(championships[0]?._id ?? "");
       } finally {
         setModeLoading(false);
       }
@@ -51,11 +65,13 @@ export default function RegisterPage() {
         body: JSON.stringify(
           championshipMode === "teams"
             ? {
+              championshipId: selectedChampionshipId,
               teamName: teamName.trim(),
               number: Number(teamNumber),
               phone: phone.trim(),
             }
             : {
+              championshipId: selectedChampionshipId,
               name: name.trim(),
               surname: surname.trim(),
               number: Number(number),
@@ -106,7 +122,38 @@ export default function RegisterPage() {
               </p>
             </div>
 
+            {activeChampionships.length > 1 && (
+              <div className="flex gap-2 mb-6 flex-wrap">
+                {activeChampionships.map((championship) => (
+                  <button
+                    key={championship._id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedChampionshipId(championship._id);
+                      setError("");
+                      setSuccess("");
+                    }}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors border ${selectedChampionshipId === championship._id
+                      ? "bg-red-600 border-red-600 text-white"
+                      : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+                      }`}
+                  >
+                    {championship.name}
+                    <span className="ml-2 text-xs opacity-70">
+                      {championship.championshipType === "teams" ? "Endurance" : "Sprint"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+              {selectedChampionship && (
+                <p className="text-zinc-400 text-sm mb-4">
+                  Обраний чемпіонат: <span className="text-white">{selectedChampionship.name}</span>
+                </p>
+              )}
+
               <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {championshipMode === "teams" ? (
                   <>

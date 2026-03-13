@@ -5,7 +5,7 @@ interface PilotsState {
   pilots: Pilot[];
   isLoading: boolean;
   error: string | null;
-  fetchPilots: () => Promise<void>;
+  fetchPilots: (championshipId?: string) => Promise<void>;
   addPilot: (pilot: Omit<Pilot, "_id">) => Promise<void>;
   updatePilot: (id: string, data: Partial<Pilot>) => Promise<void>;
   deletePilot: (id: string) => Promise<void>;
@@ -16,10 +16,13 @@ export const usePilotsStore = create<PilotsState>((set) => ({
   isLoading: false,
   error: null,
 
-  fetchPilots: async () => {
+  fetchPilots: async (championshipId?: string) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await fetch("/api/pilots");
+      const url = championshipId
+        ? `/api/pilots?championship=${encodeURIComponent(championshipId)}`
+        : "/api/pilots";
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Помилка завантаження пілотів");
       const data: Pilot[] = await res.json();
       set({ pilots: data });

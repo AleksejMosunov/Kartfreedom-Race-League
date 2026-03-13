@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 import { Pilot } from "@/lib/models/Pilot";
 import { Stage } from "@/lib/models/Stage";
-import { BallastConfig } from "@/lib/models/BallastConfig";
-import { PilotBallastAdjustment } from "@/lib/models/PilotBallastAdjustment";
 import { Championship } from "@/lib/models/Championship";
 import { LeagueSettings } from "@/lib/models/LeagueSettings";
 import { Team } from "@/lib/models/Team";
@@ -53,8 +51,6 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
         Championship.syncIndexes(),
         Pilot.syncIndexes(),
         Stage.syncIndexes(),
-        BallastConfig.syncIndexes(),
-        PilotBallastAdjustment.syncIndexes(),
         LeagueSettings.syncIndexes(),
         Team.syncIndexes(),
       ]);

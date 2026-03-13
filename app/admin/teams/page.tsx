@@ -1,136 +1,132 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/Button";
 import { Loader } from "@/app/components/ui/Loader";
 import { Team } from "@/types";
 
+type ChampionshipType = "solo" | "teams";
+
 export default function AdminTeamsPage() {
+  const searchParams = useSearchParams();
+  const championshipId = searchParams.get("championship") ?? undefined;
+
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [name, setName] = useState("");
-  const [number, setNumber] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState("");
-  const [editingNumber, setEditingNumber] = useState("");
   const [error, setError] = useState("");
-
-  const loadTeams = async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/teams", { cache: "no-store" });
-      const body = (await res.json().catch(() => [])) as Team[] | { error?: string; };
-      if (!res.ok) {
-        throw new Error((body as { error?: string; }).error ?? "Не вдалося завантажити команди");
-      }
-      setTeams(Array.isArray(body) ? body : []);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [championshipName, setChampionshipName] = useState("");
+  const [championshipType, setChampionshipType] = useState<ChampionshipType>("teams");
 
   useEffect(() => {
+    const loadChampionship = async () => {
+      if (!championshipId) return;
+      try {
+        const res = await fetch("/api/championships", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          active?: Array<{ _id: string; name: string; championshipType: ChampionshipType; }>;
+        };
+        const selected = (data.active ?? []).find((item) => item._id === championshipId);
+        if (selected) {
+          setChampionshipName(selected.name);
+          setChampionshipType(selected.championshipType);
+        }
+      } catch {
+        setChampionshipName("");
+      }
+    };
+
+    const loadTeams = async () => {
+      if (!championshipId) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError("");
+      try {
+        const res = await fetch(`/api/teams?championship=${encodeURIComponent(championshipId)}`, {
+          cache: "no-store",
+        });
+        const body = (await res.json().catch(() => [])) as Team[] | { error?: string; };
+        if (!res.ok) {
+          throw new Error((body as { error?: string; }).error ?? "Не вдалося завантажити команди");
+        }
+        setTeams(Array.isArray(body) ? body : []);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadChampionship();
     void loadTeams();
-  }, []);
+  }, [championshipId]);
 
-  const createTeam = async () => {
+  const handleDelete = async (teamId: string) => {
+    if (!championshipId) return;
+    setDeletingId(teamId);
     setError("");
-    setIsSubmitting(true);
+
     try {
-      const res = await fetch("/api/teams", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          number: Number(number) || undefined,
-        }),
-      });
+      const res = await fetch(
+        `/api/teams/${teamId}?championship=${encodeURIComponent(championshipId)}`,
+        { method: "DELETE" },
+      );
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
-      if (!res.ok) throw new Error(body.error ?? "Не вдалося створити команду");
-      setName("");
-      setNumber("");
-      await loadTeams();
+      if (!res.ok) {
+        throw new Error(body.error ?? "Не вдалося видалити команду");
+      }
+      setTeams((prev) => prev.filter((team) => team._id !== teamId));
+      if (expandedId === teamId) {
+        setExpandedId(null);
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setIsSubmitting(false);
+      setDeletingId(null);
     }
   };
 
-  const deleteTeam = async (id: string) => {
-    setError("");
-    try {
-      const res = await fetch(`/api/teams/${id}`, { method: "DELETE" });
-      const body = (await res.json().catch(() => ({}))) as { error?: string; };
-      if (!res.ok) throw new Error(body.error ?? "Не вдалося видалити команду");
-      setTeams((prev) => prev.filter((team) => team._id !== id));
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
+  if (!championshipId) {
+    return (
+      <main className="max-w-3xl mx-auto px-4 py-8">
+        <p className="text-zinc-400">Спочатку оберіть чемпіонат у розділі керування учасниками.</p>
+        <Link href="/admin/participants" className="text-red-400 underline mt-4 block">
+          ← До вибору чемпіонату
+        </Link>
+      </main>
+    );
+  }
 
-  const saveEdit = async () => {
-    if (!editingId) return;
-    setError("");
-    setIsSubmitting(true);
-    try {
-      const res = await fetch(`/api/teams/${editingId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editingName.trim(),
-          number: Number(editingNumber),
-        }),
-      });
-      const body = (await res.json().catch(() => ({}))) as { error?: string; };
-      if (!res.ok) throw new Error(body.error ?? "Не вдалося оновити команду");
-      setEditingId(null);
-      setEditingName("");
-      setEditingNumber("");
-      await loadTeams();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  if (championshipType === "solo") {
+    return (
+      <main className="max-w-3xl mx-auto px-4 py-8">
+        <p className="text-zinc-400">Для solo-чемпіонату використовуйте керування пілотами.</p>
+        <Link
+          href={`/admin/pilots?championship=${encodeURIComponent(championshipId)}`}
+          className="text-red-400 underline mt-4 block"
+        >
+          ← До пілотів
+        </Link>
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
-      <Link href="/admin" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
-        ← Адмін-панель
+      <Link href="/admin/participants" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
+        ← Керування учасниками
       </Link>
 
-      <h1 className="text-3xl font-black text-white mb-8">Керування командами</h1>
-
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
-        <h2 className="text-lg font-bold text-white mb-4">Додати команду</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Назва команди"
-            className="sm:col-span-2 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-          />
-          <input
-            type="number"
-            min={1}
-            max={999}
-            value={number}
-            onChange={(e) => setNumber(e.target.value)}
-            placeholder="№"
-            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-          />
-        </div>
-        <Button type="button" className="mt-3" onClick={createTeam} disabled={isSubmitting}>
-          {isSubmitting ? "Додавання..." : "Додати"}
-        </Button>
+      <div className="mb-8">
+        <h1 className="text-3xl font-black text-white">Команди</h1>
+        <p className="text-zinc-400 mt-1">Чемпіонат: {championshipName || "обраний чемпіонат"}</p>
       </div>
 
       {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
@@ -138,67 +134,44 @@ export default function AdminTeamsPage() {
 
       {!isLoading && (
         <div className="space-y-2">
-          {teams.map((team) => (
-            <div key={team._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-              {editingId === team._id ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <input
-                    type="text"
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    className="sm:col-span-2 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-                  />
-                  <input
-                    type="number"
-                    min={1}
-                    max={999}
-                    value={editingNumber}
-                    onChange={(e) => setEditingNumber(e.target.value)}
-                    className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-                  />
-                  <div className="sm:col-span-3 flex gap-2 mt-1">
-                    <Button size="sm" onClick={saveEdit} disabled={isSubmitting}>
-                      Зберегти
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setEditingId(null);
-                        setEditingName("");
-                        setEditingNumber("");
-                      }}
-                    >
-                      Скасувати
-                    </Button>
-                  </div>
-                </div>
-              ) : (
+          {teams.map((team) => {
+            const isExpanded = expandedId === team._id;
+
+            return (
+              <div key={team._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <div>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedId(isExpanded ? null : team._id)}
+                    className="min-w-0 flex-1 text-left"
+                  >
                     <span className="text-zinc-500 text-sm font-mono mr-2">#{team.number}</span>
                     <span className="text-white font-semibold">{team.name}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => {
-                        setEditingId(team._id);
-                        setEditingName(team.name);
-                        setEditingNumber(String(team.number));
-                      }}
-                    >
-                      Редагувати
-                    </Button>
-                    <Button size="sm" variant="danger" onClick={() => void deleteTeam(team._id)}>
-                      Видалити
-                    </Button>
-                  </div>
+                    <p className="text-zinc-400 text-xs mt-1">
+                      {isExpanded ? "Сховати інформацію" : "Переглянути інформацію"}
+                    </p>
+                  </button>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={() => void handleDelete(team._id)}
+                    disabled={deletingId === team._id}
+                  >
+                    {deletingId === team._id ? "Видалення..." : "Видалити"}
+                  </Button>
                 </div>
-              )}
-            </div>
-          ))}
+
+                {isExpanded && (
+                  <div className="mt-4 border-t border-zinc-800 pt-4 text-sm text-zinc-300 space-y-1">
+                    <p>Назва: {team.name}</p>
+                    <p>Номер: #{team.number}</p>
+                    <p>Телефон: {team.phone || "не вказано"}</p>
+                    <p>ID: {team._id}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           {teams.length === 0 && <p className="text-zinc-500">Команди ще не додані.</p>}
         </div>

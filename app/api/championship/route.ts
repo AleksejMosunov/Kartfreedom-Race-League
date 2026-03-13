@@ -1,15 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Pilot } from "@/lib/models/Pilot";
 import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
+import { Championship } from "@/lib/models/Championship";
 import { calculateChampionshipStandings } from "@/lib/utils/championship";
 import { Pilot as IPilotType, Stage as IStageType } from "@/types";
 import { getCurrentChampionship } from "@/lib/championship/current";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   await connectToDatabase();
-  const current = await getCurrentChampionship();
+
+  const championshipId = req.nextUrl.searchParams.get("championship");
+  const current = championshipId
+    ? await Championship.findById(championshipId).lean()
+    : await getCurrentChampionship();
+
   if (!current) {
     return NextResponse.json([]);
   }

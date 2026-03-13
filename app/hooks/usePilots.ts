@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { usePilotsStore } from "@/store/pilotsStore";
 
-export function usePilots() {
+export function usePilots(championshipId?: string) {
   const {
     pilots,
     isLoading,
@@ -13,8 +13,9 @@ export function usePilots() {
   } = usePilotsStore();
 
   useEffect(() => {
-    fetchPilots();
-  }, [fetchPilots]);
+    fetchPilots(championshipId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [championshipId]);
 
   return {
     pilots,
@@ -23,6 +24,6 @@ export function usePilots() {
     addPilot,
     updatePilot,
     deletePilot,
-    refresh: fetchPilots,
+    refresh: () => fetchPilots(championshipId),
   };
 }

@@ -1,17 +1,18 @@
 import { connectToDatabase } from "@/lib/mongodb";
-import { getCurrentChampionship } from "@/lib/championship/current";
+import { Championship } from "@/lib/models/Championship";
 import { LeagueSettings } from "@/lib/models/LeagueSettings";
 
 export async function getPublicChampionshipStatus() {
   await connectToDatabase();
 
-  const [current, settings] = await Promise.all([
-    getCurrentChampionship(),
+  const [active, settings] = await Promise.all([
+    Championship.find({ status: "active" }).sort({ startedAt: -1 }).lean(),
     LeagueSettings.findOne({ key: "global" }).lean(),
   ]);
 
   return {
-    current,
+    active,
+    current: active[0] ?? null,
     preseasonNews: settings?.preseasonNews ?? "",
   };
 }

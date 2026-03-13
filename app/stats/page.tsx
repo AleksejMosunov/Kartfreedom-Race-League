@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader } from "@/app/components/ui/Loader";
 
@@ -20,7 +20,6 @@ type StatsPayload = {
   championshipType: "solo" | "teams";
   participants: StatsParticipant[];
   stageLabels: Array<{ id: string; number: number; name: string; }>;
-  headToHead: Array<{ aId: string; bId: string; aName: string; bName: string; aWins: number; bWins: number; ties: number; }>;
 };
 
 function heatClass(status: "fin" | "dnf" | "dns" | "none", points: number) {
@@ -35,24 +34,52 @@ function heatClass(status: "fin" | "dnf" | "dns" | "none", points: number) {
 
 export default function StatsPage() {
   const [data, setData] = useState<StatsPayload | null>(null);
+  const [activeChampionships, setActiveChampionships] = useState<
+    Array<{ _id: string; name: string; championshipType: "solo" | "teams"; }>
+  >([]);
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [aId, setAId] = useState("");
-  const [bId, setBId] = useState("");
 
   useEffect(() => {
+    const loadChampionships = async () => {
+      try {
+        const res = await fetch("/api/championships", { cache: "no-store" });
+        if (!res.ok) return;
+        const payload = (await res.json()) as {
+          active?: Array<{ _id: string; name: string; championshipType: "solo" | "teams"; }>;
+        };
+        const active = payload.active ?? [];
+        setActiveChampionships(active);
+        if (active.length > 0) {
+          setSelectedChampionshipId((prev) => prev || active[0]._id);
+        }
+      } catch {
+        setActiveChampionships([]);
+      }
+    };
+
+    void loadChampionships();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedChampionshipId) {
+      setLoading(false);
+      setData(null);
+      return;
+    }
+
     const load = async () => {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch("/api/stats", { cache: "no-store" });
+        const res = await fetch(
+          `/api/stats?championship=${encodeURIComponent(selectedChampionshipId)}`,
+          { cache: "no-store" },
+        );
         if (!res.ok) throw new Error("Не вдалося завантажити статистику");
         const payload = (await res.json()) as StatsPayload;
         setData(payload);
-        if (payload.participants.length >= 2) {
-          setAId(payload.participants[0].participantId);
-          setBId(payload.participants[1].participantId);
-        }
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -61,16 +88,7 @@ export default function StatsPage() {
     };
 
     void load();
-  }, []);
-
-  const selectedHeadToHead = useMemo(() => {
-    if (!data || !aId || !bId || aId === bId) return null;
-    return (
-      data.headToHead.find((row) => row.aId === aId && row.bId === bId) ??
-      data.headToHead.find((row) => row.aId === bId && row.bId === aId) ??
-      null
-    );
-  }, [data, aId, bId]);
+  }, [selectedChampionshipId]);
 
   if (loading) {
     return (
@@ -81,6 +99,15 @@ export default function StatsPage() {
   }
 
   if (error || !data) {
+    if (!selectedChampionshipId && !error) {
+      return (
+        <main className="max-w-3xl mx-auto px-4 py-12 text-center">
+          <p className="text-zinc-400">Немає активного чемпіонату для статистики.</p>
+          <Link href="/" className="text-zinc-300 underline mt-4 block">← На головну</Link>
+        </main>
+      );
+    }
+
     return (
       <main className="max-w-3xl mx-auto px-4 py-12 text-center">
         <p className="text-red-400">{error || "Статистика недоступна"}</p>
@@ -94,49 +121,27 @@ export default function StatsPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-black text-white">Поглиблена статистика</h1>
         <p className="text-zinc-400 mt-1">
-          Прогрес, стабільність, fastest lap, heatmap результатів і head-to-head.
+          Прогрес, стабільність, fastest lap та heatmap результатів.
         </p>
       </div>
 
-      <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 mb-6">
-        <h2 className="text-xl font-bold text-white mb-4">Head-to-head</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-          <select
-            value={aId}
-            onChange={(e) => setAId(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white"
-          >
-            {data.participants.map((p) => (
-              <option key={p.participantId} value={p.participantId}>
-                #{p.participantNumber} {p.participantName}
-              </option>
-            ))}
-          </select>
-          <select
-            value={bId}
-            onChange={(e) => setBId(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white"
-          >
-            {data.participants.map((p) => (
-              <option key={p.participantId} value={p.participantId}>
-                #{p.participantNumber} {p.participantName}
-              </option>
-            ))}
-          </select>
+      {activeChampionships.length > 1 && (
+        <div className="mb-6 flex gap-2 flex-wrap">
+          {activeChampionships.map((item) => (
+            <button
+              key={item._id}
+              type="button"
+              onClick={() => setSelectedChampionshipId(item._id)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${selectedChampionshipId === item._id
+                ? "bg-red-600 border-red-600 text-white"
+                : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+                }`}
+            >
+              {item.name}
+            </button>
+          ))}
         </div>
-
-        {selectedHeadToHead ? (
-          <div className="rounded-lg border border-zinc-800 px-4 py-3 text-zinc-200 text-sm">
-            <span className="font-semibold">{selectedHeadToHead.aName}</span> {selectedHeadToHead.aWins}
-            {" : "}
-            {selectedHeadToHead.bWins} <span className="font-semibold">{selectedHeadToHead.bName}</span>
-            {" · Нічиї: "}
-            {selectedHeadToHead.ties}
-          </div>
-        ) : (
-          <p className="text-zinc-500 text-sm">Оберіть двох різних учасників.</p>
-        )}
-      </section>
+      )}
 
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {data.participants.map((participant) => (

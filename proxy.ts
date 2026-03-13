@@ -20,9 +20,9 @@ function isProtectedRequest(request: NextRequest) {
 
   return (
     pathname.startsWith("/api/pilots") ||
+    pathname.startsWith("/api/teams") ||
     pathname.startsWith("/api/stages") ||
     pathname.startsWith("/api/regulations") ||
-    pathname.startsWith("/api/ballast") ||
     pathname.startsWith("/api/championships")
   );
 }
@@ -76,9 +76,9 @@ export const config = {
   matcher: [
     "/admin/:path*",
     "/api/pilots/:path*",
+    "/api/teams/:path*",
     "/api/stages/:path*",
     "/api/regulations/:path*",
-    "/api/ballast/:path*",
     "/api/championships/:path*",
   ],
 };

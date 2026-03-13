@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Team } from "@/lib/models/Team";
+import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 
 async function getNextTeamNumber(championshipId: string) {
@@ -11,12 +12,19 @@ async function getNextTeamNumber(championshipId: string) {
   return (last?.number ?? 0) + 1;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   await connectToDatabase();
   let current;
   try {
-    current = await requireCurrentChampionship();
+    const championshipId = req.nextUrl.searchParams.get("championship");
+    current = championshipId
+      ? await Championship.findById(championshipId).lean()
+      : await requireCurrentChampionship();
   } catch {
+    return NextResponse.json([]);
+  }
+
+  if (!current) {
     return NextResponse.json([]);
   }
 

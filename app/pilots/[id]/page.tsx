@@ -1,31 +1,28 @@
 "use client";
 
 import { use } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { usePilotsStore } from "@/store/pilotsStore";
 import { useChampionshipStore } from "@/store/championshipStore";
 import { Loader } from "@/app/components/ui/Loader";
 import Link from "next/link";
-import { PilotBallastSummary } from "@/types";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 type ChampionshipType = "solo" | "teams";
 
-function formatKg(kg: number) {
-  return `${kg.toLocaleString("uk-UA", { minimumFractionDigits: Number.isInteger(kg) ? 0 : 1, maximumFractionDigits: 1 })} кг`;
-}
-
 export default function PilotDetailPage({ params }: { params: Promise<{ id: string; }>; }) {
   const { id } = use(params);
+  const searchParams = useSearchParams();
   const { pilots, fetchPilots, isLoading } = usePilotsStore();
   const { standings, fetchStandings } = useChampionshipStore();
-  const [ballast, setBallast] = useState<PilotBallastSummary | null>(null);
   const [championshipType, setChampionshipType] = useState<ChampionshipType>("solo");
+  const championshipId = searchParams.get("championship") ?? undefined;
 
   useEffect(() => {
-    fetchPilots();
-    fetchStandings();
-  }, [fetchPilots, fetchStandings]);
+    fetchPilots(championshipId);
+    fetchStandings(championshipId);
+  }, [championshipId, fetchPilots, fetchStandings]);
 
   useEffect(() => {
     const loadChampionshipType = async () => {
@@ -33,42 +30,20 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
         const res = await fetch("/api/championships", { cache: "no-store" });
         if (!res.ok) return;
         const data = (await res.json()) as {
+          active?: Array<{ _id: string; championshipType?: ChampionshipType; }>;
           current?: { championshipType?: ChampionshipType; } | null;
         };
-        setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");
+        const selected = championshipId
+          ? (data.active ?? []).find((item) => item._id === championshipId)
+          : data.current;
+        setChampionshipType(selected?.championshipType === "teams" ? "teams" : "solo");
       } catch {
         setChampionshipType("solo");
       }
     };
 
     void loadChampionshipType();
-  }, []);
-
-  useEffect(() => {
-    if (championshipType === "teams") {
-      setBallast(null);
-      return;
-    }
-
-    const loadBallast = async () => {
-      try {
-        const res = await fetch("/api/ballast");
-        if (!res.ok) return;
-        const data = (await res.json()) as { summaries?: PilotBallastSummary[]; };
-        const summary = (data.summaries ?? []).find((row) => row.pilotId === id) ?? null;
-        setBallast(summary);
-      } catch {
-        setBallast(null);
-      }
-    };
-
-    void loadBallast();
-  }, [championshipType, id]);
-
-  const hasBallastDetails = useMemo(
-    () => Boolean(ballast && (ballast.autoEntries.length > 0 || ballast.manualEntries.length > 0)),
-    [ballast],
-  );
+  }, [championshipId]);
 
   const pilot = pilots.find((p) => p._id === id);
   const standing = standings.find((s) => s.pilot._id === id);
@@ -97,40 +72,16 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
         </div>
         <div>
           <h1 className="text-2xl font-black text-white">{pilotFullName}</h1>
+          {pilot.phone && <p className="text-zinc-400 mt-1">Телефон: {pilot.phone}</p>}
         </div>
         {standing && (
           <div className="ml-auto text-right">
             <p className="text-4xl font-black text-white">{standing.totalPoints}</p>
             <p className="text-zinc-500 text-sm">очок</p>
             <p className="text-zinc-400 text-sm">#{standing.position} у чемпіонаті</p>
-            {!isTeams && <p className="text-zinc-300 text-sm mt-2">Доваження: {formatKg(ballast?.totalKg ?? 0)}</p>}
           </div>
         )}
       </div>
-      {!isTeams && hasBallastDetails && ballast && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-6">
-          <h2 className="text-lg font-bold text-white mb-3">Деталі доваження</h2>
-          <p className="text-sm text-zinc-300 mb-4">
-            Авто: {formatKg(ballast.autoKg)} · Ручне: {formatKg(ballast.manualKg)} · Разом: {formatKg(ballast.totalKg)}
-          </p>
-          <div className="space-y-2">
-            {ballast.autoEntries.map((entry) => (
-              <div key={`${entry.stageId}-${entry.position}`} className="text-sm text-zinc-300 flex justify-between gap-3">
-                <span>
-                  Етап {entry.stageNumber} ({entry.stageName}) · {entry.position}-е місце
-                </span>
-                <span>+{formatKg(entry.kg)}</span>
-              </div>
-            ))}
-            {ballast.manualEntries.map((entry) => (
-              <div key={entry._id} className="text-sm text-zinc-300 flex justify-between gap-3">
-                <span>Ручне: {entry.reason}</span>
-                <span>{entry.kg > 0 ? "+" : ""}{formatKg(entry.kg)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       {standing && standing.standings.length > 0 && (
         <div>
           <h2 className="text-xl font-bold text-white mb-4">Результати за етапами</h2>
@@ -162,6 +113,13 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {!standing && pilot.phone && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-300">
+          <p className="text-sm text-zinc-500 mb-1">Додаткова інформація</p>
+          <p>Телефон: {pilot.phone}</p>
         </div>
       )}
     </main>

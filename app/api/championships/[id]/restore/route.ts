@@ -25,16 +25,6 @@ export async function POST(_req: NextRequest, { params }: Params) {
     );
   }
 
-  const existingActive = await Championship.findOne({
-    status: "active",
-  }).lean();
-  if (existingActive) {
-    return NextResponse.json(
-      { error: "Спочатку завершіть поточний активний чемпіонат" },
-      { status: 409 },
-    );
-  }
-
   const restored = await Championship.findByIdAndUpdate(
     id,
     {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
+import { Championship } from "@/lib/models/Championship";
 import { Pilot } from "@/lib/models/Pilot";
 import { Team } from "@/lib/models/Team";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
@@ -18,9 +19,18 @@ function isValidUkrPhone(phone: string): boolean {
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
+  const body = await req.json().catch(() => ({}));
+
   let current;
   try {
-    current = await requireCurrentChampionship();
+    const championshipId =
+      typeof body.championshipId === "string" ? body.championshipId : "";
+    current = championshipId
+      ? await Championship.findOne({
+          _id: championshipId,
+          status: "active",
+        }).lean()
+      : await requireCurrentChampionship();
   } catch {
     return NextResponse.json(
       { error: "Немає активного чемпіонату. Зверніться до адміністратора." },
@@ -28,7 +38,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const body = await req.json().catch(() => ({}));
+  if (!current) {
+    return NextResponse.json(
+      { error: "Обраний чемпіонат недоступний для реєстрації" },
+      { status: 409 },
+    );
+  }
 
   if (current.championshipType === "teams") {
     const teamName =

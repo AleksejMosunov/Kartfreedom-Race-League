@@ -6,28 +6,31 @@ import { Button } from "@/app/components/ui/Button";
 import { Championship, RegulationSection, RegulationsContent } from "@/types";
 
 interface ChampionshipsResponse {
-  current: Championship | null;
+  active?: Championship[];
+  current?: Championship | null;
   archived: Championship[];
   preseasonNews?: string;
 }
 
 const emptySection: RegulationSection = { title: "", content: "" };
 
+function emptyRegulations(): RegulationsContent {
+  return { title: "", intro: "", sections: [emptySection] };
+}
+
 export default function AdminChampionshipsPage() {
-  const [current, setCurrent] = useState<Championship | null>(null);
+  const [active, setActive] = useState<Championship[]>([]);
   const [archived, setArchived] = useState<Championship[]>([]);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<"solo" | "teams">("solo");
   const [newFastestLapBonusEnabled, setNewFastestLapBonusEnabled] = useState(false);
-  const [currentFastestLapBonusEnabled, setCurrentFastestLapBonusEnabled] = useState(false);
+  const [activeFastestLap, setActiveFastestLap] = useState<Record<string, boolean>>({});
+  const [activeRegulations, setActiveRegulations] = useState<Record<string, RegulationsContent>>({});
+  const [expandedRegChampId, setExpandedRegChampId] = useState<string | null>(null);
   const [preseasonNews, setPreseasonNews] = useState("");
-  const [regulations, setRegulations] = useState<RegulationsContent>({
-    title: "",
-    intro: "",
-    sections: [emptySection],
-  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [restorePreview, setRestorePreview] = useState<{
@@ -47,21 +50,32 @@ export default function AdminChampionshipsPage() {
       const res = await fetch("/api/championships");
       if (!res.ok) throw new Error("Не вдалося завантажити чемпіонати");
       const payload = (await res.json()) as ChampionshipsResponse;
-      setCurrent(payload.current);
-      setCurrentFastestLapBonusEnabled(Boolean(payload.current?.fastestLapBonusEnabled));
+      const activeList: Championship[] = payload.active ?? (payload.current ? [payload.current] : []);
+      setActive(activeList);
       setArchived(payload.archived ?? []);
       setPreseasonNews(payload.preseasonNews ?? "");
-      if (payload.current?.regulations) {
-        setRegulations({
-          title: payload.current.regulations.title,
-          intro: payload.current.regulations.intro,
-          sections:
-            payload.current.regulations.sections.length > 0
-              ? payload.current.regulations.sections
-              : [emptySection],
-        });
-      } else {
-        setRegulations({ title: "", intro: "", sections: [emptySection] });
+
+      const fastestLapMap: Record<string, boolean> = {};
+      const regulationsMap: Record<string, RegulationsContent> = {};
+      for (const c of activeList) {
+        fastestLapMap[c._id] = Boolean(c.fastestLapBonusEnabled);
+        if (c.regulations) {
+          regulationsMap[c._id] = {
+            title: c.regulations.title,
+            intro: c.regulations.intro,
+            sections: c.regulations.sections.length > 0 ? c.regulations.sections : [emptySection],
+          };
+        } else {
+          regulationsMap[c._id] = emptyRegulations();
+        }
+      }
+      setActiveFastestLap(fastestLapMap);
+      setActiveRegulations(regulationsMap);
+      if (activeList.length > 0 && !expandedRegChampId) {
+        setExpandedRegChampId(activeList[0]._id);
+      }
+      if (activeList.length === 0) {
+        setExpandedRegChampId(null);
       }
     } catch (err) {
       setError((err as Error).message);
@@ -120,17 +134,16 @@ export default function AdminChampionshipsPage() {
     }
   };
 
-  const saveCurrentChampionshipSettings = async () => {
-    if (!current) return;
+  const saveChampionshipSettings = async (id: string) => {
     setError("");
     setSuccess("");
-    setIsSubmitting(true);
+    setSubmittingId(id);
     try {
-      const res = await fetch(`/api/championships/${current._id}`, {
+      const res = await fetch(`/api/championships/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fastestLapBonusEnabled: currentFastestLapBonusEnabled,
+          fastestLapBonusEnabled: activeFastestLap[id] ?? false,
         }),
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
@@ -140,18 +153,16 @@ export default function AdminChampionshipsPage() {
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setIsSubmitting(false);
+      setSubmittingId(null);
     }
   };
 
-  const finishCurrentChampionship = async () => {
-    if (!current) return;
-    const finishedChampionshipId = current._id;
+  const finishChampionship = async (id: string) => {
     setError("");
     setSuccess("");
-    setIsSubmitting(true);
+    setSubmittingId(id);
     try {
-      const res = await fetch(`/api/championships/${current._id}/finish`, {
+      const res = await fetch(`/api/championships/${id}/finish`, {
         method: "POST",
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
@@ -163,7 +174,7 @@ export default function AdminChampionshipsPage() {
           const tgRes = await fetch("/api/telegram/championship/finish", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ championshipId: finishedChampionshipId }),
+            body: JSON.stringify({ championshipId: id }),
           });
           const tgBody = (await tgRes.json().catch(() => ({}))) as { error?: string; };
           if (!tgRes.ok) {
@@ -179,7 +190,7 @@ export default function AdminChampionshipsPage() {
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setIsSubmitting(false);
+      setSubmittingId(null);
     }
   };
 
@@ -251,37 +262,56 @@ export default function AdminChampionshipsPage() {
   };
 
   const updateRegulationSection = (
+    championshipId: string,
     index: number,
     field: keyof RegulationSection,
     value: string,
   ) => {
-    setRegulations((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section, i) =>
-        i === index ? { ...section, [field]: value } : section,
-      ),
-    }));
+    setActiveRegulations((prev) => {
+      const current = prev[championshipId] ?? emptyRegulations();
+      return {
+        ...prev,
+        [championshipId]: {
+          ...current,
+          sections: current.sections.map((section, i) =>
+            i === index ? { ...section, [field]: value } : section,
+          ),
+        },
+      };
+    });
   };
 
-  const addRegulationSection = () => {
-    setRegulations((prev) => ({
-      ...prev,
-      sections: [...prev.sections, { ...emptySection }],
-    }));
+  const addRegulationSection = (championshipId: string) => {
+    setActiveRegulations((prev) => {
+      const current = prev[championshipId] ?? emptyRegulations();
+      return {
+        ...prev,
+        [championshipId]: {
+          ...current,
+          sections: [...current.sections, { ...emptySection }],
+        },
+      };
+    });
   };
 
-  const removeRegulationSection = (index: number) => {
-    setRegulations((prev) => ({
-      ...prev,
-      sections:
-        prev.sections.length === 1
-          ? [{ ...emptySection }]
-          : prev.sections.filter((_, i) => i !== index),
-    }));
+  const removeRegulationSection = (championshipId: string, index: number) => {
+    setActiveRegulations((prev) => {
+      const current = prev[championshipId] ?? emptyRegulations();
+      return {
+        ...prev,
+        [championshipId]: {
+          ...current,
+          sections:
+            current.sections.length === 1
+              ? [{ ...emptySection }]
+              : current.sections.filter((_, i) => i !== index),
+        },
+      };
+    });
   };
 
-  const saveCurrentRegulations = async () => {
-    if (!current) return;
+  const saveChampionshipRegulations = async (id: string) => {
+    const regulations = activeRegulations[id] ?? emptyRegulations();
 
     const cleanedSections = regulations.sections
       .map((section) => ({
@@ -297,9 +327,9 @@ export default function AdminChampionshipsPage() {
 
     setError("");
     setSuccess("");
-    setIsSubmitting(true);
+    setSubmittingId(id);
     try {
-      const res = await fetch("/api/championships/current/regulations", {
+      const res = await fetch(`/api/championships/${id}/regulations`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -312,12 +342,12 @@ export default function AdminChampionshipsPage() {
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося зберегти регламент");
 
-      setSuccess("Регламент поточного чемпіонату оновлено.");
+      setSuccess("Регламент чемпіонату оновлено.");
       await loadData();
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setIsSubmitting(false);
+      setSubmittingId(null);
     }
   };
 
@@ -335,7 +365,7 @@ export default function AdminChampionshipsPage() {
             <p className="text-xs uppercase tracking-[0.2em] text-zinc-400 mb-2">Підтвердження відновлення</p>
             <h2 className="text-xl font-bold text-white mb-2">{restorePreview.name}</h2>
             <p className="text-zinc-300 text-sm mb-4">
-              Після відновлення цей чемпіонат стане активним, а поточний активний (якщо є) повинен бути завершений.
+              Після відновлення цей чемпіонат також стане активним.
             </p>
             <div className="rounded-lg border border-zinc-800 p-3 text-sm text-zinc-300 space-y-1">
               <p>Учасників: {restorePreview.participantsCount}</p>
@@ -352,7 +382,7 @@ export default function AdminChampionshipsPage() {
                   void restoreArchivedChampionship(restorePreview.id);
                   setRestorePreview(null);
                 }}
-                disabled={Boolean(current) || isSubmitting}
+                disabled={isSubmitting}
               >
                 Підтвердити відновлення
               </Button>
@@ -366,48 +396,159 @@ export default function AdminChampionshipsPage() {
       ) : (
         <>
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6 space-y-4">
-            <h2 className="text-lg font-bold text-white">Поточний чемпіонат</h2>
-            {current ? (
-              <>
-                <p className="text-zinc-200 font-semibold">{current.name}</p>
-                <p className="text-zinc-400 text-sm">
-                  Формат: {current.championshipType === "teams" ? "Endurance" : "Sprint"}
-                </p>
-                <label className="flex items-center gap-2 text-sm text-zinc-300">
-                  <input
-                    type="checkbox"
-                    checked={currentFastestLapBonusEnabled}
-                    onChange={(e) => setCurrentFastestLapBonusEnabled(e.target.checked)}
-                    className="accent-red-500"
-                  />
-                  Best lap бонус (+1 очко)
-                </label>
-                <p className="text-zinc-500 text-sm">
-                  Старт: {new Date(current.startedAt).toLocaleDateString("uk-UA")}
-                </p>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={saveCurrentChampionshipSettings}
-                  disabled={isSubmitting}
-                >
-                  Зберегти налаштування
-                </Button>
-                <label className="flex items-center gap-2 text-sm text-zinc-300">
-                  <input
-                    type="checkbox"
-                    checked={notifyFinishInTelegram}
-                    onChange={(e) => setNotifyFinishInTelegram(e.target.checked)}
-                    className="accent-red-500"
-                  />
-                  Надіслати новину в Telegram при завершенні
-                </label>
-                <Button type="button" variant="danger" onClick={finishCurrentChampionship} disabled={isSubmitting}>
-                  {isSubmitting ? "Завершення..." : "Завершити чемпіонат"}
-                </Button>
-              </>
+            <h2 className="text-lg font-bold text-white">Активні чемпіонати ({active.length})</h2>
+            {active.length === 0 ? (
+              <p className="text-zinc-400">Активних чемпіонатів немає.</p>
             ) : (
-              <p className="text-zinc-400">Активного чемпіонату немає.</p>
+              <div className="space-y-4">
+                {active.map((item) => {
+                  const regulations = activeRegulations[item._id] ?? emptyRegulations();
+                  const isExpanded = expandedRegChampId === item._id;
+                  return (
+                    <div key={item._id} className="border border-zinc-800 rounded-lg p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <div>
+                          <p className="text-zinc-200 font-semibold">{item.name}</p>
+                          <p className="text-zinc-400 text-sm">
+                            Формат: {item.championshipType === "teams" ? "Endurance" : "Sprint"}
+                          </p>
+                          <p className="text-zinc-500 text-sm">
+                            Старт: {new Date(item.startedAt).toLocaleDateString("uk-UA")}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/admin/championships/${item._id}`}>
+                            <Button type="button" variant="secondary" size="sm">Деталі</Button>
+                          </Link>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            size="sm"
+                            onClick={() => void finishChampionship(item._id)}
+                            disabled={Boolean(submittingId)}
+                          >
+                            {submittingId === item._id ? "Завершення..." : "Завершити"}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <label className="flex items-center gap-2 text-sm text-zinc-300">
+                        <input
+                          type="checkbox"
+                          checked={activeFastestLap[item._id] ?? false}
+                          onChange={(e) =>
+                            setActiveFastestLap((prev) => ({ ...prev, [item._id]: e.target.checked }))
+                          }
+                          className="accent-red-500"
+                        />
+                        Best lap бонус (+1 очко)
+                      </label>
+
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => void saveChampionshipSettings(item._id)}
+                          disabled={Boolean(submittingId)}
+                        >
+                          {submittingId === item._id ? "Збереження..." : "Зберегти налаштування"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() =>
+                            setExpandedRegChampId((prev) => (prev === item._id ? null : item._id))
+                          }
+                        >
+                          {isExpanded ? "Сховати регламент" : "Редагувати регламент"}
+                        </Button>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="mt-2 border border-zinc-800 rounded-lg p-3 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-bold text-white">Регламент</h3>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => addRegulationSection(item._id)}
+                            >
+                              Додати пункт
+                            </Button>
+                          </div>
+
+                          <input
+                            type="text"
+                            value={regulations.title}
+                            onChange={(e) =>
+                              setActiveRegulations((prev) => ({
+                                ...prev,
+                                [item._id]: { ...regulations, title: e.target.value },
+                              }))
+                            }
+                            placeholder="Заголовок"
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                          />
+
+                          <textarea
+                            value={regulations.intro}
+                            onChange={(e) =>
+                              setActiveRegulations((prev) => ({
+                                ...prev,
+                                [item._id]: { ...regulations, intro: e.target.value },
+                              }))
+                            }
+                            placeholder="Вступ"
+                            className="w-full min-h-20 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                          />
+
+                          <div className="space-y-2">
+                            {regulations.sections.map((section, index) => (
+                              <div key={`reg-${item._id}-${index}`} className="border border-zinc-800 rounded-lg p-3 space-y-2">
+                                <input
+                                  type="text"
+                                  value={section.title}
+                                  onChange={(e) => updateRegulationSection(item._id, index, "title", e.target.value)}
+                                  placeholder={`Заголовок пункту ${index + 1}`}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                                />
+                                <textarea
+                                  value={section.content}
+                                  onChange={(e) => updateRegulationSection(item._id, index, "content", e.target.value)}
+                                  placeholder="Текст пункту"
+                                  className="w-full min-h-24 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                                />
+                                <div className="flex justify-end">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="danger"
+                                    onClick={() => removeRegulationSection(item._id, index)}
+                                  >
+                                    Видалити пункт
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => void saveChampionshipRegulations(item._id)}
+                            disabled={Boolean(submittingId)}
+                          >
+                            {submittingId === item._id ? "Збереження..." : "Зберегти регламент"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
 
@@ -449,14 +590,12 @@ export default function AdminChampionshipsPage() {
               />
               Надіслати новину в Telegram про старт
             </label>
-            <Button type="button" onClick={startNewChampionship} disabled={Boolean(current) || isSubmitting}>
+            <Button type="button" onClick={startNewChampionship} disabled={isSubmitting}>
               {isSubmitting ? "Створення..." : "Стартувати новий чемпіонат"}
             </Button>
-            {current && (
-              <p className="text-zinc-500 text-sm">
-                Спочатку завершіть поточний чемпіонат, щоб почати новий.
-              </p>
-            )}
+            <p className="text-zinc-500 text-sm">
+              Можна запускати декілька активних чемпіонатів одночасно.
+            </p>
           </div>
 
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6 space-y-4">
@@ -471,61 +610,6 @@ export default function AdminChampionshipsPage() {
               Зберегти новину
             </Button>
           </div>
-
-          {current && (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-white">Регламент поточного чемпіонату</h2>
-                <Button type="button" variant="secondary" size="sm" onClick={addRegulationSection}>
-                  Додати пункт
-                </Button>
-              </div>
-
-              <input
-                type="text"
-                value={regulations.title}
-                onChange={(e) => setRegulations((prev) => ({ ...prev, title: e.target.value }))}
-                placeholder="Заголовок"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-              />
-
-              <textarea
-                value={regulations.intro}
-                onChange={(e) => setRegulations((prev) => ({ ...prev, intro: e.target.value }))}
-                placeholder="Вступ"
-                className="w-full min-h-20 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-              />
-
-              <div className="space-y-3">
-                {regulations.sections.map((section, index) => (
-                  <div key={`reg-${index}`} className="border border-zinc-800 rounded-lg p-3 space-y-2">
-                    <input
-                      type="text"
-                      value={section.title}
-                      onChange={(e) => updateRegulationSection(index, "title", e.target.value)}
-                      placeholder={`Заголовок пункту ${index + 1}`}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-                    />
-                    <textarea
-                      value={section.content}
-                      onChange={(e) => updateRegulationSection(index, "content", e.target.value)}
-                      placeholder="Текст пункту"
-                      className="w-full min-h-24 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-                    />
-                    <div className="flex justify-end">
-                      <Button type="button" size="sm" variant="danger" onClick={() => removeRegulationSection(index)}>
-                        Видалити пункт
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Button type="button" onClick={saveCurrentRegulations} disabled={isSubmitting}>
-                Зберегти регламент
-              </Button>
-            </div>
-          )}
 
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
             <h2 className="text-lg font-bold text-white mb-4">Архів завершених</h2>
@@ -551,7 +635,7 @@ export default function AdminChampionshipsPage() {
                         type="button"
                         size="sm"
                         onClick={() => void openRestorePreview(item._id)}
-                        disabled={Boolean(current) || isSubmitting}
+                        disabled={isSubmitting}
                       >
                         {previewLoading ? "Завантаження..." : "Відновити"}
                       </Button>

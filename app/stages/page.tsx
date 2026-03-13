@@ -1,12 +1,38 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useStages } from "@/app/hooks/useStages";
 import { StageCard } from "@/app/components/stages/StageCard";
 import { Loader } from "@/app/components/ui/Loader";
 import { NoActiveClientGate } from "@/app/components/championship/NoActiveClientGate";
 
 export default function StagesPage() {
-  const { stages, isLoading, error } = useStages();
+  const [activeChampionships, setActiveChampionships] = useState<
+    Array<{ _id: string; name: string; championshipType: "solo" | "teams"; }>
+  >([]);
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState("");
+  const { stages, isLoading, error } = useStages(selectedChampionshipId || undefined);
+
+  useEffect(() => {
+    const loadChampionships = async () => {
+      try {
+        const res = await fetch("/api/championships", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          active?: Array<{ _id: string; name: string; championshipType: "solo" | "teams"; }>;
+        };
+        const active = data.active ?? [];
+        setActiveChampionships(active);
+        if (active.length > 0) {
+          setSelectedChampionshipId((prev) => prev || active[0]._id);
+        }
+      } catch {
+        setActiveChampionships([]);
+      }
+    };
+
+    void loadChampionships();
+  }, []);
 
   const upcomingStages = stages
     .filter((stage) => !stage.isCompleted)
@@ -23,6 +49,25 @@ export default function StagesPage() {
           <h1 className="text-3xl font-black text-white">Етапи чемпіонату</h1>
           <p className="text-zinc-400 mt-1">Розклад і результати всіх етапів</p>
         </div>
+
+        {activeChampionships.length > 1 && (
+          <div className="mb-6 flex gap-2 flex-wrap">
+            {activeChampionships.map((item) => (
+              <button
+                key={item._id}
+                type="button"
+                onClick={() => setSelectedChampionshipId(item._id)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${selectedChampionshipId === item._id
+                    ? "bg-red-600 border-red-600 text-white"
+                    : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+                  }`}
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
+        )}
+
         {isLoading && <Loader />}
         {error && <p className="text-red-400 text-center py-8">{error}</p>}
         {!isLoading && !error && !stages.length && (

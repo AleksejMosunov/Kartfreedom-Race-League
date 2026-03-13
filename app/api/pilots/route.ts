@@ -2,15 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Pilot } from "@/lib/models/Pilot";
 import { Team } from "@/lib/models/Team";
+import { Championship } from "@/lib/models/Championship";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   await connectToDatabase();
   let current;
   try {
-    current = await requireCurrentChampionship();
+    const championshipId = req.nextUrl.searchParams.get("championship");
+    current = championshipId
+      ? await Championship.findById(championshipId).lean()
+      : await requireCurrentChampionship();
   } catch {
+    return NextResponse.json([]);
+  }
+
+  if (!current) {
     return NextResponse.json([]);
   }
 
@@ -23,6 +31,7 @@ export async function GET() {
       name: team.name,
       surname: "",
       number: team.number,
+      phone: team.phone,
       createdAt: team.createdAt,
       updatedAt: team.updatedAt,
     }));

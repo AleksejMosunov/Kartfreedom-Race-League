@@ -2,12 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
+import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
-    const current = await requireCurrentChampionship();
+    const championshipId = req.nextUrl.searchParams.get("championship");
+    const current = championshipId
+      ? await Championship.findById(championshipId).lean()
+      : await requireCurrentChampionship();
+
+    if (!current) {
+      return NextResponse.json([]);
+    }
+
     const stages =
       current.championshipType === "teams"
         ? await Stage.find()
@@ -68,16 +77,26 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
+  const body = await req.json();
   let current;
   try {
-    current = await requireCurrentChampionship();
+    current = body.championshipId
+      ? await Championship.findById(body.championshipId).lean()
+      : await requireCurrentChampionship();
   } catch {
     return NextResponse.json(
       { error: "Немає активного чемпіонату" },
       { status: 409 },
     );
   }
-  const body = await req.json();
+
+  if (!current) {
+    return NextResponse.json(
+      { error: "Чемпіонат не знайдено" },
+      { status: 404 },
+    );
+  }
+
   try {
     const stage = await Stage.create({ ...body, championshipId: current._id });
     return NextResponse.json(stage, { status: 201 });

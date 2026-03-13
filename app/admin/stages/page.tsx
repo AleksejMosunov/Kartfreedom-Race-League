@@ -23,8 +23,19 @@ interface ResultInputRow {
 }
 
 export default function AdminStagesPage() {
-  const { stages, isLoading, error, deleteStage, updateStage, refresh } = useStages();
-  const { pilots } = usePilots();
+  const [activeChampionships, setActiveChampionships] = useState<
+    Array<{
+      _id: string;
+      name: string;
+      championshipType: "solo" | "teams";
+      fastestLapBonusEnabled?: boolean;
+    }>
+  >([]);
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState("");
+  const { stages, isLoading, error, deleteStage, updateStage, refresh } = useStages(
+    selectedChampionshipId || undefined,
+  );
+  const { pilots } = usePilots(selectedChampionshipId || undefined);
   const { saveStageResults } = useStagesStore();
 
   const [stageName, setStageName] = useState("");
@@ -46,9 +57,18 @@ export default function AdminStagesPage() {
         const res = await fetch("/api/championships", { cache: "no-store" });
         if (!res.ok) return;
         const data = (await res.json()) as {
-          current?: { fastestLapBonusEnabled?: boolean; } | null;
+          active?: Array<{
+            _id: string;
+            name: string;
+            championshipType: "solo" | "teams";
+            fastestLapBonusEnabled?: boolean;
+          }>;
         };
-        setFastestLapBonusEnabled(Boolean(data.current?.fastestLapBonusEnabled));
+        const active = data.active ?? [];
+        setActiveChampionships(active);
+        if (active.length > 0) {
+          setSelectedChampionshipId((prev) => prev || active[0]._id);
+        }
       } catch {
         setFastestLapBonusEnabled(false);
       }
@@ -57,8 +77,17 @@ export default function AdminStagesPage() {
     void loadChampionshipSettings();
   }, []);
 
+  useEffect(() => {
+    const selected = activeChampionships.find((item) => item._id === selectedChampionshipId);
+    setFastestLapBonusEnabled(Boolean(selected?.fastestLapBonusEnabled));
+  }, [activeChampionships, selectedChampionshipId]);
+
   const handleAddStage = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedChampionshipId) {
+      setFormError("Оберіть чемпіонат, до якого треба додати етап.");
+      return;
+    }
     if (stages.some((s) => s.number === Number(stageNumber))) {
       setFormError(`Етап з номером ${stageNumber} вже існує`);
       return;
@@ -70,6 +99,7 @@ export default function AdminStagesPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          championshipId: selectedChampionshipId,
           name: stageName.trim(),
           number: Number(stageNumber),
           date: stageDate,
@@ -256,7 +286,7 @@ export default function AdminStagesPage() {
             ? 0
             : getPointsByPosition(r.position) + (fastestLapBonusEnabled && r.bestLap ? 1 : 0),
       }));
-      await saveStageResults(editingStageId, enriched);
+      await saveStageResults(editingStageId, enriched, selectedChampionshipId || undefined);
       setEditingStageId(null);
     } catch (err) {
       setResultsError((err as Error).message);
@@ -289,8 +319,43 @@ export default function AdminStagesPage() {
       </Link>
       <h1 className="text-3xl font-black text-white mb-8">Етапи</h1>
 
+      {activeChampionships.length > 1 && (
+        <div className="mb-6 flex gap-2 flex-wrap">
+          {activeChampionships.map((item) => (
+            <button
+              key={item._id}
+              type="button"
+              onClick={() => {
+                setSelectedChampionshipId(item._id);
+                setEditingStageId(null);
+                setFormError("");
+                setResultsError("");
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${selectedChampionshipId === item._id
+                ? "bg-red-600 border-red-600 text-white"
+                : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+                }`}
+            >
+              {item.name}
+              <span className="ml-2 text-xs opacity-70">
+                {item.championshipType === "teams" ? "Endurance" : "Sprint"}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
         <h2 className="text-lg font-bold text-white mb-4">Додати етап</h2>
+        {selectedChampionshipId ? (
+          <p className="text-zinc-400 text-sm mb-4">
+            Етап буде додано до чемпіонату: <span className="text-white font-medium">
+              {activeChampionships.find((item) => item._id === selectedChampionshipId)?.name}
+            </span>
+          </p>
+        ) : (
+          <p className="text-zinc-500 text-sm mb-4">Спочатку оберіть чемпіонат.</p>
+        )}
         <form onSubmit={handleAddStage} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input
             type="text"
@@ -317,7 +382,7 @@ export default function AdminStagesPage() {
             required
           />
           <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" disabled={submitting || !selectedChampionshipId}>
               {submitting ? "Додавання..." : "Додати етап"}
             </Button>
             <label className="flex items-center gap-2 text-sm text-zinc-300">

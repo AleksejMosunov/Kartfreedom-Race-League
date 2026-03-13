@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
+import { Championship } from "@/lib/models/Championship";
 import { getPointsByPosition } from "@/lib/utils/championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 
@@ -23,7 +24,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   await connectToDatabase();
   let current;
   try {
-    current = await requireCurrentChampionship();
+    const championshipId = req.nextUrl.searchParams.get("championship");
+    current = championshipId
+      ? await Championship.findById(championshipId).lean()
+      : await requireCurrentChampionship();
   } catch {
     return NextResponse.json(
       { error: "Немає активного чемпіонату" },
@@ -33,6 +37,13 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { id } = await params;
   const body = await req.json();
   const { results }: { results: ResultInput[] } = body;
+
+  if (!current) {
+    return NextResponse.json(
+      { error: "Чемпіонат не знайдено" },
+      { status: 404 },
+    );
+  }
 
   if (!Array.isArray(results) || results.length === 0) {
     return NextResponse.json(

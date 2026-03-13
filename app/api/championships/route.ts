@@ -9,8 +9,8 @@ const SETTINGS_KEY = "global";
 export async function GET() {
   await connectToDatabase();
 
-  const [current, archived, settings] = await Promise.all([
-    Championship.findOne({ status: "active" }).sort({ startedAt: -1 }).lean(),
+  const [active, archived, settings] = await Promise.all([
+    Championship.find({ status: "active" }).sort({ startedAt: -1 }).lean(),
     Championship.find({ status: "archived" })
       .sort({ endedAt: -1, startedAt: -1 })
       .lean(),
@@ -18,7 +18,8 @@ export async function GET() {
   ]);
 
   return NextResponse.json({
-    current,
+    active,
+    current: active[0] ?? null,
     archived,
     preseasonNews: settings?.preseasonNews ?? "",
   });
@@ -26,14 +27,6 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
-
-  const existing = await Championship.findOne({ status: "active" }).lean();
-  if (existing) {
-    return NextResponse.json(
-      { error: "Спочатку завершіть поточний чемпіонат" },
-      { status: 409 },
-    );
-  }
 
   const body = (await req.json().catch(() => ({}))) as {
     name?: string;

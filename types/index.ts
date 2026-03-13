@@ -82,38 +82,9 @@ export interface Team {
   championshipId: string;
   name: string;
   number: number;
+  phone?: string;
   createdAt?: string;
   updatedAt?: string;
-}
-
-export interface BallastRule {
-  position: number;
-  kg: number;
-}
-
-export interface PilotBallastAdjustment {
-  _id: string;
-  pilotId: string;
-  kg: number;
-  reason: string;
-  createdAt?: string;
-}
-
-export interface PilotAutoBallastEntry {
-  stageId: string;
-  stageName: string;
-  stageNumber: number;
-  position: number;
-  kg: number;
-}
-
-export interface PilotBallastSummary {
-  pilotId: string;
-  autoKg: number;
-  manualKg: number;
-  totalKg: number;
-  autoEntries: PilotAutoBallastEntry[];
-  manualEntries: PilotBallastAdjustment[];
 }
 
 export type PointsMap = Record<number, number>;

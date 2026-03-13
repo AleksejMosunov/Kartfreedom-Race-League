@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { connectToDatabase } from "@/lib/mongodb";
-import { getCurrentChampionship } from "@/lib/championship/current";
+import { Championship } from "@/lib/models/Championship";
 
 export const metadata = {
   title: "Адмін-панель — KartFreedom Race League",
@@ -8,25 +8,36 @@ export const metadata = {
 
 export default async function AdminPage() {
   await connectToDatabase();
-  const current = await getCurrentChampionship();
-  const isTeams = current?.championshipType === "teams";
+  const active = await Championship.find({ status: "active" }).lean();
+  const activeTypes = new Set(active.map((item) => item.championshipType));
+  const hasMixedTypes = activeTypes.size > 1;
+  const isTeams = !hasMixedTypes && active.length > 0 && active[0].championshipType === "teams";
 
   const sections = [
     {
-      href: isTeams ? "/admin/teams" : "/admin/pilots",
-      icon: isTeams ? "👥" : "🏎️",
-      title: isTeams ? "Керування командами" : "Керування пілотами",
-      description: isTeams
-        ? "Додавати, редагувати та видаляти команди"
-        : "Додавати, редагувати та видаляти пілотів",
+      key: "participants",
+      href: hasMixedTypes ? "/admin/participants" : isTeams ? "/admin/teams" : "/admin/pilots",
+      icon: hasMixedTypes ? "🧭" : isTeams ? "👥" : "🏎️",
+      title: hasMixedTypes
+        ? "Керування учасниками"
+        : isTeams
+          ? "Керування командами"
+          : "Керування пілотами",
+      description: hasMixedTypes
+        ? "У вас одночасно активні Sprint і Endurance. Оберіть чемпіонат у розділі чемпіонатів."
+        : isTeams
+          ? "Додавати, редагувати та видаляти команди"
+          : "Додавати, редагувати та видаляти пілотів",
     },
     {
+      key: "stages",
       href: "/admin/stages",
       icon: "🏁",
       title: "Керування етапами",
       description: "Створювати етапи та вносити результати гонок",
     },
     {
+      key: "championships",
       href: "/admin/championships",
       icon: "🏆",
       title: "Керування чемпіонатами",
@@ -42,7 +53,7 @@ export default async function AdminPage() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {sections.map((section) => (
-          <Link key={section.href} href={section.href}>
+          <Link key={section.key} href={section.href}>
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-red-600 transition-colors cursor-pointer">
               <span className="text-3xl">{section.icon}</span>
               <h2 className="text-white font-bold text-lg mt-3">{section.title}</h2>

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useStagesStore } from "@/store/stagesStore";
 
-export function useStages() {
+export function useStages(championshipId?: string) {
   const {
     stages,
     isLoading,
@@ -13,21 +13,23 @@ export function useStages() {
   } = useStagesStore();
 
   useEffect(() => {
-    fetchStages();
-  }, [fetchStages]);
+    fetchStages(championshipId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [championshipId]);
 
   return {
     stages,
     isLoading,
     error,
     addStage,
-    updateStage,
-    deleteStage,
-    refresh: fetchStages,
+    updateStage: (id: string, data: Partial<import("@/types").Stage>) =>
+      updateStage(id, data, championshipId),
+    deleteStage: (id: string) => deleteStage(id, championshipId),
+    refresh: () => fetchStages(championshipId),
   };
 }
 
-export function useStage(id: string) {
+export function useStage(id: string, championshipId?: string) {
   const {
     selectedStage,
     isLoading,
@@ -38,9 +40,17 @@ export function useStage(id: string) {
   } = useStagesStore();
 
   useEffect(() => {
-    if (id) fetchStageById(id);
+    if (id) fetchStageById(id, championshipId);
     return () => setSelectedStage(null);
-  }, [id, fetchStageById, setSelectedStage]);
+  }, [id, championshipId, fetchStageById, setSelectedStage]);
 
-  return { stage: selectedStage, isLoading, error, saveStageResults };
+  return {
+    stage: selectedStage,
+    isLoading,
+    error,
+    saveStageResults: (
+      stageId: string,
+      results: Omit<import("@/types").StageResult, "pilot">[],
+    ) => saveStageResults(stageId, results, championshipId),
+  };
 }

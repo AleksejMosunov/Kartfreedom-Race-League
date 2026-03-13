@@ -6,16 +6,21 @@ interface StagesState {
   selectedStage: Stage | null;
   isLoading: boolean;
   error: string | null;
-  fetchStages: () => Promise<void>;
-  fetchStageById: (id: string) => Promise<void>;
+  fetchStages: (championshipId?: string) => Promise<void>;
+  fetchStageById: (id: string, championshipId?: string) => Promise<void>;
   addStage: (
     stage: Omit<Stage, "_id" | "results" | "isCompleted">,
   ) => Promise<void>;
-  updateStage: (id: string, data: Partial<Stage>) => Promise<void>;
-  deleteStage: (id: string) => Promise<void>;
+  updateStage: (
+    id: string,
+    data: Partial<Stage>,
+    championshipId?: string,
+  ) => Promise<void>;
+  deleteStage: (id: string, championshipId?: string) => Promise<void>;
   saveStageResults: (
     stageId: string,
     results: Omit<StageResult, "pilot">[],
+    championshipId?: string,
   ) => Promise<void>;
   setSelectedStage: (stage: Stage | null) => void;
 }
@@ -26,10 +31,13 @@ export const useStagesStore = create<StagesState>((set) => ({
   isLoading: false,
   error: null,
 
-  fetchStages: async () => {
+  fetchStages: async (championshipId?: string) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await fetch("/api/stages");
+      const url = championshipId
+        ? `/api/stages?championship=${encodeURIComponent(championshipId)}`
+        : "/api/stages";
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Помилка завантаження етапів");
       const data: Stage[] = await res.json();
       set({ stages: data });
@@ -40,10 +48,13 @@ export const useStagesStore = create<StagesState>((set) => ({
     }
   },
 
-  fetchStageById: async (id) => {
+  fetchStageById: async (id, championshipId?: string) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await fetch(`/api/stages/${id}`);
+      const url = championshipId
+        ? `/api/stages/${id}?championship=${encodeURIComponent(championshipId)}`
+        : `/api/stages/${id}`;
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Помилка завантаження етапу");
       const data: Stage = await res.json();
       set({ selectedStage: data });
@@ -68,8 +79,11 @@ export const useStagesStore = create<StagesState>((set) => ({
     set((state) => ({ stages: [...state.stages, created] }));
   },
 
-  updateStage: async (id, data) => {
-    const res = await fetch(`/api/stages/${id}`, {
+  updateStage: async (id, data, championshipId?: string) => {
+    const url = championshipId
+      ? `/api/stages/${id}?championship=${encodeURIComponent(championshipId)}`
+      : `/api/stages/${id}`;
+    const res = await fetch(url, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -83,14 +97,20 @@ export const useStagesStore = create<StagesState>((set) => ({
     }));
   },
 
-  deleteStage: async (id) => {
-    const res = await fetch(`/api/stages/${id}`, { method: "DELETE" });
+  deleteStage: async (id, championshipId?: string) => {
+    const url = championshipId
+      ? `/api/stages/${id}?championship=${encodeURIComponent(championshipId)}`
+      : `/api/stages/${id}`;
+    const res = await fetch(url, { method: "DELETE" });
     if (!res.ok) throw new Error("Помилка видалення етапу");
     set((state) => ({ stages: state.stages.filter((s) => s._id !== id) }));
   },
 
-  saveStageResults: async (stageId, results) => {
-    const res = await fetch(`/api/stages/${stageId}/results`, {
+  saveStageResults: async (stageId, results, championshipId?: string) => {
+    const url = championshipId
+      ? `/api/stages/${stageId}/results?championship=${encodeURIComponent(championshipId)}`
+      : `/api/stages/${stageId}/results`;
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ results }),

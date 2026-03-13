@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Team } from "@/lib/models/Team";
+import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 
 interface Params {
@@ -9,13 +10,22 @@ interface Params {
 
 export async function PUT(req: NextRequest, { params }: Params) {
   await connectToDatabase();
+  const championshipId = req.nextUrl.searchParams.get("championship");
   let current;
   try {
-    current = await requireCurrentChampionship();
+    current = championshipId
+      ? await Championship.findById(championshipId).lean()
+      : await requireCurrentChampionship();
   } catch {
     return NextResponse.json(
       { error: "Немає активного чемпіонату" },
       { status: 409 },
+    );
+  }
+  if (!current) {
+    return NextResponse.json(
+      { error: "Чемпіонат не знайдено" },
+      { status: 404 },
     );
   }
 
@@ -91,13 +101,22 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   await connectToDatabase();
+  const championshipId = _req.nextUrl.searchParams.get("championship");
   let current;
   try {
-    current = await requireCurrentChampionship();
+    current = championshipId
+      ? await Championship.findById(championshipId).lean()
+      : await requireCurrentChampionship();
   } catch {
     return NextResponse.json(
       { error: "Немає активного чемпіонату" },
       { status: 409 },
+    );
+  }
+  if (!current) {
+    return NextResponse.json(
+      { error: "Чемпіонат не знайдено" },
+      { status: 404 },
     );
   }
 
