@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { usePilotsStore } from "@/store/pilotsStore";
 import { useChampionshipStore } from "@/store/championshipStore";
@@ -12,6 +12,22 @@ import { formatPilotFullName } from "@/lib/utils/pilotName";
 type ChampionshipType = "solo" | "teams";
 
 export default function PilotDetailPage({ params }: { params: Promise<{ id: string; }>; }) {
+  return (
+    <Suspense fallback={<PilotDetailPageFallback />}>
+      <PilotDetailPageContent params={params} />
+    </Suspense>
+  );
+}
+
+function PilotDetailPageFallback() {
+  return (
+    <main className="max-w-3xl mx-auto px-4 py-8">
+      <Loader />
+    </main>
+  );
+}
+
+function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
   const { pilots, fetchPilots, isLoading } = usePilotsStore();

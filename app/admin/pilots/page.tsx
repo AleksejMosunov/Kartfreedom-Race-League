@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { usePilots } from "@/app/hooks/usePilots";
 import { Button } from "@/app/components/ui/Button";
 import { Loader } from "@/app/components/ui/Loader";
@@ -11,6 +11,22 @@ import { formatPilotFullName } from "@/lib/utils/pilotName";
 type ChampionshipType = "solo" | "teams";
 
 export default function AdminPilotsPage() {
+  return (
+    <Suspense fallback={<AdminPilotsPageFallback />}>
+      <AdminPilotsPageContent />
+    </Suspense>
+  );
+}
+
+function AdminPilotsPageFallback() {
+  return (
+    <main className="max-w-3xl mx-auto px-4 py-8">
+      <Loader />
+    </main>
+  );
+}
+
+function AdminPilotsPageContent() {
   const searchParams = useSearchParams();
   const championshipId = searchParams.get("championship") ?? undefined;
   const { pilots, isLoading, error, refresh } = usePilots(championshipId);

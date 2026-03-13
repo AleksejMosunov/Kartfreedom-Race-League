@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/Button";
 import { Loader } from "@/app/components/ui/Loader";
 import { Team } from "@/types";
@@ -10,6 +10,22 @@ import { Team } from "@/types";
 type ChampionshipType = "solo" | "teams";
 
 export default function AdminTeamsPage() {
+  return (
+    <Suspense fallback={<AdminTeamsPageFallback />}>
+      <AdminTeamsPageContent />
+    </Suspense>
+  );
+}
+
+function AdminTeamsPageFallback() {
+  return (
+    <main className="max-w-3xl mx-auto px-4 py-8">
+      <Loader />
+    </main>
+  );
+}
+
+function AdminTeamsPageContent() {
   const searchParams = useSearchParams();
   const championshipId = searchParams.get("championship") ?? undefined;
 
