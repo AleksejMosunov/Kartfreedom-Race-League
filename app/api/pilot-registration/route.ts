@@ -17,6 +17,23 @@ function isValidUkrPhone(phone: string): boolean {
   return /^\+380\d{9}$/.test(phone);
 }
 
+function normalizeTeamDrivers(raw: unknown) {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const obj = entry as { name?: unknown; surname?: unknown };
+      const name =
+        typeof obj.name === "string" ? normalizeNamePart(obj.name) : "";
+      const surname =
+        typeof obj.surname === "string" ? normalizeNamePart(obj.surname) : "";
+      if (!name && !surname) return null;
+      return { name, surname };
+    })
+    .filter((row): row is { name: string; surname: string } => row !== null);
+}
+
 export async function POST(req: NextRequest) {
   await connectToDatabase();
   const body = await req.json().catch(() => ({}));
@@ -46,22 +63,15 @@ export async function POST(req: NextRequest) {
   }
 
   if (current.championshipType === "teams") {
-    const teamName =
-      typeof body.teamName === "string" ? body.teamName.trim() : "";
+    const isSolo = body.isSolo !== false;
     const teamNumber = Number(body.number);
     const teamPhone = normalizePhone(
       typeof body.phone === "string" ? body.phone : "",
     );
 
-    if (
-      teamName.length < 2 ||
-      teamName.length > 60 ||
-      !Number.isInteger(teamNumber) ||
-      teamNumber < 1 ||
-      teamNumber > 999
-    ) {
+    if (!Number.isInteger(teamNumber) || teamNumber < 1 || teamNumber > 999) {
       return NextResponse.json(
-        { error: "Вкажіть назву команди і номер від 1 до 999" },
+        { error: "Вкажіть номер від 1 до 999" },
         { status: 400 },
       );
     }
@@ -73,12 +83,97 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (isSolo) {
+      const name =
+        typeof body.name === "string" ? normalizeNamePart(body.name) : "";
+      const surname =
+        typeof body.surname === "string" ? normalizeNamePart(body.surname) : "";
+
+      if (!isValidNamePart(name) || !isValidNamePart(surname)) {
+        return NextResponse.json(
+          { error: "Вкажіть ім'я та прізвище" },
+          { status: 400 },
+        );
+      }
+
+      const teamName = `${name} ${surname}`;
+
+      try {
+        const team = await Team.create({
+          championshipId: current._id,
+          name: teamName,
+          number: teamNumber,
+          phone: teamPhone,
+          isSolo: true,
+          drivers: [{ name, surname }],
+        });
+
+        return NextResponse.json(team, { status: 201 });
+      } catch (err: unknown) {
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "code" in err &&
+          (err as { code: number }).code === 11000
+        ) {
+          return NextResponse.json(
+            {
+              error: `Пілот \"${teamName}\" або номер ${teamNumber} вже зареєстровані`,
+            },
+            { status: 409 },
+          );
+        }
+
+        return NextResponse.json(
+          { error: "Не вдалося зареєструвати пілота" },
+          { status: 500 },
+        );
+      }
+    }
+
+    const teamName =
+      typeof body.teamName === "string" ? body.teamName.trim() : "";
+    const drivers = normalizeTeamDrivers(
+      (body as { drivers?: unknown }).drivers,
+    );
+
+    if (teamName.length < 2 || teamName.length > 60) {
+      return NextResponse.json(
+        { error: "Вкажіть назву команди" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      drivers.some(
+        (driver) =>
+          !isValidNamePart(driver.name) || !isValidNamePart(driver.surname),
+      )
+    ) {
+      return NextResponse.json(
+        { error: "Ім'я та прізвище пілота мають містити лише літери" },
+        { status: 400 },
+      );
+    }
+
+    if (drivers.length < 2) {
+      return NextResponse.json(
+        {
+          error:
+            "Для команди з кількома пілотами потрібно вказати мінімум двох (ім'я та прізвище)",
+        },
+        { status: 400 },
+      );
+    }
+
     try {
       const team = await Team.create({
         championshipId: current._id,
         name: teamName,
         number: teamNumber,
         phone: teamPhone,
+        isSolo: false,
+        drivers,
       });
 
       return NextResponse.json(team, { status: 201 });

@@ -19,7 +19,7 @@ export default async function ChampionshipPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-black text-white">Таблиця чемпіонату</h1>
           <p className="text-zinc-400 mt-1">
-            Загальний залік · найгірший етап кожного пілота не враховується
+            Загальний залік
           </p>
         </div>
         <NoActiveChampionshipBlock news={preseasonNews} />
@@ -33,7 +33,7 @@ export default async function ChampionshipPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-black text-white">Таблиця чемпіонату</h1>
           <p className="text-zinc-400 mt-1">
-            Загальний залік · найгірший етап кожного пілота не враховується
+            Загальний залік
           </p>
         </div>
         <ChampionshipTable />
@@ -53,7 +53,7 @@ export default async function ChampionshipPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-black text-white">Таблиця чемпіонату</h1>
         <p className="text-zinc-400 mt-1">
-          Загальний залік · найгірший етап кожного пілота не враховується
+          Загальний залік
         </p>
       </div>
       <MultiChampionshipTabs championships={championships} />

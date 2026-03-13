@@ -4,8 +4,15 @@ export interface Pilot {
   surname: string;
   number: number;
   phone?: string;
+  teamIsSolo?: boolean;
+  teamDrivers?: TeamDriver[];
   avatar?: string;
   createdAt?: string;
+}
+
+export interface TeamDriver {
+  name: string;
+  surname: string;
 }
 
 export interface StageResult {
@@ -83,6 +90,8 @@ export interface Team {
   name: string;
   number: number;
   phone?: string;
+  isSolo?: boolean;
+  drivers?: TeamDriver[];
   createdAt?: string;
   updatedAt?: string;
 }

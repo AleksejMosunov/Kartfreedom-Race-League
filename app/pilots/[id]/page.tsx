@@ -138,6 +138,26 @@ function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; 
           <p>Телефон: {pilot.phone}</p>
         </div>
       )}
+
+      {isTeams && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-300 mt-4">
+          <p className="text-sm text-zinc-500 mb-1">Склад команди</p>
+          <p className="mb-2">
+            Формат: {pilot.teamIsSolo === false ? "Кілька пілотів" : "Solo"}
+          </p>
+          {pilot.teamDrivers && pilot.teamDrivers.length > 0 ? (
+            <ul className="list-disc list-inside">
+              {pilot.teamDrivers.map((driver, index) => (
+                <li key={`${pilot._id}-driver-${index}`}>
+                  {driver.name} {driver.surname}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>Склад не вказано.</p>
+          )}
+        </div>
+      )}
     </main>
   );
 }

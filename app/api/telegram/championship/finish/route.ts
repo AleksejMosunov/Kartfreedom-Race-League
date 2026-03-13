@@ -55,7 +55,11 @@ export async function POST(req: NextRequest) {
   const participants = participantsRaw as unknown as IPilotType[];
   const stages = stagesRaw as unknown as IStageType[];
 
-  const standings = calculateChampionshipStandings(participants, stages);
+  const standings = calculateChampionshipStandings(
+    participants,
+    stages,
+    championship.championshipType === "teams" ? "teams" : "solo",
+  );
   const top3 = standings.slice(0, 3);
 
   const medals = ["🥇", "🥈", "🥉"];

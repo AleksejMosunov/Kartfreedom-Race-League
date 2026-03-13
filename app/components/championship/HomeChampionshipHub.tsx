@@ -85,8 +85,8 @@ export function HomeChampionshipHub({
               type="button"
               onClick={() => setSelectedChampionshipId(item._id)}
               className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${selectedChampionshipId === item._id
-                  ? "bg-red-600 border-red-600 text-white"
-                  : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+                ? "bg-red-600 border-red-600 text-white"
+                : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
                 }`}
             >
               {item.name}
@@ -190,7 +190,7 @@ export function HomeChampionshipHub({
       <div className="mb-8">
         <h1 className="text-3xl font-black text-white">🏆 Таблиця чемпіонату</h1>
         <p className="text-zinc-400 mt-1">
-          Загальний залік · найгірший етап кожного пілота не враховується
+          Загальний залік
         </p>
       </div>
 

@@ -88,7 +88,7 @@ export function ChampionshipTable({ championshipId }: { championshipId?: string;
   if (!standings.length)
     return (
       <p className="text-zinc-500 text-center py-12">
-        Наразі немає даних. Додайте пілотів і результати етапів.
+        Наразі немає даних.
       </p>
     );
 

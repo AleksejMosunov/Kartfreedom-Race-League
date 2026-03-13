@@ -20,14 +20,17 @@ export function getPointsByPosition(position: number): number {
 
 /**
  * Calculates full championship standings.
- * The worst 1 stage result per pilot is dropped.
+ * Sprint (solo): the 2 worst stage results are dropped.
+ * Endurance (teams): the 1 worst stage result is dropped.
  * Penalties are always counted in total, even if a stage is dropped.
  */
 export function calculateChampionshipStandings(
   pilots: Pilot[],
   stages: Stage[],
+  championshipType: "solo" | "teams" = "solo",
 ): ChampionshipStanding[] {
   const completedStages = stages.filter((s) => s.isCompleted);
+  const dropsCount = championshipType === "solo" ? 2 : 1;
 
   const standings: ChampionshipStanding[] = pilots.map((pilot) => {
     const pilotStandings: PilotStanding[] = completedStages.map((stage) => {
@@ -57,19 +60,15 @@ export function calculateChampionshipStandings(
       };
     });
 
-    // Mark the worst stage as dropped (only if pilot has > 1 completed stage)
-    if (pilotStandings.length > 1) {
-      let worstIndex = 0;
-      let worstPoints = pilotStandings[0].points;
+    // Mark the N worst stages as dropped (only when pilot has more stages than dropsCount)
+    if (pilotStandings.length > dropsCount) {
+      const sortedByPoints = pilotStandings
+        .map((s, i) => ({ points: s.points, index: i }))
+        .sort((a, b) => a.points - b.points);
 
-      pilotStandings.forEach((s, i) => {
-        if (s.points < worstPoints) {
-          worstPoints = s.points;
-          worstIndex = i;
-        }
-      });
-
-      pilotStandings[worstIndex].isDropped = true;
+      for (let d = 0; d < dropsCount; d++) {
+        pilotStandings[sortedByPoints[d].index].isDropped = true;
+      }
     }
 
     const nonDroppedPoints = pilotStandings

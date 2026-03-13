@@ -182,6 +182,21 @@ function AdminTeamsPageContent() {
                     <p>Назва: {team.name}</p>
                     <p>Номер: #{team.number}</p>
                     <p>Телефон: {team.phone || "не вказано"}</p>
+                    <p>Формат команди: {team.isSolo === false ? "Кілька пілотів" : "Solo"}</p>
+                    {team.drivers && team.drivers.length > 0 ? (
+                      <div>
+                        <p className="text-zinc-400">Склад:</p>
+                        <ul className="list-disc list-inside">
+                          {team.drivers.map((driver, index) => (
+                            <li key={`${team._id}-driver-${index}`}>
+                              {driver.name} {driver.surname}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <p>Склад: не вказано</p>
+                    )}
                     <p>ID: {team._id}</p>
                   </div>
                 )}

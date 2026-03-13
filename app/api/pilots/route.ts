@@ -32,6 +32,8 @@ export async function GET(req: NextRequest) {
       surname: "",
       number: team.number,
       phone: team.phone,
+      teamIsSolo: team.isSolo,
+      teamDrivers: team.drivers ?? [],
       createdAt: team.createdAt,
       updatedAt: team.updatedAt,
     }));

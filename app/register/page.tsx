@@ -23,6 +23,11 @@ export default function RegisterPage() {
   const [number, setNumber] = useState("");
   const [teamName, setTeamName] = useState("");
   const [teamNumber, setTeamNumber] = useState("");
+  const [teamIsSolo, setTeamIsSolo] = useState(true);
+  const [teamDrivers, setTeamDrivers] = useState([
+    { name: "", surname: "" },
+    { name: "", surname: "" },
+  ]);
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -58,18 +63,45 @@ export default function RegisterPage() {
     setError("");
     setSuccess("");
 
+    if (championshipMode === "teams" && !teamIsSolo) {
+      const validDrivers = teamDrivers.filter(
+        (driver) => driver.name.trim() && driver.surname.trim(),
+      );
+      if (validDrivers.length < 2) {
+        setError("Для команди з кількома пілотами вкажіть мінімум двох (ім'я та прізвище)");
+        setSubmitting(false);
+        return;
+      }
+    }
+
     try {
       const res = await fetch("/api/pilot-registration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           championshipMode === "teams"
-            ? {
-              championshipId: selectedChampionshipId,
-              teamName: teamName.trim(),
-              number: Number(teamNumber),
-              phone: phone.trim(),
-            }
+            ? teamIsSolo
+              ? {
+                championshipId: selectedChampionshipId,
+                isSolo: true,
+                name: teamDrivers[0].name.trim(),
+                surname: teamDrivers[0].surname.trim(),
+                number: Number(teamNumber),
+                phone: phone.trim(),
+              }
+              : {
+                championshipId: selectedChampionshipId,
+                isSolo: false,
+                teamName: teamName.trim(),
+                number: Number(teamNumber),
+                phone: phone.trim(),
+                drivers: teamDrivers
+                  .map((driver) => ({
+                    name: driver.name.trim(),
+                    surname: driver.surname.trim(),
+                  }))
+                  .filter((driver) => driver.name && driver.surname),
+              }
             : {
               championshipId: selectedChampionshipId,
               name: name.trim(),
@@ -88,8 +120,13 @@ export default function RegisterPage() {
       if (championshipMode === "teams") {
         setTeamName("");
         setTeamNumber("");
+        setTeamIsSolo(true);
+        setTeamDrivers([
+          { name: "", surname: "" },
+          { name: "", surname: "" },
+        ]);
         setPhone("");
-        setSuccess("Команду успішно зареєстровано.");
+        setSuccess(teamIsSolo ? "Реєстрацію успішно завершено. До зустрічі на етапах!" : "Команду успішно зареєстровано.");
       } else {
         setName("");
         setSurname("");
@@ -113,10 +150,10 @@ export default function RegisterPage() {
           <>
             <div className="mb-8">
               <h1 className="text-3xl font-black text-white">
-                {championshipMode === "teams" ? "Реєстрація команди" : "Реєстрація пілота"}
+                {championshipMode === "teams" && !teamIsSolo ? "Реєстрація команди" : "Реєстрація пілота"}
               </h1>
               <p className="text-zinc-400 mt-1">
-                {championshipMode === "teams"
+                {championshipMode === "teams" && !teamIsSolo
                   ? "Заповніть форму, щоб зареєструвати команду на чемпіонат."
                   : "Заповніть форму, щоб самостійно зареєструватися на чемпіонат."}
               </p>
@@ -157,16 +194,61 @@ export default function RegisterPage() {
               <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {championshipMode === "teams" ? (
                   <>
-                    <input
-                      type="text"
-                      placeholder="Назва команди *"
-                      value={teamName}
-                      onChange={(e) => setTeamName(e.target.value)}
-                      className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-                      minLength={2}
-                      maxLength={60}
-                      required
-                    />
+                    <label className="sm:col-span-2 flex items-center gap-2 text-sm text-zinc-300">
+                      <input
+                        type="checkbox"
+                        checked={teamIsSolo}
+                        onChange={(e) => setTeamIsSolo(e.target.checked)}
+                        className="accent-red-600"
+                      />
+                      Один пілот у команді (solo)
+                    </label>
+
+                    {teamIsSolo ? (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Ім'я *"
+                          value={teamDrivers[0].name}
+                          onChange={(e) =>
+                            setTeamDrivers((prev) => [
+                              { ...prev[0], name: e.target.value },
+                              ...prev.slice(1),
+                            ])
+                          }
+                          className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                          pattern="[A-Za-zА-Яа-яІіЇїЄєҐґ'' -]+"
+                          title="Лише літери, пробіл, дефіс або апостроф"
+                          required
+                        />
+                        <input
+                          type="text"
+                          placeholder="Прізвище *"
+                          value={teamDrivers[0].surname}
+                          onChange={(e) =>
+                            setTeamDrivers((prev) => [
+                              { ...prev[0], surname: e.target.value },
+                              ...prev.slice(1),
+                            ])
+                          }
+                          className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                          pattern="[A-Za-zА-Яа-яІіЇїЄєҐґ'' -]+"
+                          title="Лише літери, пробіл, дефіс або апостроф"
+                          required
+                        />
+                      </>
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder="Назва команди *"
+                        value={teamName}
+                        onChange={(e) => setTeamName(e.target.value)}
+                        className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                        minLength={2}
+                        maxLength={60}
+                        required
+                      />
+                    )}
                     <input
                       type="text"
                       placeholder="Номер команди *"
@@ -201,6 +283,72 @@ export default function RegisterPage() {
                       title="Тільки українські номери: +380XXXXXXXXX"
                       required
                     />
+
+                    {!teamIsSolo && (
+                      <div className="sm:col-span-2 rounded-lg border border-zinc-800 p-3 space-y-3">
+                        <p className="text-zinc-300 text-sm font-semibold">Склад команди (мінімум 2 пілоти)</p>
+
+                        {teamDrivers.map((driver, index) => (
+                          <div key={`driver-${index}`} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              placeholder={`Ім'я пілота ${index + 1} *`}
+                              value={driver.name}
+                              onChange={(e) => {
+                                setTeamDrivers((prev) =>
+                                  prev.map((row, i) =>
+                                    i === index ? { ...row, name: e.target.value } : row,
+                                  ),
+                                );
+                              }}
+                              className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                              pattern="[A-Za-zА-Яа-яІіЇїЄєҐґ'’ -]+"
+                              title="Лише літери, пробіл, дефіс або апостроф"
+                              required
+                            />
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder={`Прізвище пілота ${index + 1} *`}
+                                value={driver.surname}
+                                onChange={(e) => {
+                                  setTeamDrivers((prev) =>
+                                    prev.map((row, i) =>
+                                      i === index ? { ...row, surname: e.target.value } : row,
+                                    ),
+                                  );
+                                }}
+                                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                                pattern="[A-Za-zА-Яа-яІіЇїЄєҐґ'’ -]+"
+                                title="Лише літери, пробіл, дефіс або апостроф"
+                                required
+                              />
+                              {teamDrivers.length > 2 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setTeamDrivers((prev) => prev.filter((_, i) => i !== index))
+                                  }
+                                  className="px-3 py-2 rounded-md border border-zinc-700 text-zinc-300 text-sm hover:border-red-500 hover:text-red-300"
+                                >
+                                  -
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setTeamDrivers((prev) => [...prev, { name: "", surname: "" }])
+                          }
+                          className="px-3 py-2 rounded-md border border-zinc-700 text-zinc-300 text-sm hover:border-zinc-500"
+                        >
+                          + Додати пілота
+                        </button>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>

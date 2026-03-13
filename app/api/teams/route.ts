@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
+import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 
 async function getNextTeamNumber(championshipId: string) {
   const last = await Team.findOne({ championshipId })
@@ -61,6 +62,9 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as {
     name?: string;
     number?: number;
+    phone?: string;
+    isSolo?: boolean;
+    drivers?: Array<{ name?: string; surname?: string }>;
   };
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -79,11 +83,57 @@ export async function POST(req: NextRequest) {
       ? explicitNumber
       : await getNextTeamNumber(String(current._id));
 
+  const isSolo = body.isSolo !== false;
+  const drivers = Array.isArray(body.drivers)
+    ? body.drivers
+        .map((driver) => {
+          const driverName =
+            typeof driver.name === "string"
+              ? normalizeNamePart(driver.name)
+              : "";
+          const driverSurname =
+            typeof driver.surname === "string"
+              ? normalizeNamePart(driver.surname)
+              : "";
+          if (!driverName && !driverSurname) return null;
+          return { name: driverName, surname: driverSurname };
+        })
+        .filter(
+          (driver): driver is { name: string; surname: string } =>
+            driver !== null,
+        )
+    : [];
+
+  if (
+    drivers.some(
+      (driver) =>
+        !isValidNamePart(driver.name) || !isValidNamePart(driver.surname),
+    )
+  ) {
+    return NextResponse.json(
+      { error: "Ім'я та прізвище пілота мають містити лише літери" },
+      { status: 400 },
+    );
+  }
+
+  if (!isSolo && drivers.length < 2) {
+    return NextResponse.json(
+      {
+        error:
+          "Для команди з кількома пілотами потрібно вказати мінімум двох (ім'я та прізвище)",
+      },
+      { status: 400 },
+    );
+  }
+
   try {
     const created = await Team.create({
       championshipId: current._id,
       name,
       number,
+      phone: typeof body.phone === "string" ? body.phone.trim() : undefined,
+      isSolo,
+      drivers: isSolo ? drivers.slice(0, 1) : drivers,
     });
     return NextResponse.json(created, { status: 201 });
   } catch (err: unknown) {

@@ -84,6 +84,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const standings = calculateChampionshipStandings(
     participants as unknown as IPilotType[],
     mappedStages as unknown as IStageType[],
+    championship.championshipType === "teams" ? "teams" : "solo",
   );
 
   return NextResponse.json({

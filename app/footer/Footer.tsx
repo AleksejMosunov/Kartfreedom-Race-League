@@ -5,7 +5,7 @@ export function Footer() {
         <p>
           🏁 <span className="font-semibold text-zinc-300">KartFreedom Race League</span>
         </p>
-        <p>Найгірший етап не враховується у заліку</p>
+        {/* <p>Найгірший етап не враховується у заліку</p> */}
       </div>
     </footer>
   );

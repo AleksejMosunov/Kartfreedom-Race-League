@@ -88,9 +88,12 @@ export async function GET(req: NextRequest) {
         })()
       : stages;
 
+  const champType = current.championshipType === "teams" ? "teams" : "solo";
+
   const standings = calculateChampionshipStandings(
     participants as unknown as IPilotType[],
     mappedStages as unknown as IStageType[],
+    champType,
   );
 
   const completedStages = (mappedStages as unknown as IStageType[])
@@ -102,6 +105,7 @@ export async function GET(req: NextRequest) {
     const previousStandings = calculateChampionshipStandings(
       participants as unknown as IPilotType[],
       previousStages,
+      champType,
     );
     const previousPositionById = new Map(
       previousStandings.map((row) => [String(row.pilot._id), row.position]),
