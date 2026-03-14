@@ -121,7 +121,7 @@ export function HomeChampionshipHub({
                 </p>
                 <div className="mt-5 flex flex-wrap items-center gap-3">
                   <Link
-                    href="/register"
+                    href={`/register?championship=${selectedChampionshipId}`}
                     className="inline-flex rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-semibold text-white transition-colors"
                   >
                     Зареєструватись

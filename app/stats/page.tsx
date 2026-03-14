@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader } from "@/app/components/ui/Loader";
-import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
+import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiChampionship";
 
 type StatsParticipant = {
   participantId: string;
@@ -50,7 +50,7 @@ export default function StatsPage() {
         const payload = (await res.json()) as {
           active?: Array<{ _id: string; name: string; championshipType: "solo" | "teams"; }>;
         };
-        const active = payload.active ?? [];
+        const active = sortSprintFirst(payload.active ?? []);
         setActiveChampionships(active);
         if (active.length > 0) {
           setSelectedChampionshipId((prev) => prev || getPreferredUiChampionshipId(active));

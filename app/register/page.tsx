@@ -1,12 +1,12 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
 import { NoActiveClientGate } from "@/app/components/championship/NoActiveClientGate";
 import { Loader } from "@/app/components/ui/Loader";
-import { useEffect } from "react";
-import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
+import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiChampionship";
 
 type ChampionshipMode = "solo" | "teams";
 type ActiveChampionship = {
@@ -15,7 +15,8 @@ type ActiveChampionship = {
   championshipType: ChampionshipMode;
 };
 
-export default function RegisterPage() {
+function RegisterPageInner() {
+  const searchParams = useSearchParams();
   const [activeChampionships, setActiveChampionships] = useState<ActiveChampionship[]>([]);
   const [selectedChampionshipId, setSelectedChampionshipId] = useState("");
   const [modeLoading, setModeLoading] = useState(true);
@@ -49,9 +50,13 @@ export default function RegisterPage() {
         const data = (await res.json()) as {
           active?: ActiveChampionship[];
         };
-        const championships = data.active ?? [];
+        const championships = sortSprintFirst(data.active ?? []);
         setActiveChampionships(championships);
-        setSelectedChampionshipId(getPreferredUiChampionshipId(championships));
+        const fromUrl = searchParams.get("championship");
+        const preferred = fromUrl && championships.some((c) => c._id === fromUrl)
+          ? fromUrl
+          : getPreferredUiChampionshipId(championships);
+        setSelectedChampionshipId(preferred);
       } finally {
         setModeLoading(false);
       }
@@ -430,5 +435,13 @@ export default function RegisterPage() {
         )}
       </main>
     </NoActiveClientGate>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<Loader />}>
+      <RegisterPageInner />
+    </Suspense>
   );
 }

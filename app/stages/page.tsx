@@ -5,7 +5,7 @@ import { useStages } from "@/app/hooks/useStages";
 import { StageCard } from "@/app/components/stages/StageCard";
 import { Loader } from "@/app/components/ui/Loader";
 import { NoActiveClientGate } from "@/app/components/championship/NoActiveClientGate";
-import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
+import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiChampionship";
 
 export default function StagesPage() {
   const [activeChampionships, setActiveChampionships] = useState<
@@ -22,7 +22,7 @@ export default function StagesPage() {
         const data = (await res.json()) as {
           active?: Array<{ _id: string; name: string; championshipType: "solo" | "teams"; }>;
         };
-        const active = data.active ?? [];
+        const active = sortSprintFirst(data.active ?? []);
         setActiveChampionships(active);
         if (active.length > 0) {
           setSelectedChampionshipId((prev) => prev || getPreferredUiChampionshipId(active));
