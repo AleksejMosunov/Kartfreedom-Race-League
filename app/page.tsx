@@ -5,8 +5,8 @@ import { sortSprintFirst } from "@/lib/utils/uiChampionship";
 export const revalidate = 0;
 
 export const metadata = {
-  title: "KartFreedom Race League — Таблиця чемпіонату",
-  description: "Турнірна таблиця картингового чемпіонату KartFreedom Race League",
+  title: "KartFreedom Race League — Головна",
+  description: "Офіційна сторінка ліги KartFreedom: анонси етапів, новини та ключова інформація сезону.",
 };
 
 export default async function Home() {

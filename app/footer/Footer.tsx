@@ -50,7 +50,8 @@ export async function Footer() {
             <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-3">Навігація</p>
             <div className="flex flex-col gap-2">
               {([
-                { href: "/", label: "Чемпіонат" },
+                { href: "/", label: "Головна" },
+                { href: "/championship", label: "Чемпіонат" },
                 { href: "/stages", label: "Етапи" },
                 { href: "/pilots", label: "Учасники" },
                 { href: "/stats", label: "Статистика" },

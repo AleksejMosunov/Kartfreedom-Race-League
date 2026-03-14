@@ -48,6 +48,7 @@ Add these variables to `.env.local`:
 ```bash
 TELEGRAM_BOT_TOKEN=your_bot_token
 TELEGRAM_CHAT_ID=your_chat_id
+NEXT_PUBLIC_SPONSOR_CONTACT_URL=https://t.me/your_username_or_channel
 ```
 
 Available admin actions:

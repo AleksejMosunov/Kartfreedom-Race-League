@@ -4,7 +4,10 @@ import { useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const baseLinks = [{ href: "/", label: "Чемпіонат" }];
+const baseLinks = [
+  { href: "/", label: "Головна" },
+  { href: "/championship", label: "Чемпіонат" },
+];
 
 export function Header() {
   const pathname = usePathname();
