@@ -61,6 +61,9 @@ export default function AdminChampionshipsPage() {
   const [activePrizes, setActivePrizes] = useState<Record<string, { place: string; description: string; }[]>>({});
   const [expandedPrizesChampId, setExpandedPrizesChampId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"active" | "new" | "archive">("active");
+  const [hasDraftChanges, setHasDraftChanges] = useState(false);
+
+  const DRAFT_KEY = "admin:championships:draft:v1";
 
   const loadData = async () => {
     setIsLoading(true);
@@ -112,6 +115,58 @@ export default function AdminChampionshipsPage() {
   useEffect(() => {
     void loadData();
   }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as {
+        newName?: string;
+        newType?: "solo" | "teams";
+        newFastestLapBonusEnabled?: boolean;
+        newPrizes?: { place: string; description: string; }[];
+        preseasonNewsByType?: { solo: string; teams: string; };
+      };
+
+      if (typeof draft.newName === "string") setNewName(draft.newName);
+      if (draft.newType === "solo" || draft.newType === "teams") setNewType(draft.newType);
+      if (typeof draft.newFastestLapBonusEnabled === "boolean") {
+        setNewFastestLapBonusEnabled(draft.newFastestLapBonusEnabled);
+      }
+      if (Array.isArray(draft.newPrizes) && draft.newPrizes.length > 0) {
+        setNewPrizes(draft.newPrizes);
+      }
+      if (draft.preseasonNewsByType) {
+        setPreseasonNewsByType({
+          solo: draft.preseasonNewsByType.solo ?? "",
+          teams: draft.preseasonNewsByType.teams ?? "",
+        });
+      }
+      setHasDraftChanges(true);
+    } catch {
+      // ignore broken draft payload
+    }
+  }, []);
+
+  useEffect(() => {
+    const payload = {
+      newName,
+      newType,
+      newFastestLapBonusEnabled,
+      newPrizes,
+      preseasonNewsByType,
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+
+    const isDirty =
+      Boolean(newName.trim()) ||
+      newType !== "solo" ||
+      newFastestLapBonusEnabled ||
+      newPrizes.some((p) => p.place.trim() || p.description.trim()) ||
+      Boolean(preseasonNewsByType.solo.trim()) ||
+      Boolean(preseasonNewsByType.teams.trim());
+    setHasDraftChanges(isDirty);
+  }, [newName, newType, newFastestLapBonusEnabled, newPrizes, preseasonNewsByType]);
 
   const startNewChampionship = async () => {
     setError("");
@@ -179,6 +234,8 @@ export default function AdminChampionshipsPage() {
       setNewFastestLapBonusEnabled(false);
       setNewRegulations(defaultRegulationsForNewChampionship(false));
       setNewPrizes([{ place: "1", description: "" }]);
+      localStorage.removeItem(DRAFT_KEY);
+      setHasDraftChanges(false);
       setSuccess(`Новий чемпіонат створено. Дані починаються з нуля.${telegramWarning}`);
       await loadData();
     } catch (err) {
@@ -513,6 +570,9 @@ export default function AdminChampionshipsPage() {
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-black text-white mb-6">Чемпіонати</h1>
+      {hasDraftChanges ? (
+        <p className="text-xs text-amber-300 mb-4">Є незбережені зміни (чернетка зберігається автоматично).</p>
+      ) : null}
 
       {restorePreview && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">

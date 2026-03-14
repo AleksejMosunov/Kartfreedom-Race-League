@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   AUTH_COOKIE_NAME,
+  authenticateAdminCredentials,
   createAdminSessionToken,
-  getAdminAuthConfig,
+  ensureBootstrapOrganizerExists,
+  getBootstrapOrganizerCredentials,
   getAdminSessionCookieOptions,
 } from "@/lib/auth";
+import { AdminUser } from "@/lib/models/AdminUser";
+import { connectToDatabase } from "@/lib/mongodb";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,16 +18,37 @@ export async function POST(req: NextRequest) {
       password?: string;
     };
 
-    const { adminUsername, adminPassword } = getAdminAuthConfig();
-    if (username !== adminUsername || password !== adminPassword) {
+    let user = await authenticateAdminCredentials(username, password);
+
+    if (!user) {
+      const bootstrap = getBootstrapOrganizerCredentials();
+      if (
+        bootstrap &&
+        username === bootstrap.username &&
+        password === bootstrap.password
+      ) {
+        user = await ensureBootstrapOrganizerExists(username, password);
+      }
+    }
+
+    if (!user) {
       return NextResponse.json(
         { error: "Invalid username or password" },
         { status: 401 },
       );
     }
 
-    const sessionToken = await createAdminSessionToken();
-    const response = NextResponse.json({ ok: true });
+    await connectToDatabase();
+    await AdminUser.updateOne(
+      { _id: user._id },
+      { $set: { lastLoginAt: new Date() } },
+    );
+
+    const sessionToken = await createAdminSessionToken(
+      String(user._id),
+      user.role,
+    );
+    const response = NextResponse.json({ ok: true, role: user.role });
     response.cookies.set(
       AUTH_COOKIE_NAME,
       sessionToken,

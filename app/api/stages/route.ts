@@ -4,6 +4,8 @@ import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
+import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
+import { logAudit, getAuditIp } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   try {
@@ -99,6 +101,19 @@ export async function POST(req: NextRequest) {
 
   try {
     const stage = await Stage.create({ ...body, championshipId: current._id });
+
+    const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+    const session = await getAuthenticatedAdminSession(token);
+    void logAudit({
+      session,
+      action: "create",
+      entityType: "stage",
+      entityId: String(stage._id),
+      entityLabel: `Етап ${body.number as string}: ${body.name as string}`,
+      after: { number: body.number, name: body.name },
+      ip: getAuditIp(req),
+    });
+
     return NextResponse.json(stage, { status: 201 });
   } catch (err) {
     if ((err as { code: number }).code === 11000) {

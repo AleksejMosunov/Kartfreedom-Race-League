@@ -62,3 +62,30 @@ export async function sendTelegramMessage(text: string) {
 
   return payload;
 }
+
+/**
+ * Send a message to a specific chat (used for admin alert notifications).
+ * Fire-and-forget — errors are swallowed to never block the request flow.
+ */
+export async function sendAlertMessage(
+  chatId: string,
+  text: string,
+): Promise<void> {
+  const botToken = requiredEnv("TELEGRAM_BOT_TOKEN");
+  if (!botToken || !chatId) return;
+
+  try {
+    await fetch(`${TELEGRAM_API_BASE}/bot${botToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      }),
+    });
+  } catch {
+    // best-effort delivery; do not surface errors to callers
+  }
+}

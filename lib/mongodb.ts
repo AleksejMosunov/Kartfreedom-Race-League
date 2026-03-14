@@ -4,6 +4,8 @@ import { Stage } from "@/lib/models/Stage";
 import { Championship } from "@/lib/models/Championship";
 import { LeagueSettings } from "@/lib/models/LeagueSettings";
 import { Team } from "@/lib/models/Team";
+import { AdminUser } from "@/lib/models/AdminUser";
+import { AuditLog } from "@/lib/models/AuditLog";
 
 const MONGODB_URI = process.env.MONGODB_URI as string;
 
@@ -53,6 +55,8 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
         Stage.syncIndexes(),
         LeagueSettings.syncIndexes(),
         Team.syncIndexes(),
+        AdminUser.syncIndexes(),
+        AuditLog.syncIndexes(),
       ]);
       cached.indexesSynced = true;
     }

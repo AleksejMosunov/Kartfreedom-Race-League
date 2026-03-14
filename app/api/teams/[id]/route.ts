@@ -3,6 +3,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
+import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
+import { logAudit, getAuditIp } from "@/lib/audit";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -137,6 +139,20 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   if (!removed) {
     return NextResponse.json({ error: "Команду не знайдено" }, { status: 404 });
   }
+
+  const removedRec = removed as Record<string, unknown>;
+  const teamLabel = `${removedRec.name as string} #${removedRec.number as number}`;
+  const token = _req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const session = await getAuthenticatedAdminSession(token);
+  void logAudit({
+    session,
+    action: "delete",
+    entityType: "team",
+    entityId: id,
+    entityLabel: teamLabel,
+    ip: getAuditIp(_req),
+    alertMessage: `⚠️ <b>Команда видалена</b>\n«${teamLabel}»\nАдмін: ${session?.username ?? "unknown"}`,
+  });
 
   return NextResponse.json({ success: true });
 }

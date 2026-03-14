@@ -5,17 +5,7 @@ import { Pilot } from "@/lib/models/Pilot";
 import { Team } from "@/lib/models/Team";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
-
-function normalizePhone(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (digits.startsWith("380") && digits.length === 12) return `+${digits}`;
-  if (digits.startsWith("0") && digits.length === 10) return `+38${digits}`;
-  return `+${digits}`;
-}
-
-function isValidUkrPhone(phone: string): boolean {
-  return /^\+380\d{9}$/.test(phone);
-}
+import { isValidUkrPhone, normalizePhone } from "@/lib/utils/phone";
 
 function normalizeTeamDrivers(raw: unknown) {
   if (!Array.isArray(raw)) return [];
@@ -80,6 +70,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Вкажіть дійсний номер телефону у форматі +380XXXXXXXXX" },
         { status: 400 },
+      );
+    }
+
+    const [duplicatePilot, duplicateTeam] = await Promise.all([
+      Pilot.findOne({ championshipId: current._id, phone: teamPhone })
+        .select({ _id: 1 })
+        .lean(),
+      Team.findOne({ championshipId: current._id, phone: teamPhone })
+        .select({ _id: 1 })
+        .lean(),
+    ]);
+    if (duplicatePilot || duplicateTeam) {
+      return NextResponse.json(
+        {
+          error:
+            "Учасник з таким телефоном вже зареєстрований у цьому чемпіонаті",
+        },
+        { status: 409 },
       );
     }
 
@@ -212,6 +220,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: "Вкажіть дійсний номер телефону у форматі +380XXXXXXXXX" },
       { status: 400 },
+    );
+  }
+
+  const [duplicatePilot, duplicateTeam] = await Promise.all([
+    Pilot.findOne({ championshipId: current._id, phone })
+      .select({ _id: 1 })
+      .lean(),
+    Team.findOne({ championshipId: current._id, phone })
+      .select({ _id: 1 })
+      .lean(),
+  ]);
+  if (duplicatePilot || duplicateTeam) {
+    return NextResponse.json(
+      {
+        error:
+          "Учасник з таким телефоном вже зареєстрований у цьому чемпіонаті",
+      },
+      { status: 409 },
     );
   }
 

@@ -4,6 +4,8 @@ import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
+import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
+import { logAudit, getAuditIp } from "@/lib/audit";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -147,5 +149,19 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   }).lean();
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
+
+  const stageLabel = `Етап ${(stage as Record<string, unknown>).number as number}: ${(stage as Record<string, unknown>).name as string}`;
+  const token = _req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const session = await getAuthenticatedAdminSession(token);
+  void logAudit({
+    session,
+    action: "delete",
+    entityType: "stage",
+    entityId: id,
+    entityLabel: stageLabel,
+    ip: getAuditIp(_req),
+    alertMessage: `⚠️ <b>Етап видалено</b>\n«${stageLabel}»\nАдмін: ${session?.username ?? "unknown"}`,
+  });
+
   return NextResponse.json({ success: true });
 }

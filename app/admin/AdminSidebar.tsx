@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { AdminLogoutButton } from "@/app/header/AdminLogoutButton";
 
 const navItems = [
@@ -55,6 +56,17 @@ const navItems = [
     ),
   },
   {
+    href: "/admin/import",
+    label: "Імпорт CSV",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" x2="12" y1="3" y2="15" />
+      </svg>
+    ),
+  },
+  {
     href: "/admin/regulations",
     label: "Регламент",
     icon: (
@@ -66,10 +78,57 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    href: "/admin/users",
+    label: "Користувачі",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+  {
+    href: "/admin/audit",
+    label: "Аудит",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <path d="M9 15l2 2 4-4" />
+      </svg>
+    ),
+  },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const [role, setRole] = useState<"organizer" | "marshal" | "editor" | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/auth/session", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { role: "organizer" | "marshal" | "editor" | null; };
+        setRole(data.role ?? null);
+      } catch {
+        setRole(null);
+      }
+    })();
+  }, []);
+
+  const visibleNavItems = useMemo(() => {
+    if (role === "marshal") {
+      return navItems.filter((item) => item.href === "/admin/stages");
+    }
+    if (role === "editor") {
+      return [];
+    }
+    return navItems;
+  }, [role]);
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname.startsWith(href);
@@ -77,13 +136,13 @@ export function AdminSidebar() {
   return (
     <div className="flex flex-row min-[800px]:flex-col min-[800px]:w-52 min-[800px]:shrink-0 border-b min-[800px]:border-b-0 min-[800px]:border-r border-zinc-900 bg-zinc-950 min-[800px]:sticky min-[800px]:top-16 min-[800px]:min-h-[calc(100vh-64px)]">
       <nav className="flex-1 flex flex-row min-[800px]:flex-col p-2 min-[800px]:p-3 gap-1 overflow-x-auto min-[800px]:overflow-visible">
-        {navItems.map((item) => (
+        {visibleNavItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${isActive(item.href, item.exact)
-                ? "bg-[#ccff00] text-black"
-                : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+              ? "bg-[#ccff00] text-black"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-900"
               }`}
           >
             {item.icon}

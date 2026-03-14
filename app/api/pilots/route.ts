@@ -5,6 +5,7 @@ import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
+import { isValidUkrPhone, normalizePhone } from "@/lib/utils/phone";
 import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
@@ -65,12 +66,22 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   await connectToDatabase();
   let current;
+  const championshipId = req.nextUrl.searchParams.get("championship");
   try {
-    current = await requireCurrentChampionship();
+    current = championshipId
+      ? await Championship.findById(championshipId).lean()
+      : await requireCurrentChampionship();
   } catch {
     return NextResponse.json(
       { error: "Немає активного чемпіонату" },
       { status: 409 },
+    );
+  }
+
+  if (!current) {
+    return NextResponse.json(
+      { error: "Чемпіонат не знайдено" },
+      { status: 404 },
     );
   }
 
@@ -91,6 +102,10 @@ export async function POST(req: NextRequest) {
   const surname =
     typeof body.surname === "string" ? normalizeNamePart(body.surname) : "";
   const number = Number(body.number);
+  const phone =
+    typeof body.phone === "string" && body.phone.trim()
+      ? normalizePhone(body.phone)
+      : "";
 
   if (
     !isValidNamePart(name) ||
@@ -105,6 +120,34 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (phone && !isValidUkrPhone(phone)) {
+    return NextResponse.json(
+      { error: "Вкажіть дійсний номер телефону у форматі +380XXXXXXXXX" },
+      { status: 400 },
+    );
+  }
+
+  if (phone) {
+    const [duplicatePilot, duplicateTeam] = await Promise.all([
+      Pilot.findOne({ championshipId: current._id, phone })
+        .select({ _id: 1 })
+        .lean(),
+      Team.findOne({ championshipId: current._id, phone })
+        .select({ _id: 1 })
+        .lean(),
+    ]);
+
+    if (duplicatePilot || duplicateTeam) {
+      return NextResponse.json(
+        {
+          error:
+            "Учасник з таким телефоном вже зареєстрований у цьому чемпіонаті",
+        },
+        { status: 409 },
+      );
+    }
+  }
+
   try {
     const pilot = await Pilot.create({
       ...body,
@@ -112,6 +155,7 @@ export async function POST(req: NextRequest) {
       name,
       surname,
       number,
+      phone: phone || undefined,
     });
     return NextResponse.json(pilot, { status: 201 });
   } catch (err: unknown) {

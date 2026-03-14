@@ -5,6 +5,8 @@ import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { getPointsByPosition } from "@/lib/utils/championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
+import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
+import { logAudit, getAuditIp } from "@/lib/audit";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -91,6 +93,14 @@ export async function POST(req: NextRequest, { params }: Params) {
     };
   });
 
+  // Snapshot before state for audit log
+  const stageBefore = await Stage.findOne({
+    _id: id,
+    championshipId: current._id,
+  })
+    .select({ results: 1, name: 1, number: 1 })
+    .lean();
+
   const stage =
     current.championshipType === "teams"
       ? await Stage.findOneAndUpdate(
@@ -108,6 +118,24 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
+
+  const stageLabel = stageBefore
+    ? `Етап ${(stageBefore as Record<string, unknown>).number as number}: ${(stageBefore as Record<string, unknown>).name as string}`
+    : `Етап ${id}`;
+  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const session = await getAuthenticatedAdminSession(token);
+  void logAudit({
+    session,
+    action: "update",
+    entityType: "stage",
+    entityId: id,
+    entityLabel: stageLabel,
+    before: stageBefore
+      ? { results: (stageBefore as Record<string, unknown>).results }
+      : null,
+    after: { results: enrichedResults },
+    ip: getAuditIp(req),
+  });
 
   if (current.championshipType === "teams") {
     const teams = await Team.find({ championshipId: current._id }).lean();

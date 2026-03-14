@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
 import { LeagueSettings } from "@/lib/models/LeagueSettings";
+import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
+import { logAudit, getAuditIp } from "@/lib/audit";
 
 const SETTINGS_KEY = "global";
 
@@ -98,6 +100,18 @@ export async function POST(req: NextRequest) {
       regulations ??
       defaultRegulationsForNewChampionship(fastestLapBonusEnabled),
     prizes,
+  });
+
+  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const session = await getAuthenticatedAdminSession(token);
+  void logAudit({
+    session,
+    action: "create",
+    entityType: "championship",
+    entityId: String(created._id),
+    entityLabel: name,
+    after: { name, championshipType, fastestLapBonusEnabled },
+    ip: getAuditIp(req),
   });
 
   return NextResponse.json(created, { status: 201 });

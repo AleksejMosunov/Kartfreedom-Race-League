@@ -16,6 +16,29 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Admin Auth & Roles
+
+Authentication is stored in MongoDB (`admin_users` collection).
+
+Required variable in `.env.local`:
+
+```bash
+ADMIN_SESSION_SECRET=your_strong_random_secret
+```
+
+Optional bootstrap organizer credentials (used only to create the first organizer user automatically on first login):
+
+```bash
+ADMIN_USERNAME=organizer_login
+ADMIN_PASSWORD=organizer_password
+```
+
+Available roles:
+
+- `organizer` — full access
+- `marshal` — stage results only
+- `editor` — reserved (no permissions yet)
+
 ## Telegram Notifications (Admin)
 
 You can send league news to Telegram directly from the admin panel.

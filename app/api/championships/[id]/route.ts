@@ -6,7 +6,12 @@ import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
 import { calculateChampionshipStandings } from "@/lib/utils/championship";
 import { Pilot as IPilotType, Stage as IStageType } from "@/types";
-import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
+import {
+  AUTH_COOKIE_NAME,
+  isValidAdminSession,
+  getAuthenticatedAdminSession,
+} from "@/lib/auth";
+import { logAudit, getAuditIp } from "@/lib/audit";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -123,6 +128,18 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   }
 
   await Championship.deleteOne({ _id: id });
+
+  const token = _req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const session = await getAuthenticatedAdminSession(token);
+  void logAudit({
+    session,
+    action: "delete",
+    entityType: "championship",
+    entityId: id,
+    entityLabel: String(championship.name),
+    ip: getAuditIp(_req),
+    alertMessage: `⛔ <b>Чемпіонат видалено</b>\n«${championship.name}»\nАдмін: ${session?.username ?? "unknown"}`,
+  });
 
   return NextResponse.json({ ok: true });
 }

@@ -51,6 +51,13 @@ export default function AdminStagesPage() {
 
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [resultsRows, setResultsRows] = useState<ResultInputRow[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [bulkPenaltyPoints, setBulkPenaltyPoints] = useState(0);
+  const [bulkPenaltyReason, setBulkPenaltyReason] = useState("");
+  const [hasDraftChanges, setHasDraftChanges] = useState(false);
+  const [role, setRole] = useState<"organizer" | "marshal" | "editor" | null>(null);
+
+  const FORM_DRAFT_KEY = "admin:stages:form-draft:v1";
 
   useEffect(() => {
     const loadChampionshipSettings = async () => {
@@ -82,6 +89,47 @@ export default function AdminStagesPage() {
     const selected = activeChampionships.find((item) => item._id === selectedChampionshipId);
     setFastestLapBonusEnabled(Boolean(selected?.fastestLapBonusEnabled));
   }, [activeChampionships, selectedChampionshipId]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/auth/session", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { role: "organizer" | "marshal" | "editor" | null; };
+        setRole(data.role ?? null);
+      } catch {
+        setRole(null);
+      }
+    })();
+  }, []);
+
+  const canManageStages = role === "organizer";
+  const canEditResults = role === "organizer" || role === "marshal";
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FORM_DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as {
+        stageName?: string;
+        stageNumber?: string;
+        stageDate?: string;
+      };
+      if (typeof draft.stageName === "string") setStageName(draft.stageName);
+      if (typeof draft.stageNumber === "string") setStageNumber(draft.stageNumber);
+      if (typeof draft.stageDate === "string") setStageDate(draft.stageDate);
+    } catch {
+      // ignore malformed draft
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      FORM_DRAFT_KEY,
+      JSON.stringify({ stageName, stageNumber, stageDate }),
+    );
+    setHasDraftChanges(Boolean(stageName.trim() || stageNumber || stageDate));
+  }, [stageName, stageNumber, stageDate]);
 
   const handleAddStage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +174,8 @@ export default function AdminStagesPage() {
       setStageName("");
       setStageNumber("");
       setStageDate("");
+      localStorage.removeItem(FORM_DRAFT_KEY);
+      setHasDraftChanges(false);
       await refresh();
     } catch (err) {
       setFormError((err as Error).message);
@@ -188,6 +238,9 @@ export default function AdminStagesPage() {
         };
       }),
     );
+    setSelectedRows([]);
+    setBulkPenaltyPoints(0);
+    setBulkPenaltyReason("");
   };
 
   const applyPreviousStageTemplate = (stageId: string) => {
@@ -217,6 +270,67 @@ export default function AdminStagesPage() {
           penaltyReason: "",
         };
       }),
+    );
+    setSelectedRows([]);
+    setBulkPenaltyPoints(0);
+    setBulkPenaltyReason("");
+  };
+
+  const toggleSelectRow = (pilotId: string) => {
+    setSelectedRows((prev) =>
+      prev.includes(pilotId) ? prev.filter((id) => id !== pilotId) : [...prev, pilotId],
+    );
+  };
+
+  const selectAllRows = () => {
+    setSelectedRows(resultsRows.map((row) => row.pilotId));
+  };
+
+  const clearSelection = () => {
+    setSelectedRows([]);
+  };
+
+  const applyBulkState = (state: "dnf" | "dns") => {
+    if (selectedRows.length === 0) {
+      setResultsError("Оберіть хоча б одного учасника для масової дії.");
+      return;
+    }
+
+    setResultsRows((rows) =>
+      rows.map((row) => {
+        if (!selectedRows.includes(row.pilotId)) return row;
+        if (state === "dnf") {
+          return { ...row, dnf: true, dns: false, bestLap: false };
+        }
+        return { ...row, dns: true, dnf: false, bestLap: false, position: 999 };
+      }),
+    );
+  };
+
+  const applyBulkPenalty = () => {
+    if (selectedRows.length === 0) {
+      setResultsError("Оберіть хоча б одного учасника для масового штрафу.");
+      return;
+    }
+    if (bulkPenaltyPoints <= 0) {
+      setResultsError("Вкажіть штраф більше 0.");
+      return;
+    }
+    if (!bulkPenaltyReason.trim()) {
+      setResultsError("Вкажіть причину масового штрафу.");
+      return;
+    }
+
+    setResultsRows((rows) =>
+      rows.map((row) =>
+        selectedRows.includes(row.pilotId)
+          ? {
+            ...row,
+            penaltyPoints: bulkPenaltyPoints,
+            penaltyReason: bulkPenaltyReason.trim(),
+          }
+          : row,
+      ),
     );
   };
 
@@ -319,6 +433,9 @@ export default function AdminStagesPage() {
         ← Адмін-панель
       </Link>
       <h1 className="text-3xl font-black text-white mb-8">Етапи</h1>
+      {hasDraftChanges ? (
+        <p className="text-xs text-amber-300 mb-4">Є незбережені зміни (чернетка зберігається автоматично).</p>
+      ) : null}
 
       {activeChampionships.length > 1 && (
         <div className="mb-6 flex gap-2 flex-wrap">
@@ -346,59 +463,65 @@ export default function AdminStagesPage() {
         </div>
       )}
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
-        <h2 className="text-lg font-bold text-white mb-4">Додати етап</h2>
-        {selectedChampionshipId ? (
-          <p className="text-zinc-400 text-sm mb-4">
-            Етап буде додано до чемпіонату: <span className="text-white font-medium">
-              {activeChampionships.find((item) => item._id === selectedChampionshipId)?.name}
-            </span>
-          </p>
-        ) : (
-          <p className="text-zinc-500 text-sm mb-4">Спочатку оберіть чемпіонат.</p>
-        )}
-        <form onSubmit={handleAddStage} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input
-            type="text"
-            placeholder="Назва етапу *"
-            value={stageName}
-            onChange={(e) => setStageName(e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-            required
-          />
-          <input
-            type="number"
-            placeholder="Номер етапу *"
-            value={stageNumber}
-            onChange={(e) => setStageNumber(e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-            min={1}
-            required
-          />
-          <input
-            type="date"
-            value={stageDate}
-            onChange={(e) => setStageDate(e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-            required
-          />
-          <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={submitting || !selectedChampionshipId}>
-              {submitting ? "Додавання..." : "Додати етап"}
-            </Button>
-            <label className="flex items-center gap-2 text-sm text-zinc-300">
-              <input
-                type="checkbox"
-                checked={notifyNewStageInTelegram}
-                onChange={(e) => setNotifyNewStageInTelegram(e.target.checked)}
-                className="accent-red-500"
-              />
-              Надіслати новину в Telegram про новий етап
-            </label>
-            {formError && <p className="text-red-400 text-sm">{formError}</p>}
-          </div>
-        </form>
-      </div>
+      {canManageStages ? (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
+          <h2 className="text-lg font-bold text-white mb-4">Додати етап</h2>
+          {selectedChampionshipId ? (
+            <p className="text-zinc-400 text-sm mb-4">
+              Етап буде додано до чемпіонату: <span className="text-white font-medium">
+                {activeChampionships.find((item) => item._id === selectedChampionshipId)?.name}
+              </span>
+            </p>
+          ) : (
+            <p className="text-zinc-500 text-sm mb-4">Спочатку оберіть чемпіонат.</p>
+          )}
+          <form onSubmit={handleAddStage} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input
+              type="text"
+              placeholder="Назва етапу *"
+              value={stageName}
+              onChange={(e) => setStageName(e.target.value)}
+              className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Номер етапу *"
+              value={stageNumber}
+              onChange={(e) => setStageNumber(e.target.value)}
+              className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+              min={1}
+              required
+            />
+            <input
+              type="date"
+              value={stageDate}
+              onChange={(e) => setStageDate(e.target.value)}
+              className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+              required
+            />
+            <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
+              <Button type="submit" disabled={submitting || !selectedChampionshipId}>
+                {submitting ? "Додавання..." : "Додати етап"}
+              </Button>
+              <label className="flex items-center gap-2 text-sm text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={notifyNewStageInTelegram}
+                  onChange={(e) => setNotifyNewStageInTelegram(e.target.checked)}
+                  className="accent-red-500"
+                />
+                Надіслати новину в Telegram про новий етап
+              </label>
+              {formError && <p className="text-red-400 text-sm">{formError}</p>}
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
+          <p className="text-zinc-300 text-sm">Режим маршала: доступно лише внесення результатів етапів.</p>
+        </div>
+      )}
 
       {isLoading && <Loader />}
       {error && <p className="text-red-400 mb-4">{error}</p>}
@@ -421,7 +544,7 @@ export default function AdminStagesPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                {pilots.length > 0 && (
+                {pilots.length > 0 && canEditResults && (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -431,7 +554,7 @@ export default function AdminStagesPage() {
                     {stage.isCompleted ? "Редагувати результати" : "Внести результати"}
                   </Button>
                 )}
-                {stage.isCompleted && (
+                {stage.isCompleted && canManageStages && (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -444,7 +567,7 @@ export default function AdminStagesPage() {
                       : "Відправити результати етапу"}
                   </Button>
                 )}
-                {pilots.length > 0 && (
+                {pilots.length > 0 && canEditResults && (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -454,7 +577,7 @@ export default function AdminStagesPage() {
                     Копіювати попередній етап
                   </Button>
                 )}
-                {!stage.isCompleted && (
+                {!stage.isCompleted && canManageStages && (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -464,14 +587,16 @@ export default function AdminStagesPage() {
                     Завершити етап
                   </Button>
                 )}
-                <Button
-                  variant="danger"
-                  size="sm"
-                  className="whitespace-nowrap"
-                  onClick={() => deleteStage(stage._id)}
-                >
-                  Видалити
-                </Button>
+                {canManageStages && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="whitespace-nowrap"
+                    onClick={() => deleteStage(stage._id)}
+                  >
+                    Видалити
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -531,6 +656,40 @@ export default function AdminStagesPage() {
                   >
                     Позначити всіх як DNS
                   </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={selectAllRows}>
+                    Обрати всіх
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={clearSelection}>
+                    Очистити вибір
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => applyBulkState("dnf")}>
+                    Масово DNF (обрані)
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => applyBulkState("dns")}>
+                    Масово DNS (обрані)
+                  </Button>
+                </div>
+
+                <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-zinc-800 p-3">
+                  <span className="text-xs text-zinc-400">Масовий штраф для обраних:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={bulkPenaltyPoints}
+                    onChange={(e) => setBulkPenaltyPoints(Math.max(0, Number(e.target.value) || 0))}
+                    className="w-20 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center"
+                  />
+                  <input
+                    type="text"
+                    value={bulkPenaltyReason}
+                    onChange={(e) => setBulkPenaltyReason(e.target.value)}
+                    placeholder="Причина"
+                    className="min-w-56 flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm"
+                  />
+                  <Button type="button" variant="secondary" size="sm" onClick={applyBulkPenalty}>
+                    Застосувати
+                  </Button>
+                  <span className="text-xs text-zinc-500">Обрано: {selectedRows.length}</span>
                 </div>
 
                 <div className="space-y-2">
@@ -540,6 +699,15 @@ export default function AdminStagesPage() {
                     const pts = basePoints + (fastestLapBonusEnabled && row.bestLap ? 1 : 0) - row.penaltyPoints;
                     return (
                       <div key={row.pilotId} className="flex items-center gap-3 flex-wrap">
+                        <label className="flex items-center gap-1 text-xs text-zinc-400">
+                          <input
+                            type="checkbox"
+                            checked={selectedRows.includes(row.pilotId)}
+                            onChange={() => toggleSelectRow(row.pilotId)}
+                            className="accent-[#ccff00]"
+                          />
+                          Обрати
+                        </label>
                         <span className="text-white w-40 shrink-0 text-sm">
                           #{pilot?.number} {pilot ? formatPilotFullName(pilot.name, pilot.surname) : ""}
                         </span>

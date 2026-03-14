@@ -4,6 +4,8 @@ import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
+import { isValidUkrPhone, normalizePhone } from "@/lib/utils/phone";
+import { Pilot } from "@/lib/models/Pilot";
 import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
 
 async function getNextTeamNumber(championshipId: string) {
@@ -56,12 +58,22 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   await connectToDatabase();
   let current;
+  const championshipId = req.nextUrl.searchParams.get("championship");
   try {
-    current = await requireCurrentChampionship();
+    current = championshipId
+      ? await Championship.findById(championshipId).lean()
+      : await requireCurrentChampionship();
   } catch {
     return NextResponse.json(
       { error: "Немає активного чемпіонату" },
       { status: 409 },
+    );
+  }
+
+  if (!current) {
+    return NextResponse.json(
+      { error: "Чемпіонат не знайдено" },
+      { status: 404 },
     );
   }
 
@@ -97,6 +109,10 @@ export async function POST(req: NextRequest) {
       : await getNextTeamNumber(String(current._id));
 
   const isSolo = body.isSolo !== false;
+  const phone =
+    typeof body.phone === "string" && body.phone.trim()
+      ? normalizePhone(body.phone)
+      : "";
   const drivers = Array.isArray(body.drivers)
     ? body.drivers
         .map((driver) => {
@@ -139,12 +155,39 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (phone && !isValidUkrPhone(phone)) {
+    return NextResponse.json(
+      { error: "Вкажіть дійсний номер телефону у форматі +380XXXXXXXXX" },
+      { status: 400 },
+    );
+  }
+
+  if (phone) {
+    const [duplicatePilot, duplicateTeam] = await Promise.all([
+      Pilot.findOne({ championshipId: current._id, phone })
+        .select({ _id: 1 })
+        .lean(),
+      Team.findOne({ championshipId: current._id, phone })
+        .select({ _id: 1 })
+        .lean(),
+    ]);
+    if (duplicatePilot || duplicateTeam) {
+      return NextResponse.json(
+        {
+          error:
+            "Учасник з таким телефоном вже зареєстрований у цьому чемпіонаті",
+        },
+        { status: 409 },
+      );
+    }
+  }
+
   try {
     const created = await Team.create({
       championshipId: current._id,
       name,
       number,
-      phone: typeof body.phone === "string" ? body.phone.trim() : undefined,
+      phone: phone || undefined,
       isSolo,
       drivers: isSolo ? drivers.slice(0, 1) : drivers,
     });

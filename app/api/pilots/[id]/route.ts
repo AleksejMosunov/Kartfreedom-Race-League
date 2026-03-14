@@ -4,7 +4,12 @@ import { Pilot } from "@/lib/models/Pilot";
 import { Championship } from "@/lib/models/Championship";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
-import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
+import {
+  AUTH_COOKIE_NAME,
+  isValidAdminSession,
+  getAuthenticatedAdminSession,
+} from "@/lib/auth";
+import { logAudit, getAuditIp } from "@/lib/audit";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -134,5 +139,21 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   }).lean();
   if (!pilot)
     return NextResponse.json({ error: "Pilot not found" }, { status: 404 });
+
+  const pilotRec = pilot as Record<string, unknown>;
+  const pilotLabel =
+    `${pilotRec.name as string} ${pilotRec.surname as string} #${pilotRec.number as number}`.trim();
+  const token = _req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const session = await getAuthenticatedAdminSession(token);
+  void logAudit({
+    session,
+    action: "delete",
+    entityType: "pilot",
+    entityId: id,
+    entityLabel: pilotLabel,
+    ip: getAuditIp(_req),
+    alertMessage: `⚠️ <b>Пілот видалено</b>\n«${pilotLabel}»\nАдмін: ${session?.username ?? "unknown"}`,
+  });
+
   return NextResponse.json({ success: true });
 }
