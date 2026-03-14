@@ -76,15 +76,18 @@ function canAccessApi(role: AdminRole, request: NextRequest) {
       return (
         pathname.startsWith("/api/championships") ||
         pathname.startsWith("/api/stages") ||
-        pathname.startsWith("/api/pilots")
+        pathname.startsWith("/api/pilots") ||
+        pathname.startsWith("/api/teams") ||
+        pathname.startsWith("/api/stages") ||
+        pathname.startsWith("/api/regulations") ||
+        pathname.startsWith("/api/championships") ||
+        pathname.startsWith("/api/admin-users") ||
+        pathname.startsWith("/api/telegram") ||
+        pathname.startsWith("/api/audit") ||
+        pathname === "/api/metrics" ||
+        pathname === "/api/settings"
       );
     }
-
-    if (method === "POST" && /\/api\/stages\/[^/]+\/results$/.test(pathname)) {
-      return true;
-    }
-
-    return false;
   }
 
   return false;
@@ -134,5 +137,9 @@ export const config = {
     "/api/championships/:path*",
     "/api/admin-users/:path*",
     "/api/telegram/:path*",
+    "/api/audit/:path*",
+    "/api/audit",
+    "/api/metrics",
+    "/api/settings",
   ],
 };
