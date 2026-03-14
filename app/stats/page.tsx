@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader } from "@/app/components/ui/Loader";
+import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 
 type StatsParticipant = {
   participantId: string;
@@ -52,7 +53,7 @@ export default function StatsPage() {
         const active = payload.active ?? [];
         setActiveChampionships(active);
         if (active.length > 0) {
-          setSelectedChampionshipId((prev) => prev || active[0]._id);
+          setSelectedChampionshipId((prev) => prev || getPreferredUiChampionshipId(active));
         }
       } catch {
         setActiveChampionships([]);

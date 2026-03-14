@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RegulationsContent } from "@/types";
+import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 
 type ActiveChampionship = {
   _id: string;
@@ -14,7 +15,9 @@ export function RegulationsHub({
 }: {
   active: ActiveChampionship[];
 }) {
-  const [selectedChampionshipId, setSelectedChampionshipId] = useState(active[0]?._id ?? "");
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState(
+    getPreferredUiChampionshipId(active),
+  );
   const [content, setContent] = useState<RegulationsContent | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -58,8 +61,8 @@ export function RegulationsHub({
               type="button"
               onClick={() => setSelectedChampionshipId(item._id)}
               className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${selectedChampionshipId === item._id
-                  ? "bg-red-600 border-red-600 text-white"
-                  : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+                ? "bg-red-600 border-red-600 text-white"
+                : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
                 }`}
             >
               {item.name}

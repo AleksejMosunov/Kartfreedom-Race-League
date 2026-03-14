@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { ChampionshipTable } from "@/app/components/championship/ChampionshipTable";
+import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 
 interface ChampionshipMeta {
   _id: string;
   name: string;
-  championshipType: string;
+  championshipType: "solo" | "teams";
 }
 
 export function MultiChampionshipTabs({
@@ -14,7 +15,7 @@ export function MultiChampionshipTabs({
 }: {
   championships: ChampionshipMeta[];
 }) {
-  const [activeId, setActiveId] = useState(championships[0]?._id ?? "");
+  const [activeId, setActiveId] = useState(getPreferredUiChampionshipId(championships));
 
   return (
     <div>
@@ -24,8 +25,8 @@ export function MultiChampionshipTabs({
             key={c._id}
             onClick={() => setActiveId(c._id)}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors border ${activeId === c._id
-                ? "bg-red-600 border-red-600 text-white"
-                : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+              ? "bg-red-600 border-red-600 text-white"
+              : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
               }`}
           >
             {c.name}

@@ -9,6 +9,7 @@ import { Button } from "@/app/components/ui/Button";
 import { Badge } from "@/app/components/ui/Badge";
 import { getPointsByPosition } from "@/lib/utils/championship";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
+import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 import { StageResult } from "@/types";
 import Link from "next/link";
 
@@ -67,7 +68,7 @@ export default function AdminStagesPage() {
         const active = data.active ?? [];
         setActiveChampionships(active);
         if (active.length > 0) {
-          setSelectedChampionshipId((prev) => prev || active[0]._id);
+          setSelectedChampionshipId((prev) => prev || getPreferredUiChampionshipId(active));
         }
       } catch {
         setFastestLapBonusEnabled(false);

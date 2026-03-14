@@ -6,6 +6,7 @@ import { ChampionshipTable } from "@/app/components/championship/ChampionshipTab
 import { NoActiveChampionshipBlock } from "@/app/components/championship/NoActiveChampionshipBlock";
 import { Stage, ChampionshipStanding } from "@/types";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
+import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 
 type ActiveChampionship = {
   _id: string;
@@ -21,7 +22,9 @@ export function HomeChampionshipHub({
   active: ActiveChampionship[];
   preseasonNews: string;
 }) {
-  const [selectedChampionshipId, setSelectedChampionshipId] = useState(active[0]?._id ?? "");
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState(
+    getPreferredUiChampionshipId(active),
+  );
   const [stages, setStages] = useState<Stage[]>([]);
   const [standings, setStandings] = useState<ChampionshipStanding[]>([]);
   const [loading, setLoading] = useState(false);

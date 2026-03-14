@@ -5,6 +5,7 @@ import { useStages } from "@/app/hooks/useStages";
 import { StageCard } from "@/app/components/stages/StageCard";
 import { Loader } from "@/app/components/ui/Loader";
 import { NoActiveClientGate } from "@/app/components/championship/NoActiveClientGate";
+import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 
 export default function StagesPage() {
   const [activeChampionships, setActiveChampionships] = useState<
@@ -24,7 +25,7 @@ export default function StagesPage() {
         const active = data.active ?? [];
         setActiveChampionships(active);
         if (active.length > 0) {
-          setSelectedChampionshipId((prev) => prev || active[0]._id);
+          setSelectedChampionshipId((prev) => prev || getPreferredUiChampionshipId(active));
         }
       } catch {
         setActiveChampionships([]);
@@ -58,8 +59,8 @@ export default function StagesPage() {
                 type="button"
                 onClick={() => setSelectedChampionshipId(item._id)}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${selectedChampionshipId === item._id
-                    ? "bg-red-600 border-red-600 text-white"
-                    : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+                  ? "bg-red-600 border-red-600 text-white"
+                  : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
                   }`}
               >
                 {item.name}

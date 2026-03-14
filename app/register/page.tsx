@@ -6,6 +6,7 @@ import { Button } from "@/app/components/ui/Button";
 import { NoActiveClientGate } from "@/app/components/championship/NoActiveClientGate";
 import { Loader } from "@/app/components/ui/Loader";
 import { useEffect } from "react";
+import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 
 type ChampionshipMode = "solo" | "teams";
 type ActiveChampionship = {
@@ -35,6 +36,7 @@ export default function RegisterPage() {
 
   const selectedChampionship =
     activeChampionships.find((item) => item._id === selectedChampionshipId) ??
+    activeChampionships.find((item) => item.championshipType === "solo") ??
     activeChampionships[0] ??
     null;
   const championshipMode = selectedChampionship?.championshipType ?? "solo";
@@ -49,7 +51,7 @@ export default function RegisterPage() {
         };
         const championships = data.active ?? [];
         setActiveChampionships(championships);
-        setSelectedChampionshipId(championships[0]?._id ?? "");
+        setSelectedChampionshipId(getPreferredUiChampionshipId(championships));
       } finally {
         setModeLoading(false);
       }

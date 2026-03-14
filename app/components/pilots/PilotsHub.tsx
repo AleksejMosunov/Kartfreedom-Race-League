@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PilotsList } from "@/app/components/pilots/PilotsList";
+import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 
 type ActiveChampionship = {
   _id: string;
@@ -14,9 +15,14 @@ export function PilotsHub({
 }: {
   active: ActiveChampionship[];
 }) {
-  const [selectedChampionshipId, setSelectedChampionshipId] = useState(active[0]?._id ?? "");
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState(
+    getPreferredUiChampionshipId(active),
+  );
 
-  const selected = active.find((item) => item._id === selectedChampionshipId) ?? active[0];
+  const selected =
+    active.find((item) => item._id === selectedChampionshipId) ??
+    active.find((item) => item.championshipType === "solo") ??
+    active[0];
   const type = selected?.championshipType ?? "solo";
 
   return (
@@ -29,8 +35,8 @@ export function PilotsHub({
               type="button"
               onClick={() => setSelectedChampionshipId(item._id)}
               className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${selectedChampionshipId === item._id
-                  ? "bg-red-600 border-red-600 text-white"
-                  : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+                ? "bg-red-600 border-red-600 text-white"
+                : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
                 }`}
             >
               {item.name}

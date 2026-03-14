@@ -9,7 +9,7 @@ function buildScoringContent(fastestLapBonusEnabled: boolean): string {
   const bestLapNote = fastestLapBonusEnabled
     ? " Пілот, що показав найшвидше коло етапу, отримує додатково +1 очко."
     : "";
-  return `Бали нараховуються за фінішну позицію у фіналі:\n${rows}.${bestLapNote} У підсумковому заліку найгірший результат кожного пілота не враховується.`;
+  return `Бали нараховуються за фінішну позицію у фіналі:\n${rows}.${bestLapNote} У підсумковому заліку 2 найгірші результати кожного пілота не враховуються.`;
 }
 
 export function buildDefaultRegulations(
