@@ -59,11 +59,20 @@ export async function GET(req: NextRequest) {
   const recentAudit = await AuditLog.find()
     .sort({ createdAt: -1 })
     .limit(5)
-    .select({ action: 1, entityType: 1, entityLabel: 1, adminUsername: 1, createdAt: 1 })
+    .select({
+      action: 1,
+      entityType: 1,
+      entityLabel: 1,
+      adminUsername: 1,
+      createdAt: 1,
+    })
     .lean();
 
   return NextResponse.json({
-    championships: { active: activeChampionships, archived: archivedChampionships },
+    championships: {
+      active: activeChampionships,
+      archived: archivedChampionships,
+    },
     participants: { pilots: totalPilots, teams: totalTeams },
     stages: { total: totalStages, completed: completedStages },
     adminUsers: { total: totalAdminUsers, active: activeAdminUsers },

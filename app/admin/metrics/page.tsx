@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader } from "@/app/components/ui/Loader";
 
-type AuditActionCount = { _id: string; count: number };
+type AuditActionCount = { _id: string; count: number; };
 type RecentEntry = {
   _id: string;
   action: string;
@@ -14,10 +14,10 @@ type RecentEntry = {
 };
 
 type MetricsData = {
-  championships: { active: number; archived: number };
-  participants: { pilots: number; teams: number };
-  stages: { total: number; completed: number };
-  adminUsers: { total: number; active: number };
+  championships: { active: number; archived: number; };
+  participants: { pilots: number; teams: number; };
+  stages: { total: number; completed: number; };
+  adminUsers: { total: number; active: number; };
   auditActivity: {
     last7d: number;
     last30d: number;
@@ -49,7 +49,7 @@ const ENTITY_LABELS: Record<string, string> = {
   admin_user: "Адмін",
 };
 
-function StatCard({ label, value, sub }: { label: string; value: number | string; sub?: string }) {
+function StatCard({ label, value, sub }: { label: string; value: number | string; sub?: string; }) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
       <p className="text-zinc-500 text-xs uppercase tracking-wide mb-1">{label}</p>
@@ -69,7 +69,7 @@ export default function AdminMetricsPage() {
     setError("");
     try {
       const res = await fetch("/api/metrics", { cache: "no-store" });
-      const body = (await res.json().catch(() => ({}))) as MetricsData & { error?: string };
+      const body = (await res.json().catch(() => ({}))) as MetricsData & { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося завантажити метрики");
       setData(body);
     } catch (e) {

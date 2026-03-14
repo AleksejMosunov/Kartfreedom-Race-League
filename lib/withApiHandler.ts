@@ -35,10 +35,7 @@ export function withApiHandler<C = unknown>(
       });
       void fireAlert(req, 500, label, err);
       const { NextResponse: NR } = await import("next/server");
-      return NR.json(
-        { error: "Internal server error" },
-        { status: 500 },
-      );
+      return NR.json({ error: "Internal server error" }, { status: 500 });
     }
   };
 }
