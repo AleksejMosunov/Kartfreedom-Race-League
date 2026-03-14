@@ -6,6 +6,7 @@ import { Championship } from "@/lib/models/Championship";
 import { LeagueSettings } from "@/lib/models/LeagueSettings";
 import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
 import { logAudit, getAuditIp } from "@/lib/audit";
+import { normalizeSocialLinks, SocialLinks } from "@/lib/socialLinks";
 
 const SETTINGS_KEY = "global";
 
@@ -25,6 +26,9 @@ export async function GET() {
     current: active[0] ?? null,
     archived,
     preseasonNews: settings?.preseasonNews ?? "",
+    socialLinks: normalizeSocialLinks(
+      settings?.socialLinks as Partial<SocialLinks> | undefined,
+    ),
     preseasonNewsByType: {
       solo: settings?.preseasonNewsSolo ?? settings?.preseasonNews ?? "",
       teams: settings?.preseasonNewsTeams ?? "",
@@ -71,13 +75,6 @@ export async function POST(req: NextRequest) {
           description: (p.description as string).trim(),
         }))
     : [];
-
-  if (prizes.length === 0) {
-    return NextResponse.json(
-      { error: "Вкажіть хоча б один приз чемпіонату" },
-      { status: 400 },
-    );
-  }
 
   const championshipType = body.championshipType;
   const fastestLapBonusEnabled = Boolean(body.fastestLapBonusEnabled);

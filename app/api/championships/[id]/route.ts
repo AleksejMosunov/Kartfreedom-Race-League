@@ -172,13 +172,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
         place: (p.place as string).trim(),
         description: (p.description as string).trim(),
       }));
-
-    if (prizes.length === 0) {
-      return NextResponse.json(
-        { error: "Вкажіть хоча б один приз" },
-        { status: 400 },
-      );
-    }
     update.prizes = prizes;
   }
 

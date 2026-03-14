@@ -3,13 +3,49 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { AuditLog } from "@/lib/models/AuditLog";
 import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
 
-export async function GET(req: NextRequest) {
+type CleanupScope = "all" | "today" | "week" | "month";
+
+async function requireOrganizer(req: NextRequest) {
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   const session = await getAuthenticatedAdminSession(token);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "organizer")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!session) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+  if (session.role !== "organizer") {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
+  return { ok: true as const, session };
+}
+
+function getCleanupFilter(scope: CleanupScope) {
+  if (scope === "all") return {};
+
+  const now = new Date();
+  const start = new Date(now);
+
+  if (scope === "today") {
+    start.setHours(0, 0, 0, 0);
+    return { createdAt: { $gte: start } };
+  }
+
+  if (scope === "week") {
+    start.setDate(start.getDate() - 7);
+    return { createdAt: { $gte: start } };
+  }
+
+  start.setMonth(start.getMonth() - 1);
+  return { createdAt: { $gte: start } };
+}
+
+export async function GET(req: NextRequest) {
+  const auth = await requireOrganizer(req);
+  if (!auth.ok) return auth.response;
 
   await connectToDatabase();
   const sp = req.nextUrl.searchParams;
@@ -49,4 +85,35 @@ export async function GET(req: NextRequest) {
   ]);
 
   return NextResponse.json({ logs, total, page, limit });
+}
+
+export async function DELETE(req: NextRequest) {
+  const auth = await requireOrganizer(req);
+  if (!auth.ok) return auth.response;
+
+  const body = (await req.json().catch(() => ({}))) as {
+    scope?: CleanupScope;
+  };
+  const scope = body.scope;
+
+  if (
+    scope !== "all" &&
+    scope !== "today" &&
+    scope !== "week" &&
+    scope !== "month"
+  ) {
+    return NextResponse.json(
+      { error: "Invalid cleanup scope" },
+      { status: 400 },
+    );
+  }
+
+  await connectToDatabase();
+  const result = await AuditLog.deleteMany(getCleanupFilter(scope));
+
+  return NextResponse.json({
+    ok: true,
+    scope,
+    deletedCount: result.deletedCount ?? 0,
+  });
 }

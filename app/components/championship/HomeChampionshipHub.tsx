@@ -52,6 +52,7 @@ export function HomeChampionshipHub({
 
   const leaders = standings.slice(0, 3);
   const prizes = selectedChampionship?.prizes ?? [];
+  const hasPrizes = prizes.length > 0;
 
   if (!active.length) {
     return <NoActiveChampionshipBlock news={preseasonNews} />;
@@ -81,7 +82,7 @@ export function HomeChampionshipHub({
       )}
 
       <section className="mb-8 rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 p-6 sm:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+        <div className={`grid grid-cols-1 ${hasPrizes ? "md:grid-cols-2 gap-6 md:gap-10" : "gap-0"}`}>
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-lime-300 mb-2">Наступний етап</p>
             {nextStage ? (
@@ -115,9 +116,9 @@ export function HomeChampionshipHub({
             )}
           </div>
 
-          <div className="border-t border-zinc-800 md:border-t-0 md:border-l md:border-zinc-800 md:pl-8 pt-5 md:pt-0">
-            <p className="text-xs uppercase tracking-[0.2em] text-[#ccff00] mb-4">Призовий фонд</p>
-            {prizes.length > 0 ? (
+          {hasPrizes ? (
+            <div className="border-t border-zinc-800 md:border-t-0 md:border-l md:border-zinc-800 md:pl-8 pt-5 md:pt-0">
+              <p className="text-xs uppercase tracking-[0.2em] text-[#ccff00] mb-4">Призовий фонд</p>
               <div className="space-y-2">
                 {prizes.map((prize, i) => (
                   <div key={i} className="flex gap-3 items-center rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2.5">
@@ -128,10 +129,8 @@ export function HomeChampionshipHub({
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-zinc-600 text-sm">Інформацію про призи буде додано найближчим часом.</p>
-            )}
-          </div>
+            </div>
+          ) : null}
         </div>
       </section>
 

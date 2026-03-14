@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Stage } from "@/lib/models/Stage";
 import { Championship } from "@/lib/models/Championship";
-import { escapeHtml, sendTelegramMessage, stageLinkLine } from "@/lib/telegram";
+import {
+  escapeHtml,
+  registrationLinkLine,
+  sendTelegramMessage,
+} from "@/lib/telegram";
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
@@ -33,7 +37,7 @@ export async function POST(req: NextRequest) {
     "",
     "Реєстрація триває. До зустрічі на трасі! 🏎️",
     "",
-    stageLinkLine(String(stage._id)),
+    registrationLinkLine(String(stage.championshipId)),
   ].join("\n");
 
   await sendTelegramMessage(message);

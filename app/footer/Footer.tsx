@@ -1,6 +1,23 @@
 import Link from "next/link";
+import { connectToDatabase } from "@/lib/mongodb";
+import { LeagueSettings } from "@/lib/models/LeagueSettings";
+import { normalizeSocialLinks, SOCIAL_LINK_META, SocialLinks } from "@/lib/socialLinks";
 
-export function Footer() {
+export async function Footer() {
+  let socialLinks: SocialLinks = normalizeSocialLinks();
+
+  try {
+    await connectToDatabase();
+    const settings = await LeagueSettings.findOne({ key: "global" })
+      .select({ socialLinks: 1 })
+      .lean();
+    socialLinks = normalizeSocialLinks(
+      settings?.socialLinks as Partial<SocialLinks> | undefined,
+    );
+  } catch {
+    socialLinks = normalizeSocialLinks();
+  }
+
   return (
     <footer className="bg-black border-t border-zinc-900 mt-auto">
       <div className="max-w-6xl mx-auto px-4 py-10">
@@ -54,15 +71,10 @@ export function Footer() {
           <div>
             <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-3">Слідкуйте за нами</p>
             <div className="flex flex-col gap-2">
-              {[
-                { href: "https://t.me/kartfreedoms", label: "Telegram", tag: "TG" },
-                { href: "https://www.instagram.com/kartfreedom/", label: "Instagram", tag: "IG" },
-                { href: "https://www.facebook.com/kartfreedom", label: "Facebook", tag: "FB" },
-                { href: "https://www.youtube.com/c/KartFreedomGoKartTrack", label: "YouTube", tag: "YT" },
-              ].map((s) => (
+              {SOCIAL_LINK_META.map((s) => (
                 <a
-                  key={s.href}
-                  href={s.href}
+                  key={s.key}
+                  href={socialLinks[s.key]}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-zinc-400 text-sm hover:text-white transition-colors"

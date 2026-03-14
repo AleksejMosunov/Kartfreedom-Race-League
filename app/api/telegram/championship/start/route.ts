@@ -5,7 +5,6 @@ import {
   escapeHtml,
   registrationLinkLine,
   sendTelegramMessage,
-  championshipLinkLine,
 } from "@/lib/telegram";
 
 export async function POST(req: NextRequest) {
@@ -41,7 +40,6 @@ export async function POST(req: NextRequest) {
     "Реєстрацію відкрито. Успіхів усім учасникам! 🔥",
     "",
     registrationLinkLine(String(championship._id)),
-    championshipLinkLine(String(championship._id)),
   ].join("\n");
 
   await sendTelegramMessage(message);

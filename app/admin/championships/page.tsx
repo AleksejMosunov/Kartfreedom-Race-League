@@ -188,11 +188,6 @@ export default function AdminChampionshipsPage() {
     const validPrizes = newPrizes
       .filter((p) => p.place.trim() && p.description.trim())
       .map((p) => ({ place: p.place.trim(), description: p.description.trim() }));
-    if (validPrizes.length === 0) {
-      setError("Вкажіть хоча б один приз чемпіонату");
-      setIsSubmitting(false);
-      return;
-    }
     try {
       const res = await fetch("/api/championships", {
         method: "POST",
@@ -502,10 +497,6 @@ export default function AdminChampionshipsPage() {
     const prizes = (activePrizes[id] ?? [])
       .filter((p) => p.place.trim() && p.description.trim())
       .map((p) => ({ place: p.place.trim(), description: p.description.trim() }));
-    if (prizes.length === 0) {
-      setError("Вкажіть хоча б один приз");
-      return;
-    }
     setError("");
     setSuccess("");
     setSubmittingId(id);

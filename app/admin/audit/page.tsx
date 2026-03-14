@@ -88,6 +88,9 @@ export default function AdminAuditPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [cleanupLoading, setCleanupLoading] = useState<
+    "all" | "today" | "week" | "month" | null
+  >(null);
 
   const load = useCallback(
     async (p = page) => {
@@ -136,6 +139,44 @@ export default function AdminAuditPage() {
     });
   }
 
+  const cleanupAudit = async (
+    scope: "all" | "today" | "week" | "month",
+  ) => {
+    const labels = {
+      all: "весь аудит-лог",
+      today: "записи за сьогодні",
+      week: "записи за тиждень",
+      month: "записи за місяць",
+    };
+
+    const confirmed = window.confirm(
+      `Очистити ${labels[scope]}? Цю дію неможливо скасувати.`,
+    );
+    if (!confirmed) return;
+
+    setCleanupLoading(scope);
+    setError("");
+
+    try {
+      const res = await fetch("/api/audit", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        deletedCount?: number;
+      };
+      if (!res.ok) throw new Error(data.error ?? "Не вдалося очистити лог");
+      setExpanded(null);
+      await load(1);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setCleanupLoading(null);
+    }
+  };
+
   return (
     <main className="max-w-7xl mx-auto px-4 py-8 space-y-6">
       <div>
@@ -143,6 +184,40 @@ export default function AdminAuditPage() {
         <p className="text-zinc-500 text-sm mt-1">
           Записи зберігаються 100 днів. Мутації даних: створення, зміна, видалення.
         </p>
+      </div>
+
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
+        <div>
+          <h2 className="text-white font-semibold">Очистка логу</h2>
+          <p className="text-zinc-500 text-sm mt-1">
+            Можна видалити весь аудит-лог або лише записи за окремий період.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: "today", label: "Очистити за сьогодні" },
+            { key: "week", label: "Очистити за тиждень" },
+            { key: "month", label: "Очистити за місяць" },
+            { key: "all", label: "Очистити весь лог" },
+          ].map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() =>
+                void cleanupAudit(
+                  item.key as "all" | "today" | "week" | "month",
+                )
+              }
+              disabled={cleanupLoading !== null}
+              className={`px-3 py-2 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${item.key === "all"
+                  ? "bg-red-950 border border-red-800 text-red-300 hover:bg-red-900"
+                  : "bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700"
+                }`}
+            >
+              {cleanupLoading === item.key ? "Очищення..." : item.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filters */}

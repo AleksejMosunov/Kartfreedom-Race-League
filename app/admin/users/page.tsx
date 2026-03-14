@@ -3,6 +3,17 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/Button";
 
+type SocialLinkKey = "telegram" | "instagram" | "facebook" | "youtube";
+
+type SocialLinks = Record<SocialLinkKey, string>;
+
+const SOCIAL_LINK_FIELDS: Array<{ key: SocialLinkKey; label: string; tag: string; }> = [
+  { key: "telegram", label: "Telegram", tag: "TG" },
+  { key: "instagram", label: "Instagram", tag: "IG" },
+  { key: "facebook", label: "Facebook", tag: "FB" },
+  { key: "youtube", label: "YouTube", tag: "YT" },
+];
+
 type AdminRole = "organizer" | "marshal" | "editor";
 
 type AdminUserRow = {
@@ -28,6 +39,13 @@ export default function AdminUsersPage() {
   const [alertChatId, setAlertChatId] = useState("");
   const [alertChatLoading, setAlertChatLoading] = useState(true);
   const [alertChatSaving, setAlertChatSaving] = useState(false);
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({
+    telegram: "",
+    instagram: "",
+    facebook: "",
+    youtube: "",
+  });
+  const [socialLinksSaving, setSocialLinksSaving] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -52,8 +70,17 @@ export default function AdminUsersPage() {
     void (async () => {
       try {
         const res = await fetch("/api/settings", { cache: "no-store" });
-        const data = (await res.json().catch(() => ({}))) as { alertChatId?: string; };
+        const data = (await res.json().catch(() => ({}))) as {
+          alertChatId?: string;
+          socialLinks?: Partial<SocialLinks>;
+        };
         setAlertChatId(data.alertChatId ?? "");
+        setSocialLinks({
+          telegram: data.socialLinks?.telegram ?? "",
+          instagram: data.socialLinks?.instagram ?? "",
+          facebook: data.socialLinks?.facebook ?? "",
+          youtube: data.socialLinks?.youtube ?? "",
+        });
       } catch {
         // ignore
       } finally {
@@ -70,7 +97,7 @@ export default function AdminUsersPage() {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ alertChatId }),
+        body: JSON.stringify({ alertChatId, socialLinks }),
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося зберегти");
@@ -79,6 +106,26 @@ export default function AdminUsersPage() {
       setError((e as Error).message);
     } finally {
       setAlertChatSaving(false);
+    }
+  };
+
+  const saveSocialLinks = async () => {
+    setSocialLinksSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alertChatId, socialLinks }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; };
+      if (!res.ok) throw new Error(body.error ?? "Не вдалося зберегти соцмережі");
+      setSuccess("Соцмережі збережено.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSocialLinksSaving(false);
     }
   };
 
@@ -244,6 +291,43 @@ export default function AdminUsersPage() {
             )}
           </div>
         )}
+      </div>
+
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
+        <div>
+          <h2 className="text-white font-semibold">Соцмережі у футері</h2>
+          <p className="text-zinc-500 text-sm mt-0.5">
+            Посилання з блоку «Слідкуйте за нами» беруться з бази даних і змінюються тут.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {SOCIAL_LINK_FIELDS.map((item) => (
+            <label key={item.key} className="block">
+              <span className="text-zinc-400 text-xs uppercase tracking-[0.2em] block mb-1.5">
+                {item.tag} · {item.label}
+              </span>
+              <input
+                type="url"
+                value={socialLinks[item.key]}
+                onChange={(e) =>
+                  setSocialLinks((prev) => ({
+                    ...prev,
+                    [item.key]: e.target.value,
+                  }))
+                }
+                placeholder={`https://${item.label.toLowerCase()}.com/...`}
+                className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm w-full"
+              />
+            </label>
+          ))}
+        </div>
+
+        <div>
+          <Button onClick={saveSocialLinks} disabled={socialLinksSaving}>
+            {socialLinksSaving ? "Збереження..." : "Зберегти соцмережі"}
+          </Button>
+        </div>
       </div>
     </main>
   );
