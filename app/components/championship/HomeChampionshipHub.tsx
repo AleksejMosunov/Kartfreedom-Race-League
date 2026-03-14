@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChampionshipTable } from "@/app/components/championship/ChampionshipTable";
 import { NoActiveChampionshipBlock } from "@/app/components/championship/NoActiveChampionshipBlock";
-import { Stage, ChampionshipStanding } from "@/types";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
+import { useStages } from "@/app/hooks/useStages";
+import { useChampionship } from "@/app/hooks/useChampionship";
+import { Loader } from "@/app/components/ui/Loader";
 
 type ActiveChampionship = {
   _id: string;
@@ -25,40 +27,9 @@ export function HomeChampionshipHub({
   const [selectedChampionshipId, setSelectedChampionshipId] = useState(
     getPreferredUiChampionshipId(active),
   );
-  const [stages, setStages] = useState<Stage[]>([]);
-  const [standings, setStandings] = useState<ChampionshipStanding[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!selectedChampionshipId) return;
-
-    const load = async () => {
-      setLoading(true);
-      try {
-        const [stagesRes, standingsRes] = await Promise.all([
-          fetch(`/api/stages?championship=${encodeURIComponent(selectedChampionshipId)}`, {
-            cache: "no-store",
-          }),
-          fetch(
-            `/api/championship?championship=${encodeURIComponent(selectedChampionshipId)}`,
-            { cache: "no-store" },
-          ),
-        ]);
-
-        const stagesData = stagesRes.ok ? ((await stagesRes.json()) as Stage[]) : [];
-        const standingsData = standingsRes.ok
-          ? ((await standingsRes.json()) as ChampionshipStanding[])
-          : [];
-
-        setStages(stagesData);
-        setStandings(standingsData);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void load();
-  }, [selectedChampionshipId]);
+  const { stages, isLoading } = useStages(selectedChampionshipId || undefined);
+  const { standings } = useChampionship(selectedChampionshipId || undefined);
+  const selectedChampionship = active.find((c) => c._id === selectedChampionshipId);
 
   const nextStage = useMemo(
     () => stages.find((stage) => !stage.isCompleted) ?? null,
@@ -74,7 +45,7 @@ export function HomeChampionshipHub({
   );
 
   const leaders = standings.slice(0, 3);
-  const prizes = active.find((c) => c._id === selectedChampionshipId)?.prizes ?? [];
+  const prizes = selectedChampionship?.prizes ?? [];
 
   if (!active.length) {
     return <NoActiveChampionshipBlock news={preseasonNews} />;
@@ -221,8 +192,11 @@ export function HomeChampionshipHub({
         </p>
       </div>
 
-      {loading ? <p className="text-zinc-400">Завантаження...</p> : null}
-      <ChampionshipTable championshipId={selectedChampionshipId} />
+      {isLoading ? <Loader className="mb-6" /> : null}
+      <ChampionshipTable
+        championshipId={selectedChampionshipId}
+        championshipType={selectedChampionship?.championshipType ?? "solo"}
+      />
     </>
   );
 }

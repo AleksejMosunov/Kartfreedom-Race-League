@@ -39,7 +39,7 @@ export function MultiChampionshipTabs({
 
       {championships.map((c) =>
         activeId === c._id ? (
-          <ChampionshipTable key={c._id} championshipId={c._id} />
+          <ChampionshipTable key={c._id} championshipId={c._id} championshipType={c.championshipType} />
         ) : null,
       )}
     </div>

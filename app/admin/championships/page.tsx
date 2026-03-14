@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/Button";
+import { Loader } from "@/app/components/ui/Loader";
 import { Championship, RegulationSection, RegulationsContent } from "@/types";
 
 interface ChampionshipsResponse {
@@ -463,7 +464,7 @@ export default function AdminChampionshipsPage() {
       )}
 
       {isLoading ? (
-        <p className="text-zinc-400">Завантаження...</p>
+        <Loader className="mb-6" />
       ) : (
         <>
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6 space-y-4">

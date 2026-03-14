@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/Button";
+import { Loader } from "@/app/components/ui/Loader";
 import { RegulationSection, RegulationsContent } from "@/types";
 import { buildDefaultRegulations } from "@/lib/regulations/defaultContent";
 
@@ -140,7 +141,7 @@ export default function AdminRegulationsPage() {
       <h1 className="text-3xl font-black text-white mb-8">Регламент</h1>
 
       {isLoading ? (
-        <p className="text-zinc-400">Завантаження...</p>
+        <Loader className="mb-6" />
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex justify-end">

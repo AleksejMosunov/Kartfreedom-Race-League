@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { RegulationsContent } from "@/types";
 import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
+import { Loader } from "@/app/components/ui/Loader";
 
 type ActiveChampionship = {
   _id: string;
@@ -74,7 +75,7 @@ export function RegulationsHub({
         </div>
       )}
 
-      {loading ? <p className="text-zinc-400">Завантаження...</p> : null}
+      {loading ? <Loader className="mb-6" /> : null}
       {error ? <p className="text-red-400 mb-6">{error}</p> : null}
 
       {!loading && content ? (

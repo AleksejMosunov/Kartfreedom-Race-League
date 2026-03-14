@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdminLogoutButton } from "@/app/header/AdminLogoutButton";
@@ -11,8 +11,6 @@ export function Header() {
   const pathname = usePathname();
   const isAdminArea = pathname.startsWith("/admin");
   const mobileMenuRef = useRef<HTMLDetailsElement>(null);
-  const [hasActiveChampionship, setHasActiveChampionship] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const adminLinkClass =
     "px-3 py-2 rounded-md text-sm font-medium text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-700";
 
@@ -22,26 +20,6 @@ export function Header() {
     }
   };
 
-  useEffect(() => {
-    const loadStatus = async () => {
-      try {
-        const res = await fetch("/api/championships", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          active?: Array<unknown>;
-          current?: unknown;
-        };
-        setHasActiveChampionship((data.active?.length ?? 0) > 0 || Boolean(data.current));
-      } catch {
-        setHasActiveChampionship(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadStatus();
-  }, [pathname]);
-
   const championshipLinks = [
     { href: "/stages", label: "Етапи" },
     { href: "/pilots", label: "Учасники" },
@@ -50,9 +28,7 @@ export function Header() {
     // { href: "/register", label: "Реєстрація" },
   ];
 
-  const navLinks = !isLoading && hasActiveChampionship
-    ? [...baseLinks, ...championshipLinks]
-    : baseLinks;
+  const navLinks = [...baseLinks, ...championshipLinks];
 
   return (
     <header className="bg-black border-b border-zinc-900 sticky top-0 z-50">

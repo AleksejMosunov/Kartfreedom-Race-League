@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { NoActiveChampionshipBlock } from "@/app/components/championship/NoActiveChampionshipBlock";
+import { Loader } from "@/app/components/ui/Loader";
 
 interface NoActiveClientGateProps {
   children: React.ReactNode;
@@ -35,7 +36,7 @@ export function NoActiveClientGate({ children }: NoActiveClientGateProps) {
   if (isLoading) {
     return (
       <main className="max-w-3xl mx-auto px-4 py-12">
-        <p className="text-zinc-400 text-center">Завантаження...</p>
+        <Loader />
       </main>
     );
   }

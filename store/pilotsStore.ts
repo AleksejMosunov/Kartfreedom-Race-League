@@ -11,26 +11,36 @@ interface PilotsState {
   deletePilot: (id: string) => Promise<void>;
 }
 
+const _pilotsInflight = new Map<string, Promise<void>>();
+
 export const usePilotsStore = create<PilotsState>((set) => ({
   pilots: [],
   isLoading: false,
   error: null,
 
-  fetchPilots: async (championshipId?: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const url = championshipId
-        ? `/api/pilots?championship=${encodeURIComponent(championshipId)}`
-        : "/api/pilots";
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Помилка завантаження пілотів");
-      const data: Pilot[] = await res.json();
-      set({ pilots: data });
-    } catch (e) {
-      set({ error: (e as Error).message });
-    } finally {
-      set({ isLoading: false });
-    }
+  fetchPilots: async (championshipId?: string): Promise<void> => {
+    const key = championshipId ?? "";
+    const inflight = _pilotsInflight.get(key);
+    if (inflight) return inflight;
+    const promise = (async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const url = championshipId
+          ? `/api/pilots?championship=${encodeURIComponent(championshipId)}`
+          : "/api/pilots";
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Помилка завантаження пілотів");
+        const data: Pilot[] = await res.json();
+        set({ pilots: data });
+      } catch (e) {
+        set({ error: (e as Error).message });
+      } finally {
+        set({ isLoading: false });
+        _pilotsInflight.delete(key);
+      }
+    })();
+    _pilotsInflight.set(key, promise);
+    return promise;
   },
 
   addPilot: async (pilot) => {

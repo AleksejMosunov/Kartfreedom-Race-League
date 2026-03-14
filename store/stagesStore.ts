@@ -25,44 +25,64 @@ interface StagesState {
   setSelectedStage: (stage: Stage | null) => void;
 }
 
+// Deduplicates concurrent calls: two components calling fetchStages(id) simultaneously
+// share one in-flight promise and produce a single HTTP request.
+const _stagesInflight = new Map<string, Promise<void>>();
+
 export const useStagesStore = create<StagesState>((set) => ({
   stages: [],
   selectedStage: null,
   isLoading: false,
   error: null,
 
-  fetchStages: async (championshipId?: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const url = championshipId
-        ? `/api/stages?championship=${encodeURIComponent(championshipId)}`
-        : "/api/stages";
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Помилка завантаження етапів");
-      const data: Stage[] = await res.json();
-      set({ stages: data });
-    } catch (e) {
-      set({ error: (e as Error).message });
-    } finally {
-      set({ isLoading: false });
-    }
+  fetchStages: async (championshipId?: string): Promise<void> => {
+    const key = championshipId ?? "";
+    const inflight = _stagesInflight.get(key);
+    if (inflight) return inflight;
+    const promise = (async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const url = championshipId
+          ? `/api/stages?championship=${encodeURIComponent(championshipId)}`
+          : "/api/stages";
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Помилка завантаження етапів");
+        const data: Stage[] = await res.json();
+        set({ stages: data });
+      } catch (e) {
+        set({ error: (e as Error).message });
+      } finally {
+        set({ isLoading: false });
+        _stagesInflight.delete(key);
+      }
+    })();
+    _stagesInflight.set(key, promise);
+    return promise;
   },
 
-  fetchStageById: async (id, championshipId?: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const url = championshipId
-        ? `/api/stages/${id}?championship=${encodeURIComponent(championshipId)}`
-        : `/api/stages/${id}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Помилка завантаження етапу");
-      const data: Stage = await res.json();
-      set({ selectedStage: data });
-    } catch (e) {
-      set({ error: (e as Error).message });
-    } finally {
-      set({ isLoading: false });
-    }
+  fetchStageById: async (id, championshipId?: string): Promise<void> => {
+    const key = `id:${id}:${championshipId ?? ""}`;
+    const inflight = _stagesInflight.get(key);
+    if (inflight) return inflight;
+    const promise = (async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const url = championshipId
+          ? `/api/stages/${id}?championship=${encodeURIComponent(championshipId)}`
+          : `/api/stages/${id}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Помилка завантаження етапу");
+        const data: Stage = await res.json();
+        set({ selectedStage: data });
+      } catch (e) {
+        set({ error: (e as Error).message });
+      } finally {
+        set({ isLoading: false });
+        _stagesInflight.delete(key);
+      }
+    })();
+    _stagesInflight.set(key, promise);
+    return promise;
   },
 
   addStage: async (stage) => {

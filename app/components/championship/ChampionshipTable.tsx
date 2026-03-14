@@ -12,16 +12,26 @@ const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉"
 
 type ChampionshipType = "solo" | "teams";
 
-export function ChampionshipTable({ championshipId }: { championshipId?: string; }) {
+export function ChampionshipTable({
+  championshipId,
+  championshipType: propChampionshipType,
+}: {
+  championshipId?: string;
+  championshipType?: "solo" | "teams";
+}) {
   const { standings, isLoading, error } = useChampionship(championshipId);
   const { stages } = useStages(championshipId);
 
-  const [championshipType, setChampionshipType] = useState<ChampionshipType>("solo");
+  const [championshipType, setChampionshipType] = useState<ChampionshipType>(
+    propChampionshipType ?? "solo",
+  );
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [classFilter, setClassFilter] = useState<"all" | "top" | "mid" | "tail">("all");
   const [teamFilter, setTeamFilter] = useState("");
 
   useEffect(() => {
+    // prop already seeded the state — nothing to look up
+    if (propChampionshipType != null) return;
     if (championshipId) {
       const load = async () => {
         try {
@@ -51,7 +61,7 @@ export function ChampionshipTable({ championshipId }: { championshipId?: string;
       };
       void loadType();
     }
-  }, [championshipId]);
+  }, [championshipId, propChampionshipType]);
 
   const completedStages = stages.filter((s) => s.isCompleted);
   const normalizedStageFilter =
