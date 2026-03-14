@@ -1,6 +1,5 @@
 const TELEGRAM_API_BASE = "https://api.telegram.org";
-export const WEB_APP_URL =
-  "https://kartfreedom-race-league.vercel.app/register";
+const DEFAULT_APP_BASE_URL = "https://kartfreedom-race-league.vercel.app";
 
 function requiredEnv(name: string) {
   const value = process.env[name];
@@ -23,7 +22,37 @@ export function escapeHtml(value: string) {
 }
 
 export function webAppLinkLine() {
-  return `🔗 <a href="${WEB_APP_URL}">Веб-застосунок KartFreedom Race League</a>`;
+  return `🔗 <a href="${buildAppUrl("/register")}">Веб-застосунок KartFreedom Race League</a>`;
+}
+
+function appBaseUrl() {
+  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (fromEnv) return fromEnv.replace(/\/+$/, "");
+  return DEFAULT_APP_BASE_URL;
+}
+
+function buildAppUrl(path: string) {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${appBaseUrl()}${normalized}`;
+}
+
+export function registrationLinkLine(championshipId?: string) {
+  const query = championshipId
+    ? `?championship=${encodeURIComponent(championshipId)}`
+    : "";
+  return `🔗 <a href="${buildAppUrl(`/register${query}`)}">Реєстрація KartFreedom Race League</a>`;
+}
+
+export function championshipLinkLine(championshipId: string) {
+  return `🔗 <a href="${buildAppUrl(`/championship/${encodeURIComponent(championshipId)}`)}">Результати чемпіонату</a>`;
+}
+
+export function stageLinkLine(stageId: string) {
+  return `🔗 <a href="${buildAppUrl(`/stages/${encodeURIComponent(stageId)}`)}">Інформація про етап</a>`;
+}
+
+export function stageResultsLinkLine(stageId: string) {
+  return `🔗 <a href="${buildAppUrl(`/stages/${encodeURIComponent(stageId)}`)}">Результати етапу</a>`;
 }
 
 export async function sendTelegramMessage(text: string) {

@@ -7,9 +7,9 @@ import { Stage } from "@/lib/models/Stage";
 import { calculateChampionshipStandings } from "@/lib/utils/championship";
 import { Pilot as IPilotType, Stage as IStageType } from "@/types";
 import {
+  championshipLinkLine,
   escapeHtml,
   sendTelegramMessage,
-  webAppLinkLine,
 } from "@/lib/telegram";
 
 export async function POST(req: NextRequest) {
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       ? "Вітаємо чемпіона та призерів сезону! 🎉"
       : "Підсумки чемпіонату опубліковано.",
     "",
-    webAppLinkLine(),
+    championshipLinkLine(String(championship._id)),
   ].join("\n");
 
   await sendTelegramMessage(message);

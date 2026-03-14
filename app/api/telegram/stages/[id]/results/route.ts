@@ -7,7 +7,7 @@ import { Team } from "@/lib/models/Team";
 import {
   escapeHtml,
   sendTelegramMessage,
-  webAppLinkLine,
+  stageResultsLinkLine,
 } from "@/lib/telegram";
 
 type Params = { params: Promise<{ id: string }> };
@@ -114,7 +114,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       ? `Вітаємо переможця та призерів! 👏`
       : "Результати опубліковано.",
     "",
-    webAppLinkLine(),
+    stageResultsLinkLine(String(stage._id)),
   ]
     .filter(Boolean)
     .join("\n");

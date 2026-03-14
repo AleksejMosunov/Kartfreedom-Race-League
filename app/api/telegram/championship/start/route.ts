@@ -3,9 +3,9 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
 import {
   escapeHtml,
+  registrationLinkLine,
   sendTelegramMessage,
-  WEB_APP_URL,
-  webAppLinkLine,
+  championshipLinkLine,
 } from "@/lib/telegram";
 
 export async function POST(req: NextRequest) {
@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
     "",
     "Реєстрацію відкрито. Успіхів усім учасникам! 🔥",
     "",
-    `🔗 <a href="${WEB_APP_URL}">Реєстрація KartFreedom Race League</a>`,
+    registrationLinkLine(String(championship._id)),
+    championshipLinkLine(String(championship._id)),
   ].join("\n");
 
   await sendTelegramMessage(message);
