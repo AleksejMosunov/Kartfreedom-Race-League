@@ -71,6 +71,11 @@ export interface RegulationsContent {
   sections: RegulationSection[];
 }
 
+export interface ChampionshipPrize {
+  place: string;
+  description: string;
+}
+
 export interface Championship {
   _id: string;
   name: string;
@@ -80,6 +85,7 @@ export interface Championship {
   startedAt: string;
   endedAt?: string;
   regulations?: RegulationsContent;
+  prizes?: ChampionshipPrize[];
   createdAt?: string;
   updatedAt?: string;
 }

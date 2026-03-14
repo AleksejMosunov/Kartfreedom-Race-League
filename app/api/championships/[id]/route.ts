@@ -123,20 +123,48 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const body = (await req.json().catch(() => ({}))) as {
     fastestLapBonusEnabled?: boolean;
+    prizes?: { place?: string; description?: string }[];
   };
 
-  if (typeof body.fastestLapBonusEnabled !== "boolean") {
+  const update: Record<string, unknown> = {};
+
+  if (typeof body.fastestLapBonusEnabled === "boolean") {
+    update.fastestLapBonusEnabled = body.fastestLapBonusEnabled;
+  }
+
+  if (Array.isArray(body.prizes)) {
+    const prizes = body.prizes
+      .filter(
+        (p) =>
+          typeof p.place === "string" &&
+          p.place.trim() &&
+          typeof p.description === "string" &&
+          p.description.trim(),
+      )
+      .map((p) => ({
+        place: (p.place as string).trim(),
+        description: (p.description as string).trim(),
+      }));
+
+    if (prizes.length === 0) {
+      return NextResponse.json(
+        { error: "Вкажіть хоча б один приз" },
+        { status: 400 },
+      );
+    }
+    update.prizes = prizes;
+  }
+
+  if (Object.keys(update).length === 0) {
     return NextResponse.json(
-      { error: "Поле fastestLapBonusEnabled має бути boolean" },
+      { error: "Нічого для оновлення" },
       { status: 400 },
     );
   }
 
-  const updated = await Championship.findByIdAndUpdate(
-    id,
-    { fastestLapBonusEnabled: body.fastestLapBonusEnabled },
-    { new: true },
-  ).lean();
+  const updated = await Championship.findByIdAndUpdate(id, update, {
+    new: true,
+  }).lean();
 
   if (!updated) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

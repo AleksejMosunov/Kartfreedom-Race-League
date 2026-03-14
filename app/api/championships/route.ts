@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
     name?: string;
     championshipType?: "solo" | "teams";
     fastestLapBonusEnabled?: boolean;
+    prizes?: { place?: string; description?: string }[];
   };
   const name =
     typeof body.name === "string" && body.name.trim()
@@ -40,6 +41,28 @@ export async function POST(req: NextRequest) {
   if (body.championshipType !== "solo" && body.championshipType !== "teams") {
     return NextResponse.json(
       { error: "Оберіть формат чемпіонату: Sprint або Endurance" },
+      { status: 400 },
+    );
+  }
+
+  const prizes = Array.isArray(body.prizes)
+    ? body.prizes
+        .filter(
+          (p) =>
+            typeof p.place === "string" &&
+            p.place.trim() &&
+            typeof p.description === "string" &&
+            p.description.trim(),
+        )
+        .map((p) => ({
+          place: (p.place as string).trim(),
+          description: (p.description as string).trim(),
+        }))
+    : [];
+
+  if (prizes.length === 0) {
+    return NextResponse.json(
+      { error: "Вкажіть хоча б один приз чемпіонату" },
       { status: 400 },
     );
   }
@@ -54,6 +77,7 @@ export async function POST(req: NextRequest) {
     fastestLapBonusEnabled,
     startedAt: new Date(),
     regulations: defaultRegulationsForNewChampionship(fastestLapBonusEnabled),
+    prizes,
   });
 
   return NextResponse.json(created, { status: 201 });

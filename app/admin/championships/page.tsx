@@ -43,6 +43,11 @@ export default function AdminChampionshipsPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [notifyStartInTelegram, setNotifyStartInTelegram] = useState(true);
   const [notifyFinishInTelegram, setNotifyFinishInTelegram] = useState(true);
+  const [newPrizes, setNewPrizes] = useState<{ place: string; description: string; }[]>([
+    { place: "1", description: "" },
+  ]);
+  const [activePrizes, setActivePrizes] = useState<Record<string, { place: string; description: string; }[]>>({});
+  const [expandedPrizesChampId, setExpandedPrizesChampId] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -71,6 +76,13 @@ export default function AdminChampionshipsPage() {
       }
       setActiveFastestLap(fastestLapMap);
       setActiveRegulations(regulationsMap);
+
+      const prizesMap: Record<string, { place: string; description: string; }[]> = {};
+      for (const c of activeList) {
+        prizesMap[c._id] = (c.prizes ?? []).map((p) => ({ place: p.place, description: p.description }));
+      }
+      setActivePrizes(prizesMap);
+
       if (activeList.length > 0 && !expandedRegChampId) {
         setExpandedRegChampId(activeList[0]._id);
       }
@@ -92,6 +104,14 @@ export default function AdminChampionshipsPage() {
     setError("");
     setSuccess("");
     setIsSubmitting(true);
+    const validPrizes = newPrizes
+      .filter((p) => p.place.trim() && p.description.trim())
+      .map((p) => ({ place: p.place.trim(), description: p.description.trim() }));
+    if (validPrizes.length === 0) {
+      setError("Вкажіть хоча б один приз чемпіонату");
+      setIsSubmitting(false);
+      return;
+    }
     try {
       const res = await fetch("/api/championships", {
         method: "POST",
@@ -100,6 +120,7 @@ export default function AdminChampionshipsPage() {
           name: newName.trim(),
           championshipType: newType,
           fastestLapBonusEnabled: newFastestLapBonusEnabled,
+          prizes: validPrizes,
         }),
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; _id?: string; };
@@ -125,6 +146,7 @@ export default function AdminChampionshipsPage() {
       setNewName("");
       setNewType("solo");
       setNewFastestLapBonusEnabled(false);
+      setNewPrizes([{ place: "1", description: "" }]);
       setSuccess(`Новий чемпіонат створено. Дані починаються з нуля.${telegramWarning}`);
       await loadData();
     } catch (err) {
@@ -310,6 +332,55 @@ export default function AdminChampionshipsPage() {
     });
   };
 
+  const updateActivePrize = (
+    champId: string,
+    index: number,
+    field: "place" | "description",
+    value: string,
+  ) => {
+    setActivePrizes((prev) => ({
+      ...prev,
+      [champId]: (prev[champId] ?? []).map((p, i) =>
+        i === index ? { ...p, [field]: value } : p,
+      ),
+    }));
+  };
+
+  const removePrize = (champId: string, index: number) => {
+    setActivePrizes((prev) => ({
+      ...prev,
+      [champId]: (prev[champId] ?? []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const savePrizes = async (id: string) => {
+    const prizes = (activePrizes[id] ?? [])
+      .filter((p) => p.place.trim() && p.description.trim())
+      .map((p) => ({ place: p.place.trim(), description: p.description.trim() }));
+    if (prizes.length === 0) {
+      setError("Вкажіть хоча б один приз");
+      return;
+    }
+    setError("");
+    setSuccess("");
+    setSubmittingId(id);
+    try {
+      const res = await fetch(`/api/championships/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prizes }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; };
+      if (!res.ok) throw new Error(body.error ?? "Не вдалося зберегти призи");
+      setSuccess("Призи чемпіонату оновлено.");
+      await loadData();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
   const saveChampionshipRegulations = async (id: string) => {
     const regulations = activeRegulations[id] ?? emptyRegulations();
 
@@ -404,6 +475,7 @@ export default function AdminChampionshipsPage() {
                 {active.map((item) => {
                   const regulations = activeRegulations[item._id] ?? emptyRegulations();
                   const isExpanded = expandedRegChampId === item._id;
+                  const isPrizesExpanded = expandedPrizesChampId === item._id;
                   return (
                     <div key={item._id} className="border border-zinc-800 rounded-lg p-4 space-y-3">
                       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -463,6 +535,16 @@ export default function AdminChampionshipsPage() {
                           }
                         >
                           {isExpanded ? "Сховати регламент" : "Редагувати регламент"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() =>
+                            setExpandedPrizesChampId((prev) => (prev === item._id ? null : item._id))
+                          }
+                        >
+                          {isPrizesExpanded ? "Сховати призи" : "Редагувати призи"}
                         </Button>
                       </div>
 
@@ -545,6 +627,61 @@ export default function AdminChampionshipsPage() {
                           </Button>
                         </div>
                       )}
+
+                      {isPrizesExpanded && (
+                        <div className="mt-2 border border-zinc-800 rounded-lg p-3 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-bold text-white">Призовий фонд</h3>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() =>
+                                setActivePrizes((prev) => ({
+                                  ...prev,
+                                  [item._id]: [...(prev[item._id] ?? []), { place: "", description: "" }],
+                                }))
+                              }
+                            >
+                              Додати приз
+                            </Button>
+                          </div>
+                          {(activePrizes[item._id] ?? []).map((prize, index) => (
+                            <div key={`prize-${item._id}-${index}`} className="flex gap-2 items-center">
+                              <input
+                                type="text"
+                                placeholder="Місце (напр. 1, Топ 3)"
+                                value={prize.place}
+                                onChange={(e) => updateActivePrize(item._id, index, "place", e.target.value)}
+                                className="w-36 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                              />
+                              <input
+                                type="text"
+                                placeholder="Опис призу"
+                                value={prize.description}
+                                onChange={(e) => updateActivePrize(item._id, index, "description", e.target.value)}
+                                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                              />
+                              <Button
+                                type="button"
+                                variant="danger"
+                                size="sm"
+                                onClick={() => removePrize(item._id, index)}
+                              >
+                                ×
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => void savePrizes(item._id)}
+                            disabled={Boolean(submittingId)}
+                          >
+                            {submittingId === item._id ? "Збереження..." : "Зберегти призи"}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -571,6 +708,55 @@ export default function AdminChampionshipsPage() {
                 <option value="solo">Sprint</option>
                 <option value="teams">Endurance</option>
               </select>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-zinc-400 text-sm">Призовий фонд *</label>
+                <button
+                  type="button"
+                  onClick={() => setNewPrizes((prev) => [...prev, { place: "", description: "" }])}
+                  className="text-xs text-zinc-400 hover:text-white transition-colors"
+                >
+                  + Додати приз
+                </button>
+              </div>
+              <div className="space-y-2">
+                {newPrizes.map((prize, index) => (
+                  <div key={`new-prize-${index}`} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="Місце (напр. 1, Топ 3)"
+                      value={prize.place}
+                      onChange={(e) =>
+                        setNewPrizes((prev) =>
+                          prev.map((p, i) => (i === index ? { ...p, place: e.target.value } : p)),
+                        )
+                      }
+                      className="w-36 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Опис призу"
+                      value={prize.description}
+                      onChange={(e) =>
+                        setNewPrizes((prev) =>
+                          prev.map((p, i) => (i === index ? { ...p, description: e.target.value } : p)),
+                        )
+                      }
+                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                    />
+                    {newPrizes.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setNewPrizes((prev) => prev.filter((_, i) => i !== index))}
+                        className="px-2 py-2 rounded-md border border-zinc-700 text-zinc-400 text-sm hover:border-red-500 hover:text-red-300"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
             <label className="flex items-center gap-2 text-sm text-zinc-300">
               <input

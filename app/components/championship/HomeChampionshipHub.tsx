@@ -11,6 +11,7 @@ type ActiveChampionship = {
   _id: string;
   name: string;
   championshipType: "solo" | "teams";
+  prizes?: { place: string; description: string; }[];
 };
 
 export function HomeChampionshipHub({
@@ -70,6 +71,7 @@ export function HomeChampionshipHub({
   );
 
   const leaders = standings.slice(0, 3);
+  const prizes = active.find((c) => c._id === selectedChampionshipId)?.prizes ?? [];
 
   if (!active.length) {
     return <NoActiveChampionshipBlock news={preseasonNews} />;
@@ -99,36 +101,58 @@ export function HomeChampionshipHub({
       )}
 
       <section className="mb-8 rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 p-6 sm:p-8">
-        <p className="text-xs uppercase tracking-[0.2em] text-lime-300 mb-2">Наступний етап</p>
-        {nextStage ? (
-          <>
-            <h2 className="text-3xl sm:text-4xl font-black text-white">
-              Етап {nextStage.number}: {nextStage.name}
-            </h2>
-            <p className="text-zinc-300 mt-3">
-              Дата: {new Date(nextStage.date).toLocaleDateString("uk-UA", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-              <Link
-                href="/register"
-                className="inline-flex rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-semibold text-white transition-colors"
-              >
-                Зареєструватись
-              </Link>
-            </div>
-          </>
-        ) : (
-          <>
-            <h2 className="text-3xl sm:text-4xl font-black text-white">Календар оновлюється</h2>
-            <p className="text-zinc-300 mt-3">
-              Нові дати етапів з&apos;являться найближчим часом. Слідкуйте за оновленнями нижче.
-            </p>
-          </>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-lime-300 mb-2">Наступний етап</p>
+            {nextStage ? (
+              <>
+                <h2 className="text-2xl sm:text-3xl font-black text-white">
+                  Етап {nextStage.number}: {nextStage.name}
+                </h2>
+                <p className="text-zinc-300 mt-3">
+                  Дата: {new Date(nextStage.date).toLocaleDateString("uk-UA", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </p>
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <Link
+                    href="/register"
+                    className="inline-flex rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-semibold text-white transition-colors"
+                  >
+                    Зареєструватись
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl sm:text-3xl font-black text-white">Календар оновлюється</h2>
+                <p className="text-zinc-300 mt-3">
+                  Нові дати етапів з&apos;являться найближчим часом. Слідкуйте за оновленнями нижче.
+                </p>
+              </>
+            )}
+          </div>
+
+          <div className="border-t border-zinc-800 md:border-t-0 md:border-l md:border-zinc-700 md:pl-8 pt-5 md:pt-0">
+            <p className="text-xs uppercase tracking-[0.2em] text-amber-400 mb-3">Призовий фонд</p>
+            {prizes.length > 0 ? (
+              <div className="space-y-3">
+                {prizes.map((prize, i) => (
+                  <div key={i} className="flex gap-3 items-start">
+                    <span className="shrink-0 text-white font-bold text-xs bg-zinc-800 border border-zinc-700 px-2 py-1 rounded">
+                      {prize.place}
+                    </span>
+                    <p className="text-zinc-300 text-sm leading-snug">{prize.description}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-zinc-500 text-sm">Інформацію про призи буде додано найближчим часом.</p>
+            )}
+          </div>
+        </div>
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">

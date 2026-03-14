@@ -12,6 +12,11 @@ interface IRegulations {
   sections: IRegulationsSection[];
 }
 
+interface IPrize {
+  place: string;
+  description: string;
+}
+
 export interface IChampionship extends Document {
   name: string;
   status: "active" | "archived";
@@ -20,6 +25,7 @@ export interface IChampionship extends Document {
   startedAt: Date;
   endedAt?: Date;
   regulations: IRegulations;
+  prizes: IPrize[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +43,14 @@ const RegulationsSchema = new Schema<IRegulations>(
     title: { type: String, required: true, trim: true },
     intro: { type: String, required: true, trim: true },
     sections: { type: [RegulationsSectionSchema], default: [] },
+  },
+  { _id: false },
+);
+
+const PrizeSchema = new Schema<IPrize>(
+  {
+    place: { type: String, required: true, trim: true },
+    description: { type: String, required: true, trim: true },
   },
   { _id: false },
 );
@@ -70,6 +84,7 @@ const ChampionshipSchema = new Schema<IChampionship>(
       required: true,
       default: () => defaultRegulationsForNewChampionship(),
     },
+    prizes: { type: [PrizeSchema], default: [] },
   },
   { timestamps: true },
 );

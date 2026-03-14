@@ -15,6 +15,7 @@ export default async function Home() {
     _id: String(item._id),
     name: item.name,
     championshipType: item.championshipType,
+    prizes: ((item as Record<string, unknown>).prizes as { place: string; description: string; }[] | undefined) ?? [],
   }));
 
   return (
