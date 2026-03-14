@@ -11,11 +11,16 @@ interface Params {
   params: Promise<{ id: string }>;
 }
 
+type TeamLite = {
+  _id: unknown;
+  name: string;
+  number: number;
+};
+
 async function mapStageParticipantsForTeams(
   stage: Record<string, unknown>,
-  championshipId: string,
+  teams: TeamLite[],
 ) {
-  const teams = await Team.find({ championshipId }).lean();
   const teamById = new Map(teams.map((team) => [String(team._id), team]));
 
   return {
@@ -66,10 +71,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
 
   if (current.championshipType === "teams") {
+    const teams = await Team.find({ championshipId: current._id })
+      .select({ name: 1, number: 1 })
+      .lean<TeamLite[]>();
+
     return NextResponse.json(
       await mapStageParticipantsForTeams(
         stage as unknown as Record<string, unknown>,
-        String(current._id),
+        teams,
       ),
     );
   }
@@ -117,10 +126,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
 
   if (current.championshipType === "teams") {
+    const teams = await Team.find({ championshipId: current._id })
+      .select({ name: 1, number: 1 })
+      .lean<TeamLite[]>();
+
     return NextResponse.json(
       await mapStageParticipantsForTeams(
         stage as unknown as Record<string, unknown>,
-        String(current._id),
+        teams,
       ),
     );
   }

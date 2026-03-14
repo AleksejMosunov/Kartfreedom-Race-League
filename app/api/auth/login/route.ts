@@ -7,8 +7,13 @@ import {
   getBootstrapOrganizerCredentials,
   getAdminSessionCookieOptions,
 } from "@/lib/auth";
+import { getAuditIp, logAudit } from "@/lib/audit";
 import { AdminUser } from "@/lib/models/AdminUser";
 import { connectToDatabase } from "@/lib/mongodb";
+import { clearRateLimit, consumeRateLimit } from "@/lib/security/rateLimit";
+
+const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 10;
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,6 +22,30 @@ export async function POST(req: NextRequest) {
       username?: string;
       password?: string;
     };
+
+    const normalizedUsername =
+      typeof username === "string" ? username.trim().toLowerCase() : "";
+    const ip = getAuditIp(req) || "unknown";
+    const rateLimitKey = `${ip}:${normalizedUsername || "unknown"}`;
+    const rateLimit = consumeRateLimit(rateLimitKey, {
+      windowMs: LOGIN_RATE_LIMIT_WINDOW_MS,
+      max: LOGIN_RATE_LIMIT_MAX_ATTEMPTS,
+    });
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: "Too many login attempts. Please try again later.",
+          retryAfterSeconds: rateLimit.retryAfterSeconds,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.retryAfterSeconds),
+          },
+        },
+      );
+    }
 
     let user = await authenticateAdminCredentials(username, password);
 
@@ -32,11 +61,21 @@ export async function POST(req: NextRequest) {
     }
 
     if (!user) {
+      void logAudit({
+        action: "login_failed",
+        entityType: "admin_user",
+        entityId: normalizedUsername || "unknown",
+        entityLabel: `Failed login: ${normalizedUsername || "unknown"}`,
+        ip,
+      });
+
       return NextResponse.json(
         { error: "Invalid username or password" },
         { status: 401 },
       );
     }
+
+    clearRateLimit(rateLimitKey);
 
     await connectToDatabase();
     await AdminUser.updateOne(
@@ -56,9 +95,10 @@ export async function POST(req: NextRequest) {
     );
 
     return response;
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Authentication failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return NextResponse.json(
+      { error: "Authentication failed" },
+      { status: 500 },
+    );
   }
 }

@@ -5,6 +5,16 @@ import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
 
 type CleanupScope = "all" | "today" | "week" | "month";
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function parseDateParam(value: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 async function requireOrganizer(req: NextRequest) {
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   const session = await getAuthenticatedAdminSession(token);
@@ -49,8 +59,14 @@ export async function GET(req: NextRequest) {
 
   await connectToDatabase();
   const sp = req.nextUrl.searchParams;
-  const page = Math.max(1, Number(sp.get("page") ?? 1));
-  const limit = Math.min(100, Math.max(1, Number(sp.get("limit") ?? 20)));
+  const pageParam = Number(sp.get("page") ?? 1);
+  const limitParam = Number(sp.get("limit") ?? 20);
+  const page =
+    Number.isFinite(pageParam) && pageParam >= 1 ? Math.floor(pageParam) : 1;
+  const limit =
+    Number.isFinite(limitParam) && limitParam >= 1
+      ? Math.min(100, Math.floor(limitParam))
+      : 20;
   const skip = (page - 1) * limit;
 
   const filter: Record<string, unknown> = {};
@@ -62,15 +78,48 @@ export async function GET(req: NextRequest) {
 
   if (action) filter.action = action;
   if (entityType) filter.entityType = entityType;
-  if (adminUsername)
-    filter.adminUsername = { $regex: adminUsername, $options: "i" };
+  if (adminUsername) {
+    const normalized = adminUsername.trim();
+    if (normalized.length > 64) {
+      return NextResponse.json(
+        { error: "adminUsername is too long" },
+        { status: 400 },
+      );
+    }
+    filter.adminUsername = {
+      $regex: escapeRegex(normalized),
+      $options: "i",
+    };
+  }
   if (from || to) {
     const dateFilter: Record<string, Date> = {};
-    if (from) dateFilter.$gte = new Date(from);
+    if (from) {
+      const fromDate = parseDateParam(from);
+      if (!fromDate) {
+        return NextResponse.json(
+          { error: "Invalid from date" },
+          { status: 400 },
+        );
+      }
+      dateFilter.$gte = fromDate;
+    }
     if (to) {
-      const toDate = new Date(to);
+      const toDate = parseDateParam(to);
+      if (!toDate) {
+        return NextResponse.json({ error: "Invalid to date" }, { status: 400 });
+      }
       toDate.setHours(23, 59, 59, 999);
       dateFilter.$lte = toDate;
+    }
+    if (
+      dateFilter.$gte &&
+      dateFilter.$lte &&
+      dateFilter.$gte.getTime() > dateFilter.$lte.getTime()
+    ) {
+      return NextResponse.json(
+        { error: "from date must be less than or equal to to date" },
+        { status: 400 },
+      );
     }
     filter.createdAt = dateFilter;
   }

@@ -10,7 +10,8 @@ export type AuditAction =
   | "role_change"
   | "deactivate"
   | "activate"
-  | "create_user";
+  | "create_user"
+  | "login_failed";
 
 export type AuditEntityType =
   | "championship"

@@ -1,39 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { NoActiveChampionshipBlock } from "@/app/components/championship/NoActiveChampionshipBlock";
 import { Loader } from "@/app/components/ui/Loader";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 
 interface NoActiveClientGateProps {
   children: React.ReactNode;
 }
 
 export function NoActiveClientGate({ children }: NoActiveClientGateProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasActive, setHasActive] = useState(true);
-  const [news, setNews] = useState("");
+  const { current, preseasonNews, isLoading, hasLoaded } = useChampionshipsCatalog();
+  const hasActive = Boolean(current);
 
-  useEffect(() => {
-    const loadStatus = async () => {
-      try {
-        const res = await fetch("/api/championships");
-        const data = (await res.json().catch(() => ({}))) as {
-          current?: unknown;
-          preseasonNews?: string;
-        };
-        setHasActive(Boolean(data.current));
-        setNews(data.preseasonNews ?? "");
-      } catch {
-        setHasActive(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadStatus();
-  }, []);
-
-  if (isLoading) {
+  if (isLoading && !hasLoaded) {
     return (
       <main className="max-w-3xl mx-auto px-4 py-12">
         <Loader />
@@ -42,7 +21,7 @@ export function NoActiveClientGate({ children }: NoActiveClientGateProps) {
   }
 
   if (!hasActive) {
-    return <NoActiveChampionshipBlock news={news} />;
+    return <NoActiveChampionshipBlock news={preseasonNews} />;
   }
 
   return <>{children}</>;

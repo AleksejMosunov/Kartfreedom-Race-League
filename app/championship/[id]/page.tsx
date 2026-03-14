@@ -4,7 +4,7 @@ import { use } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChampionshipTable } from "@/app/components/championship/ChampionshipTable";
-import { Loader } from "@/app/components/ui/Loader";
+import { DetailPageSkeleton } from "@/app/components/ui/PageSkeletons";
 
 type ChampionshipType = "solo" | "teams";
 
@@ -33,13 +33,15 @@ export default function ChampionshipByIdPage({
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
       try {
         const res = await fetch(`/api/championships/${id}`, {
           cache: "no-store",
         });
         if (res.status === 404) {
-          setNotFound(true);
+          if (!cancelled) setNotFound(true);
           return;
         }
         if (!res.ok) throw new Error("Failed");
@@ -47,31 +49,32 @@ export default function ChampionshipByIdPage({
         const payload = (await res.json()) as ChampionshipPayload;
         const championship = payload.championship;
         if (!championship) {
-          setNotFound(true);
+          if (!cancelled) setNotFound(true);
           return;
         }
 
-        setName(championship.name);
-        setChampionshipType(
-          championship.championshipType === "teams" ? "teams" : "solo",
-        );
-        setStatus(championship.status ?? "unknown");
+        if (!cancelled) {
+          setName(championship.name);
+          setChampionshipType(
+            championship.championshipType === "teams" ? "teams" : "solo",
+          );
+          setStatus(championship.status ?? "unknown");
+        }
       } catch {
-        setNotFound(true);
+        if (!cancelled) setNotFound(true);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     void load();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (loading) {
-    return (
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <Loader />
-      </main>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (notFound) {

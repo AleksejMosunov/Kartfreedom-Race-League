@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStages } from "@/app/hooks/useStages";
 import { usePilots } from "@/app/hooks/usePilots";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { useStagesStore } from "@/store/stagesStore";
 import { Loader } from "@/app/components/ui/Loader";
 import { Button } from "@/app/components/ui/Button";
@@ -24,17 +25,29 @@ interface ResultInputRow {
 }
 
 export default function AdminStagesPage() {
-  const [activeChampionships, setActiveChampionships] = useState<
-    Array<{
-      _id: string;
-      name: string;
-      championshipType: "solo" | "teams";
-      fastestLapBonusEnabled?: boolean;
-    }>
-  >([]);
-  const [selectedChampionshipId, setSelectedChampionshipId] = useState("");
+  const {
+    active,
+  } = useChampionshipsCatalog();
+  const activeChampionships = sortSprintFirst(active);
+  const [selectedChampionshipIdState, setSelectedChampionshipIdState] = useState("");
+  const selectedChampionshipId = useMemo(() => {
+    if (
+      selectedChampionshipIdState &&
+      activeChampionships.some((item) => item._id === selectedChampionshipIdState)
+    ) {
+      return selectedChampionshipIdState;
+    }
+    return getPreferredUiChampionshipId(activeChampionships);
+  }, [activeChampionships, selectedChampionshipIdState]);
+  const selectedChampionship = activeChampionships.find(
+    (item) => item._id === selectedChampionshipId,
+  );
+  const fastestLapBonusEnabled = Boolean(
+    selectedChampionship?.fastestLapBonusEnabled,
+  );
   const { stages, isLoading, error, deleteStage, updateStage, refresh } = useStages(
     selectedChampionshipId || undefined,
+    { enabled: Boolean(selectedChampionshipId) },
   );
   const { pilots } = usePilots(selectedChampionshipId || undefined);
   const { saveStageResults } = useStagesStore();
@@ -45,7 +58,6 @@ export default function AdminStagesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [resultsError, setResultsError] = useState("");
-  const [fastestLapBonusEnabled, setFastestLapBonusEnabled] = useState(false);
   const [notifyNewStageInTelegram, setNotifyNewStageInTelegram] = useState(true);
   const [sendingResultsStageId, setSendingResultsStageId] = useState<string | null>(null);
 
@@ -58,37 +70,6 @@ export default function AdminStagesPage() {
   const [role, setRole] = useState<"organizer" | "marshal" | "editor" | null>(null);
 
   const FORM_DRAFT_KEY = "admin:stages:form-draft:v1";
-
-  useEffect(() => {
-    const loadChampionshipSettings = async () => {
-      try {
-        const res = await fetch("/api/championships", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          active?: Array<{
-            _id: string;
-            name: string;
-            championshipType: "solo" | "teams";
-            fastestLapBonusEnabled?: boolean;
-          }>;
-        };
-        const active = sortSprintFirst(data.active ?? []);
-        setActiveChampionships(active);
-        if (active.length > 0) {
-          setSelectedChampionshipId((prev) => prev || getPreferredUiChampionshipId(active));
-        }
-      } catch {
-        setFastestLapBonusEnabled(false);
-      }
-    };
-
-    void loadChampionshipSettings();
-  }, []);
-
-  useEffect(() => {
-    const selected = activeChampionships.find((item) => item._id === selectedChampionshipId);
-    setFastestLapBonusEnabled(Boolean(selected?.fastestLapBonusEnabled));
-  }, [activeChampionships, selectedChampionshipId]);
 
   useEffect(() => {
     void (async () => {
@@ -444,7 +425,7 @@ export default function AdminStagesPage() {
               key={item._id}
               type="button"
               onClick={() => {
-                setSelectedChampionshipId(item._id);
+                setSelectedChampionshipIdState(item._id);
                 setEditingStageId(null);
                 setFormError("");
                 setResultsError("");
@@ -469,7 +450,7 @@ export default function AdminStagesPage() {
           {selectedChampionshipId ? (
             <p className="text-zinc-400 text-sm mb-4">
               Етап буде додано до чемпіонату: <span className="text-white font-medium">
-                {activeChampionships.find((item) => item._id === selectedChampionshipId)?.name}
+                {selectedChampionship?.name}
               </span>
             </p>
           ) : (

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { usePilots } from "@/app/hooks/usePilots";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { Button } from "@/app/components/ui/Button";
 import { Loader } from "@/app/components/ui/Loader";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
@@ -29,35 +30,17 @@ function AdminPilotsPageFallback() {
 function AdminPilotsPageContent() {
   const searchParams = useSearchParams();
   const championshipId = searchParams.get("championship") ?? undefined;
+  const { active } = useChampionshipsCatalog({ enabled: Boolean(championshipId) });
   const { pilots, isLoading, error, refresh } = usePilots(championshipId);
+  const selectedChampionship = championshipId
+    ? active.find((item) => item._id === championshipId)
+    : null;
 
-  const [championshipName, setChampionshipName] = useState("");
-  const [championshipType, setChampionshipType] = useState<ChampionshipType>("solo");
+  const championshipName = selectedChampionship?.name ?? "";
+  const championshipType: ChampionshipType =
+    selectedChampionship?.championshipType === "teams" ? "teams" : "solo";
   const [deleteError, setDeleteError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadChampionship = async () => {
-      try {
-        const res = await fetch("/api/championships", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          active?: Array<{ _id: string; name: string; championshipType: ChampionshipType; }>;
-        };
-        const selected = (data.active ?? []).find((item) => item._id === championshipId);
-        if (selected) {
-          setChampionshipName(selected.name);
-          setChampionshipType(selected.championshipType);
-        }
-      } catch {
-        setChampionshipName("");
-      }
-    };
-
-    if (championshipId) {
-      void loadChampionship();
-    }
-  }, [championshipId]);
 
   const handleDelete = async (pilotId: string) => {
     if (!championshipId) return;

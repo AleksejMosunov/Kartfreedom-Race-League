@@ -1,7 +1,8 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useMemo, useState } from "react";
 import { Button } from "@/app/components/ui/Button";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 
 type ChampionshipType = "solo" | "teams";
 
@@ -69,32 +70,28 @@ function isValidPhone(phone: string): boolean {
 }
 
 export default function AdminImportPage() {
-  const [activeChampionships, setActiveChampionships] = useState<ActiveChampionship[]>([]);
-  const [selectedChampionshipId, setSelectedChampionshipId] = useState("");
+  const {
+    active,
+    isLoading: championshipsLoading,
+    hasLoaded,
+  } = useChampionshipsCatalog();
+  const activeChampionships = active as ActiveChampionship[];
+  const [selectedChampionshipIdState, setSelectedChampionshipIdState] = useState("");
+  const selectedChampionshipId = useMemo(() => {
+    if (
+      selectedChampionshipIdState &&
+      activeChampionships.some((item) => item._id === selectedChampionshipIdState)
+    ) {
+      return selectedChampionshipIdState;
+    }
+    return activeChampionships[0]?._id ?? "";
+  }, [activeChampionships, selectedChampionshipIdState]);
   const [csvText, setCsvText] = useState("");
   const [preview, setPreview] = useState<PreviewRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  useEffect(() => {
-    void (async () => {
-      try {
-        const res = await fetch("/api/championships", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as { active?: ActiveChampionship[]; };
-        const active = data.active ?? [];
-        setActiveChampionships(active);
-        if (active.length > 0) {
-          setSelectedChampionshipId(active[0]._id);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, []);
 
   const selected = useMemo(
     () => activeChampionships.find((item) => item._id === selectedChampionshipId) ?? null,
@@ -299,7 +296,7 @@ export default function AdminImportPage() {
     setPreview([]);
   };
 
-  if (isLoading) {
+  if (championshipsLoading && !hasLoaded) {
     return (
       <main className="max-w-4xl mx-auto px-4 py-8">
         <p className="text-zinc-400">Завантаження…</p>
@@ -318,7 +315,7 @@ export default function AdminImportPage() {
         <label className="text-sm text-zinc-400 block">Чемпіонат</label>
         <select
           value={selectedChampionshipId}
-          onChange={(e) => setSelectedChampionshipId(e.target.value)}
+          onChange={(e) => setSelectedChampionshipIdState(e.target.value)}
           className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
         >
           {activeChampionships.map((item) => (

@@ -6,10 +6,60 @@ import {
   sanitizeNextPath,
 } from "@/lib/auth";
 
+const ALLOWED_CORS_ORIGINS = new Set([
+  "https://kartfreedom-race-league.vercel.app",
+  "http://localhost:3000",
+]);
+
+function applySecurityHeaders(response: NextResponse) {
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  return response;
+}
+
+function applyCorsHeaders(request: NextRequest, response: NextResponse) {
+  const origin = request.headers.get("origin");
+  response.headers.append("Vary", "Origin");
+
+  if (!origin || !ALLOWED_CORS_ORIGINS.has(origin)) {
+    return response;
+  }
+
+  const requestedHeaders = request.headers.get(
+    "access-control-request-headers",
+  );
+  response.headers.set("Access-Control-Allow-Origin", origin);
+  response.headers.set("Access-Control-Allow-Credentials", "true");
+  response.headers.set(
+    "Access-Control-Allow-Methods",
+    "GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS",
+  );
+  response.headers.set(
+    "Access-Control-Allow-Headers",
+    requestedHeaders ?? "Content-Type, Authorization",
+  );
+  response.headers.set("Access-Control-Max-Age", "86400");
+  return response;
+}
+
+function applyResponseHeaders(request: NextRequest, response: NextResponse) {
+  return applySecurityHeaders(applyCorsHeaders(request, response));
+}
+
 function isProtectedRequest(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/admin")) {
+    return true;
+  }
+
+  if (
+    pathname.startsWith("/api/audit") ||
+    pathname.startsWith("/api/metrics") ||
+    pathname.startsWith("/api/settings") ||
+    pathname.startsWith("/api/admin-users")
+  ) {
     return true;
   }
 
@@ -94,8 +144,18 @@ function canAccessApi(role: AdminRole, request: NextRequest) {
 }
 
 export async function proxy(request: NextRequest) {
+  if (
+    request.nextUrl.pathname.startsWith("/api/") &&
+    request.method.toUpperCase() === "OPTIONS"
+  ) {
+    return applyResponseHeaders(
+      request,
+      new NextResponse(null, { status: 204 }),
+    );
+  }
+
   if (!isProtectedRequest(request)) {
-    return NextResponse.next();
+    return applyResponseHeaders(request, NextResponse.next());
   }
 
   const sessionToken = request.cookies.get(AUTH_COOKIE_NAME)?.value;
@@ -103,43 +163,36 @@ export async function proxy(request: NextRequest) {
   const role = session?.role ?? null;
 
   if (!role) {
-    return request.nextUrl.pathname.startsWith("/api/")
-      ? unauthorizedApiResponse()
-      : unauthorizedPageResponse(request);
+    return applyResponseHeaders(
+      request,
+      request.nextUrl.pathname.startsWith("/api/")
+        ? unauthorizedApiResponse()
+        : unauthorizedPageResponse(request),
+    );
   }
 
   if (request.nextUrl.pathname.startsWith("/admin")) {
     if (role === "marshal" && request.nextUrl.pathname === "/admin") {
-      return NextResponse.redirect(new URL("/admin/stages", request.url));
+      return applyResponseHeaders(
+        request,
+        NextResponse.redirect(new URL("/admin/stages", request.url)),
+      );
     }
     if (!canAccessAdminPage(role, request.nextUrl.pathname)) {
-      return forbiddenPageResponse();
+      return applyResponseHeaders(request, forbiddenPageResponse());
     }
-    return NextResponse.next();
+    return applyResponseHeaders(request, NextResponse.next());
   }
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
     if (!canAccessApi(role, request)) {
-      return forbiddenApiResponse();
+      return applyResponseHeaders(request, forbiddenApiResponse());
     }
   }
 
-  return NextResponse.next();
+  return applyResponseHeaders(request, NextResponse.next());
 }
 
 export const config = {
-  matcher: [
-    "/admin/:path*",
-    "/api/pilots/:path*",
-    "/api/teams/:path*",
-    "/api/stages/:path*",
-    "/api/regulations/:path*",
-    "/api/championships/:path*",
-    "/api/admin-users/:path*",
-    "/api/telegram/:path*",
-    "/api/audit/:path*",
-    "/api/audit",
-    "/api/metrics",
-    "/api/settings",
-  ],
+  matcher: ["/admin/:path*", "/api/:path*"],
 };

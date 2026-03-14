@@ -41,18 +41,9 @@ export async function GET(req: NextRequest) {
 
   const teams = await Team.find({ championshipId: current._id })
     .sort({ number: 1, name: 1 })
+    .select(isAdmin ? {} : { phone: 0, __v: 0 })
     .lean();
-
-  if (isAdmin) {
-    return NextResponse.json(teams);
-  }
-
-  const publicTeams = teams.map((team) => {
-    const { phone: _phone, ...publicTeam } = team as Record<string, unknown>;
-    return publicTeam;
-  });
-
-  return NextResponse.json(publicTeams);
+  return NextResponse.json(teams);
 }
 
 export async function POST(req: NextRequest) {

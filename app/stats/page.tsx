@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Loader } from "@/app/components/ui/Loader";
+import { StatsPageSkeleton } from "@/app/components/ui/PageSkeletons";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiChampionship";
 
 type StatsParticipant = {
@@ -34,69 +35,69 @@ function heatClass(status: "fin" | "dnf" | "dns" | "none", points: number) {
 }
 
 export default function StatsPage() {
+  const {
+    active,
+    isLoading: championshipsLoading,
+    hasLoaded,
+  } = useChampionshipsCatalog();
+  const activeChampionships = sortSprintFirst(active);
   const [data, setData] = useState<StatsPayload | null>(null);
-  const [activeChampionships, setActiveChampionships] = useState<
-    Array<{ _id: string; name: string; championshipType: "solo" | "teams"; }>
-  >([]);
-  const [selectedChampionshipId, setSelectedChampionshipId] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [selectedChampionshipIdState, setSelectedChampionshipIdState] = useState("");
+  const selectedChampionshipId = useMemo(() => {
+    if (
+      selectedChampionshipIdState &&
+      activeChampionships.some((item) => item._id === selectedChampionshipIdState)
+    ) {
+      return selectedChampionshipIdState;
+    }
+    return getPreferredUiChampionshipId(activeChampionships);
+  }, [activeChampionships, selectedChampionshipIdState]);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [error, setError] = useState("");
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
-    const loadChampionships = async () => {
-      try {
-        const res = await fetch("/api/championships", { cache: "no-store" });
-        if (!res.ok) return;
-        const payload = (await res.json()) as {
-          active?: Array<{ _id: string; name: string; championshipType: "solo" | "teams"; }>;
-        };
-        const active = sortSprintFirst(payload.active ?? []);
-        setActiveChampionships(active);
-        if (active.length > 0) {
-          setSelectedChampionshipId((prev) => prev || getPreferredUiChampionshipId(active));
-        }
-      } catch {
-        setActiveChampionships([]);
-      }
-    };
-
-    void loadChampionships();
-  }, []);
-
-  useEffect(() => {
-    if (!selectedChampionshipId) {
-      setLoading(false);
+    if ((championshipsLoading && !hasLoaded) || !selectedChampionshipId) {
+      setStatsLoading(false);
       setData(null);
       return;
     }
 
+    requestIdRef.current += 1;
+    const currentRequestId = requestIdRef.current;
+    const controller = new AbortController();
+
     const load = async () => {
-      setLoading(true);
+      setStatsLoading(true);
       setError("");
       try {
         const res = await fetch(
           `/api/stats?championship=${encodeURIComponent(selectedChampionshipId)}`,
-          { cache: "no-store" },
+          { cache: "no-store", signal: controller.signal },
         );
         if (!res.ok) throw new Error("Не вдалося завантажити статистику");
         const payload = (await res.json()) as StatsPayload;
+        if (requestIdRef.current !== currentRequestId) return;
         setData(payload);
       } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        if (requestIdRef.current !== currentRequestId) return;
         setError((err as Error).message);
       } finally {
-        setLoading(false);
+        if (requestIdRef.current === currentRequestId) {
+          setStatsLoading(false);
+        }
       }
     };
 
     void load();
-  }, [selectedChampionshipId]);
+    return () => controller.abort();
+  }, [selectedChampionshipId, championshipsLoading, hasLoaded]);
+
+  const loading = championshipsLoading || statsLoading;
 
   if (loading) {
-    return (
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <Loader />
-      </main>
-    );
+    return <StatsPageSkeleton />;
   }
 
   if (error || !data) {
@@ -132,7 +133,7 @@ export default function StatsPage() {
             <button
               key={item._id}
               type="button"
-              onClick={() => setSelectedChampionshipId(item._id)}
+              onClick={() => setSelectedChampionshipIdState(item._id)}
               className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${selectedChampionshipId === item._id
                 ? "bg-red-600 border-red-600 text-white"
                 : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"

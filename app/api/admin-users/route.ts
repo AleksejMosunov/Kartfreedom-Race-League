@@ -32,6 +32,15 @@ function isRole(value: unknown): value is AdminUserRole {
   return value === "organizer" || value === "marshal" || value === "editor";
 }
 
+function isStrongPassword(password: string) {
+  return (
+    password.length >= 12 &&
+    /[A-Z]/.test(password) &&
+    /[a-z]/.test(password) &&
+    /\d/.test(password)
+  );
+}
+
 export async function GET(req: NextRequest) {
   const auth = await requireOrganizer(req);
   if (!auth.ok) return auth.response;
@@ -75,9 +84,12 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  if (!password || password.length < 6) {
+  if (!isStrongPassword(password)) {
     return NextResponse.json(
-      { error: "Пароль має містити щонайменше 6 символів" },
+      {
+        error:
+          "Пароль має містити щонайменше 12 символів, великі та малі літери і цифру",
+      },
       { status: 400 },
     );
   }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { Button } from "@/app/components/ui/Button";
 import { Loader } from "@/app/components/ui/Loader";
 import { Team } from "@/types";
@@ -28,34 +29,21 @@ function AdminTeamsPageFallback() {
 function AdminTeamsPageContent() {
   const searchParams = useSearchParams();
   const championshipId = searchParams.get("championship") ?? undefined;
+  const { active } = useChampionshipsCatalog({ enabled: Boolean(championshipId) });
+  const selectedChampionship = championshipId
+    ? active.find((item) => item._id === championshipId)
+    : null;
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [championshipName, setChampionshipName] = useState("");
-  const [championshipType, setChampionshipType] = useState<ChampionshipType>("teams");
+  const championshipName = selectedChampionship?.name ?? "";
+  const championshipType: ChampionshipType =
+    selectedChampionship?.championshipType === "solo" ? "solo" : "teams";
 
   useEffect(() => {
-    const loadChampionship = async () => {
-      if (!championshipId) return;
-      try {
-        const res = await fetch("/api/championships", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          active?: Array<{ _id: string; name: string; championshipType: ChampionshipType; }>;
-        };
-        const selected = (data.active ?? []).find((item) => item._id === championshipId);
-        if (selected) {
-          setChampionshipName(selected.name);
-          setChampionshipType(selected.championshipType);
-        }
-      } catch {
-        setChampionshipName("");
-      }
-    };
-
     const loadTeams = async () => {
       if (!championshipId) {
         setIsLoading(false);
@@ -80,7 +68,6 @@ function AdminTeamsPageContent() {
       }
     };
 
-    void loadChampionship();
     void loadTeams();
   }, [championshipId]);
 

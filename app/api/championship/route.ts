@@ -7,9 +7,12 @@ import { Championship } from "@/lib/models/Championship";
 import { calculateChampionshipStandings } from "@/lib/utils/championship";
 import { Pilot as IPilotType, Stage as IStageType } from "@/types";
 import { getCurrentChampionship } from "@/lib/championship/current";
+import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   await connectToDatabase();
+  const sessionToken = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const isAdmin = await isValidAdminSession(sessionToken);
 
   const championshipId = req.nextUrl.searchParams.get("championship");
   const current = championshipId
@@ -33,7 +36,10 @@ export async function GET(req: NextRequest) {
               number: team.number,
             })),
           )
-      : Pilot.find({ championshipId: current._id }).sort({ number: 1 }).lean(),
+      : Pilot.find({ championshipId: current._id })
+          .sort({ number: 1 })
+          .select(isAdmin ? {} : { phone: 0, __v: 0 })
+          .lean(),
     current.championshipType === "teams"
       ? Stage.find()
           .where("championshipId")

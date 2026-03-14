@@ -1,39 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useStages } from "@/app/hooks/useStages";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { StageCard } from "@/app/components/stages/StageCard";
-import { Loader } from "@/app/components/ui/Loader";
 import { NoActiveClientGate } from "@/app/components/championship/NoActiveClientGate";
+import { StagesGridSkeleton } from "@/app/components/ui/PageSkeletons";
 import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiChampionship";
 
 export default function StagesPage() {
-  const [activeChampionships, setActiveChampionships] = useState<
-    Array<{ _id: string; name: string; championshipType: "solo" | "teams"; }>
-  >([]);
-  const [selectedChampionshipId, setSelectedChampionshipId] = useState("");
-  const { stages, isLoading, error } = useStages(selectedChampionshipId || undefined);
+  const { active, isLoading: championshipsLoading, hasLoaded } = useChampionshipsCatalog();
+  const activeChampionships = sortSprintFirst(active);
+  const [selectedChampionshipIdState, setSelectedChampionshipIdState] = useState("");
+  const selectedChampionshipId = useMemo(() => {
+    if (
+      selectedChampionshipIdState &&
+      activeChampionships.some((item) => item._id === selectedChampionshipIdState)
+    ) {
+      return selectedChampionshipIdState;
+    }
+    return getPreferredUiChampionshipId(activeChampionships);
+  }, [activeChampionships, selectedChampionshipIdState]);
+  const shouldFetchStages = Boolean(selectedChampionshipId);
+  const { stages, isLoading, error } = useStages(
+    selectedChampionshipId || undefined,
+    { enabled: shouldFetchStages },
+  );
 
-  useEffect(() => {
-    const loadChampionships = async () => {
-      try {
-        const res = await fetch("/api/championships", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          active?: Array<{ _id: string; name: string; championshipType: "solo" | "teams"; }>;
-        };
-        const active = sortSprintFirst(data.active ?? []);
-        setActiveChampionships(active);
-        if (active.length > 0) {
-          setSelectedChampionshipId((prev) => prev || getPreferredUiChampionshipId(active));
-        }
-      } catch {
-        setActiveChampionships([]);
-      }
-    };
+  const isBootstrapping =
+    (championshipsLoading && !hasLoaded) ||
+    (activeChampionships.length > 0 && !selectedChampionshipId) ||
+    (shouldFetchStages && isLoading);
 
-    void loadChampionships();
-  }, []);
+  if (isBootstrapping) {
+    return (
+      <NoActiveClientGate>
+        <StagesGridSkeleton />
+      </NoActiveClientGate>
+    );
+  }
 
   const upcomingStages = stages
     .filter((stage) => !stage.isCompleted)
@@ -57,7 +62,7 @@ export default function StagesPage() {
               <button
                 key={item._id}
                 type="button"
-                onClick={() => setSelectedChampionshipId(item._id)}
+                onClick={() => setSelectedChampionshipIdState(item._id)}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${selectedChampionshipId === item._id
                   ? "bg-red-600 border-red-600 text-white"
                   : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
@@ -69,13 +74,12 @@ export default function StagesPage() {
           </div>
         )}
 
-        {isLoading && <Loader />}
         {error && <p className="text-red-400 text-center py-8">{error}</p>}
-        {!isLoading && !error && !stages.length && (
+        {!error && !stages.length && (
           <p className="text-zinc-500 text-center py-12">Етапи ще не додані.</p>
         )}
 
-        {!isLoading && !error && stages.length > 0 && (
+        {!error && stages.length > 0 && (
           <div className="space-y-10">
             <section>
               <div className="mb-4">

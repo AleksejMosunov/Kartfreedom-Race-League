@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
 import { NoActiveClientGate } from "@/app/components/championship/NoActiveClientGate";
 import { Loader } from "@/app/components/ui/Loader";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiChampionship";
 
 type ChampionshipMode = "solo" | "teams";
@@ -17,9 +18,14 @@ type ActiveChampionship = {
 
 function RegisterPageInner() {
   const searchParams = useSearchParams();
-  const [activeChampionships, setActiveChampionships] = useState<ActiveChampionship[]>([]);
+  const championshipFromUrl = searchParams.get("championship") ?? "";
+  const {
+    active,
+    isLoading: championshipsLoading,
+    hasLoaded,
+  } = useChampionshipsCatalog();
+  const activeChampionships = sortSprintFirst(active as ActiveChampionship[]);
   const [selectedChampionshipId, setSelectedChampionshipId] = useState("");
-  const [modeLoading, setModeLoading] = useState(true);
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [number, setNumber] = useState("");
@@ -41,28 +47,16 @@ function RegisterPageInner() {
     activeChampionships[0] ??
     null;
   const championshipMode = selectedChampionship?.championshipType ?? "solo";
+  const modeLoading = (championshipsLoading && !hasLoaded) || (activeChampionships.length > 0 && !selectedChampionshipId);
 
   useEffect(() => {
-    const loadChampionshipMode = async () => {
-      try {
-        const res = await fetch("/api/championships", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          active?: ActiveChampionship[];
-        };
-        const championships = sortSprintFirst(data.active ?? []);
-        setActiveChampionships(championships);
-        const fromUrl = searchParams.get("championship");
-        const preferred = fromUrl && championships.some((c) => c._id === fromUrl)
-          ? fromUrl
-          : getPreferredUiChampionshipId(championships);
-        setSelectedChampionshipId(preferred);
-      } finally {
-        setModeLoading(false);
-      }
-    };
-    void loadChampionshipMode();
-  }, []);
+    if (!activeChampionships.length) return;
+    const preferred =
+      championshipFromUrl && activeChampionships.some((c) => c._id === championshipFromUrl)
+        ? championshipFromUrl
+        : getPreferredUiChampionshipId(activeChampionships);
+    setSelectedChampionshipId((prev) => prev || preferred);
+  }, [activeChampionships, championshipFromUrl]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

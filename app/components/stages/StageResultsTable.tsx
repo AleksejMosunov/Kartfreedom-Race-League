@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Stage } from "@/types";
 import { Badge } from "@/app/components/ui/Badge";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 interface StageResultsTableProps {
@@ -12,26 +13,11 @@ const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉"
 type ChampionshipType = "solo" | "teams";
 
 export function StageResultsTable({ stage }: StageResultsTableProps) {
-  const [championshipType, setChampionshipType] = useState<ChampionshipType>("solo");
+  const { current } = useChampionshipsCatalog();
+  const championshipType: ChampionshipType =
+    current?.championshipType === "teams" ? "teams" : "solo";
   const [statusFilter, setStatusFilter] = useState<"all" | "fin" | "dnf" | "dns">("all");
   const [teamFilter, setTeamFilter] = useState("");
-
-  useEffect(() => {
-    const loadType = async () => {
-      try {
-        const res = await fetch("/api/championships", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          current?: { championshipType?: ChampionshipType; } | null;
-        };
-        setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");
-      } catch {
-        setChampionshipType("solo");
-      }
-    };
-
-    void loadType();
-  }, []);
 
   const sorted = [...stage.results].sort((a, b) => a.position - b.position);
   const filtered = sorted.filter((result) => {

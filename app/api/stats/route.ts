@@ -30,6 +30,10 @@ type StageRow = {
   results: StageResultRow[];
 };
 
+type PreparedStageRow = StageRow & {
+  resultByPilotId: Map<string, StageResultRow>;
+};
+
 function participantLabel(p: Participant) {
   return p.surname ? `${p.name} ${p.surname}`.trim() : p.name;
 }
@@ -61,6 +65,7 @@ export async function GET(req: NextRequest) {
   const [participantsRaw, stagesRaw] = await Promise.all([
     current.championshipType === "teams"
       ? Team.find({ championshipId: current._id })
+          .select({ name: 1, number: 1 })
           .sort({ number: 1, name: 1 })
           .lean()
           .then((teams) =>
@@ -72,6 +77,7 @@ export async function GET(req: NextRequest) {
             })),
           )
       : Pilot.find({ championshipId: current._id })
+          .select({ name: 1, surname: 1, number: 1 })
           .sort({ number: 1 })
           .lean()
           .then((pilots) =>
@@ -82,13 +88,27 @@ export async function GET(req: NextRequest) {
               number: pilot.number,
             })),
           ),
-    Stage.find({ championshipId: current._id }).sort({ number: 1 }).lean(),
+    Stage.find({ championshipId: current._id })
+      .select({ number: 1, name: 1, isCompleted: 1, results: 1 })
+      .sort({ number: 1 })
+      .lean(),
   ]);
 
   const participants = participantsRaw as Participant[];
-  const completedStages = (stagesRaw as unknown as StageRow[]).filter(
-    (stage) => stage.isCompleted,
-  );
+  const completedStages = (stagesRaw as unknown as StageRow[])
+    .filter((stage) => stage.isCompleted)
+    .map(
+      (stage) =>
+        ({
+          ...stage,
+          resultByPilotId: new Map(
+            ((stage.results as StageResultRow[]) ?? []).map((row) => [
+              String(row.pilotId),
+              row,
+            ]),
+          ),
+        }) as PreparedStageRow,
+    );
 
   const stageLabels = completedStages.map((stage) => ({
     id: String(stage._id),
@@ -115,9 +135,7 @@ export async function GET(req: NextRequest) {
     let fastestLaps = 0;
 
     for (const stage of completedStages) {
-      const result = stage.results.find(
-        (row) => String(row.pilotId) === participant._id,
-      );
+      const result = stage.resultByPilotId.get(participant._id);
       const pts = result?.points ?? 0;
       cumulative += pts;
 
@@ -175,9 +193,16 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({
-    championshipType: current.championshipType,
-    participants: participantStats,
-    stageLabels,
-  });
+  return NextResponse.json(
+    {
+      championshipType: current.championshipType,
+      participants: participantStats,
+      stageLabels,
+    },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+      },
+    },
+  );
 }

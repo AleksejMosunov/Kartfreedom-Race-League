@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/Button";
 import { Loader } from "@/app/components/ui/Loader";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { RegulationSection, RegulationsContent } from "@/types";
 import { buildDefaultRegulations } from "@/lib/regulations/defaultContent";
 
@@ -19,18 +20,15 @@ export default function AdminRegulationsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  const [fastestLapBonusEnabled, setFastestLapBonusEnabled] = useState(false);
+  const { current } = useChampionshipsCatalog();
+  const fastestLapBonusEnabled = Boolean(current?.fastestLapBonusEnabled);
 
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       setError("");
       try {
-        const [regRes, champRes] = await Promise.all([
-          fetch("/api/regulations"),
-          fetch("/api/championships", { cache: "no-store" }),
-        ]);
+        const regRes = await fetch("/api/regulations");
         if (!regRes.ok) throw new Error("Не вдалося завантажити регламент");
         const payload = (await regRes.json()) as RegulationsContent;
         setData({
@@ -38,12 +36,6 @@ export default function AdminRegulationsPage() {
           intro: payload.intro,
           sections: payload.sections.length > 0 ? payload.sections : [emptySection],
         });
-        if (champRes.ok) {
-          const champData = (await champRes.json()) as {
-            current?: { fastestLapBonusEnabled?: boolean; } | null;
-          };
-          setFastestLapBonusEnabled(Boolean(champData.current?.fastestLapBonusEnabled));
-        }
       } catch (err) {
         setError((err as Error).message);
       } finally {

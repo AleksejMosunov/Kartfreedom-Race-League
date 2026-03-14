@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useChampionship } from "@/app/hooks/useChampionship";
 import { useStages } from "@/app/hooks/useStages";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { Badge } from "@/app/components/ui/Badge";
 import { Loader } from "@/app/components/ui/Loader";
 import { POINTS_TABLE } from "@/lib/utils/championship";
@@ -21,46 +22,41 @@ export function ChampionshipTable({
 }) {
   const { standings, isLoading, error } = useChampionship(championshipId);
   const { stages } = useStages(championshipId);
+  const { current } = useChampionshipsCatalog({ enabled: !championshipId && !propChampionshipType });
 
-  const [championshipType, setChampionshipType] = useState<ChampionshipType>(
-    propChampionshipType ?? "solo",
-  );
+  const [championshipTypeById, setChampionshipTypeById] = useState<ChampionshipType>("solo");
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [classFilter, setClassFilter] = useState<"all" | "top" | "mid" | "tail">("all");
   const [teamFilter, setTeamFilter] = useState("");
 
+  const championshipType: ChampionshipType =
+    propChampionshipType ??
+    (championshipId
+      ? championshipTypeById
+      : current?.championshipType === "teams"
+        ? "teams"
+        : "solo");
+
   useEffect(() => {
-    // prop already seeded the state — nothing to look up
+    // prop fully defines the type
     if (propChampionshipType != null) return;
-    if (championshipId) {
-      const load = async () => {
-        try {
-          const res = await fetch(`/api/championships/${championshipId}`);
-          if (!res.ok) return;
-          const data = (await res.json()) as {
-            championship?: { championshipType?: ChampionshipType; };
-          };
-          setChampionshipType(data.championship?.championshipType === "teams" ? "teams" : "solo");
-        } catch {
-          setChampionshipType("solo");
-        }
-      };
-      void load();
-    } else {
-      const loadType = async () => {
-        try {
-          const res = await fetch("/api/championships", { cache: "no-store" });
-          if (!res.ok) return;
-          const data = (await res.json()) as {
-            current?: { championshipType?: ChampionshipType; } | null;
-          };
-          setChampionshipType(data.current?.championshipType === "teams" ? "teams" : "solo");
-        } catch {
-          setChampionshipType("solo");
-        }
-      };
-      void loadType();
-    }
+    if (!championshipId) return;
+
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/championships/${championshipId}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          championship?: { championshipType?: ChampionshipType; };
+        };
+        setChampionshipTypeById(
+          data.championship?.championshipType === "teams" ? "teams" : "solo",
+        );
+      } catch {
+        setChampionshipTypeById("solo");
+      }
+    };
+    void load();
   }, [championshipId, propChampionshipType]);
 
   const completedStages = stages.filter((s) => s.isCompleted);

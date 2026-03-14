@@ -1,7 +1,11 @@
 import { useEffect } from "react";
 import { useStagesStore } from "@/store/stagesStore";
 
-export function useStages(championshipId?: string) {
+interface UseStagesOptions {
+  enabled?: boolean;
+}
+
+export function useStages(championshipId?: string, options?: UseStagesOptions) {
   const {
     stages,
     isLoading,
@@ -12,10 +16,13 @@ export function useStages(championshipId?: string) {
     deleteStage,
   } = useStagesStore();
 
+  const enabled = options?.enabled ?? true;
+
   useEffect(() => {
+    if (!enabled) return;
     fetchStages(championshipId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [championshipId]);
+  }, [championshipId, enabled]);
 
   return {
     stages,

@@ -13,14 +13,6 @@ export async function GET(req: NextRequest) {
   const sessionToken = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   const isAdmin = await isValidAdminSession(sessionToken);
 
-  const hidePhoneForPublic = <T extends Record<string, unknown>>(
-    item: T,
-  ): T => {
-    if (isAdmin) return item;
-    const { phone: _phone, ...rest } = item;
-    return rest as T;
-  };
-
   let current;
   try {
     const championshipId = req.nextUrl.searchParams.get("championship");
@@ -38,29 +30,30 @@ export async function GET(req: NextRequest) {
   if (current.championshipType === "teams") {
     const teams = await Team.find({ championshipId: current._id })
       .sort({ number: 1, name: 1 })
+      .select(isAdmin ? {} : { phone: 0, __v: 0 })
       .lean();
-    const participants = teams
-      .map((team) => ({
+    const participants = teams.map((team) => {
+      const base = {
         _id: String(team._id),
         name: team.name,
         surname: "",
         number: team.number,
-        phone: team.phone,
         teamIsSolo: team.isSolo,
         teamDrivers: team.drivers ?? [],
         createdAt: team.createdAt,
         updatedAt: team.updatedAt,
-      }))
-      .map(hidePhoneForPublic);
+      };
+
+      return isAdmin ? { ...base, phone: team.phone } : base;
+    });
     return NextResponse.json(participants);
   }
 
   const pilots = await Pilot.find({ championshipId: current._id })
     .sort({ number: 1 })
+    .select(isAdmin ? {} : { phone: 0, __v: 0 })
     .lean();
-  return NextResponse.json(
-    pilots.map((pilot) => hidePhoneForPublic(pilot as Record<string, unknown>)),
-  );
+  return NextResponse.json(pilots);
 }
 
 export async function POST(req: NextRequest) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
+import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
 import { RegulationSection, RegulationsContent } from "@/types";
 
 interface Params {
@@ -43,6 +44,15 @@ export async function GET(_req: NextRequest, { params }: Params) {
 }
 
 export async function PUT(req: NextRequest, { params }: Params) {
+  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const session = await getAuthenticatedAdminSession(token);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.role !== "organizer") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   await connectToDatabase();
   const { id } = await params;
 

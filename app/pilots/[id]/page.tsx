@@ -1,11 +1,12 @@
 "use client";
 
 import { use } from "react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { usePilotsStore } from "@/store/pilotsStore";
 import { useChampionshipStore } from "@/store/championshipStore";
-import { Loader } from "@/app/components/ui/Loader";
+import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
+import { DetailPageSkeleton } from "@/app/components/ui/PageSkeletons";
 import Link from "next/link";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
@@ -20,19 +21,24 @@ export default function PilotDetailPage({ params }: { params: Promise<{ id: stri
 }
 
 function PilotDetailPageFallback() {
-  return (
-    <main className="max-w-3xl mx-auto px-4 py-8">
-      <Loader />
-    </main>
-  );
+  return <DetailPageSkeleton />;
 }
 
 function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
   const { pilots, fetchPilots, isLoading } = usePilotsStore();
-  const { standings, fetchStandings } = useChampionshipStore();
-  const [championshipType, setChampionshipType] = useState<ChampionshipType>("solo");
+  const {
+    standings,
+    fetchStandings,
+    isLoading: standingsLoading,
+  } = useChampionshipStore();
+  const {
+    active,
+    current,
+    isLoading: catalogLoading,
+    hasLoaded: catalogLoaded,
+  } = useChampionshipsCatalog();
   const championshipId = searchParams.get("championship") ?? undefined;
 
   useEffect(() => {
@@ -40,33 +46,18 @@ function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; 
     fetchStandings(championshipId);
   }, [championshipId, fetchPilots, fetchStandings]);
 
-  useEffect(() => {
-    const loadChampionshipType = async () => {
-      try {
-        const res = await fetch("/api/championships", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          active?: Array<{ _id: string; championshipType?: ChampionshipType; }>;
-          current?: { championshipType?: ChampionshipType; } | null;
-        };
-        const selected = championshipId
-          ? (data.active ?? []).find((item) => item._id === championshipId)
-          : data.current;
-        setChampionshipType(selected?.championshipType === "teams" ? "teams" : "solo");
-      } catch {
-        setChampionshipType("solo");
-      }
-    };
-
-    void loadChampionshipType();
-  }, [championshipId]);
-
   const pilot = pilots.find((p) => p._id === id);
   const standing = standings.find((s) => s.pilot._id === id);
   const pilotFullName = pilot ? formatPilotFullName(pilot.name, pilot.surname) : "";
+  const selectedChampionship = championshipId
+    ? active.find((item) => item._id === championshipId)
+    : current;
+  const championshipType: ChampionshipType =
+    selectedChampionship?.championshipType === "teams" ? "teams" : "solo";
   const isTeams = championshipType === "teams";
+  const loading = isLoading || standingsLoading || (catalogLoading && !catalogLoaded);
 
-  if (isLoading) return <Loader />;
+  if (loading) return <DetailPageSkeleton />;
   if (!pilot)
     return (
       <main className="max-w-2xl mx-auto px-4 py-16 text-center">

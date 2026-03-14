@@ -13,7 +13,8 @@ type AuditAction =
   | "role_change"
   | "deactivate"
   | "activate"
-  | "create_user";
+  | "create_user"
+  | "login_failed";
 
 type AuditEntityType =
   | "championship"
@@ -47,6 +48,7 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   deactivate: "Деактивовано",
   activate: "Активовано",
   create_user: "Новий користувач",
+  login_failed: "Невдалий вхід",
 };
 
 const ACTION_COLORS: Record<AuditAction, string> = {
@@ -60,6 +62,7 @@ const ACTION_COLORS: Record<AuditAction, string> = {
   deactivate: "bg-red-900/60 text-red-400 border border-red-700",
   activate: "bg-emerald-900/60 text-emerald-400 border border-emerald-700",
   create_user: "bg-sky-900/50 text-sky-300 border border-sky-800",
+  login_failed: "bg-amber-900/60 text-amber-300 border border-amber-800",
 };
 
 const ENTITY_LABELS: Record<AuditEntityType, string> = {
@@ -210,8 +213,8 @@ export default function AdminAuditPage() {
               }
               disabled={cleanupLoading !== null}
               className={`px-3 py-2 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${item.key === "all"
-                  ? "bg-red-950 border border-red-800 text-red-300 hover:bg-red-900"
-                  : "bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700"
+                ? "bg-red-950 border border-red-800 text-red-300 hover:bg-red-900"
+                : "bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700"
                 }`}
             >
               {cleanupLoading === item.key ? "Очищення..." : item.label}
