@@ -138,21 +138,21 @@ export function HomeChampionshipHub({
             )}
           </div>
 
-          <div className="border-t border-zinc-800 md:border-t-0 md:border-l md:border-zinc-700 md:pl-8 pt-5 md:pt-0">
-            <p className="text-xs uppercase tracking-[0.2em] text-amber-400 mb-3">Призовий фонд</p>
+          <div className="border-t border-zinc-800 md:border-t-0 md:border-l md:border-zinc-800 md:pl-8 pt-5 md:pt-0">
+            <p className="text-xs uppercase tracking-[0.2em] text-[#ccff00] mb-4">Призовий фонд</p>
             {prizes.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {prizes.map((prize, i) => (
-                  <div key={i} className="flex gap-3 items-start">
-                    <span className="shrink-0 text-white font-bold text-xs bg-zinc-800 border border-zinc-700 px-2 py-1 rounded">
+                  <div key={i} className="flex gap-3 items-center rounded-lg bg-zinc-900/60 border border-zinc-800 px-3 py-2.5">
+                    <span className="shrink-0 text-black font-black text-xs bg-[#ccff00] px-2 py-1 rounded min-w-[52px] text-center">
                       {prize.place}
                     </span>
-                    <p className="text-zinc-300 text-sm leading-snug">{prize.description}</p>
+                    <p className="text-zinc-200 text-sm leading-snug">{prize.description}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-zinc-500 text-sm">Інформацію про призи буде додано найближчим часом.</p>
+              <p className="text-zinc-600 text-sm">Інформацію про призи буде додано найближчим часом.</p>
             )}
           </div>
         </div>

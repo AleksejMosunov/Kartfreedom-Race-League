@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --brand-primary: #75039a;
-  --brand-accent: #b9fe00;
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+  --brand-primary: #ccff00;
+  --brand-accent: #ccff00;
 }
 
 @theme inline {
@@ -14,22 +14,21 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Brand remap for existing red Tailwind utilities used across the app. */
+/* Brand remap — lime accent replaces all red-600 utilities across the app. */
 .bg-red-600 {
   background-color: var(--brand-primary) !important;
+  color: #000000 !important;
+}
+
+.hover\:bg-red-700:hover {
+  background-color: #b3e600 !important;
+  color: #000000 !important;
 }
 
 .border-red-600,
@@ -43,6 +42,7 @@ body {
   color: var(--brand-accent) !important;
 }
 
-.accent-red-500 {
+.accent-red-500,
+.accent-red-600 {
   accent-color: var(--brand-primary) !important;
 }
