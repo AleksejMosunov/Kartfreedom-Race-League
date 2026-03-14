@@ -5,9 +5,21 @@ import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
+import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   await connectToDatabase();
+  const sessionToken = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const isAdmin = await isValidAdminSession(sessionToken);
+
+  const hidePhoneForPublic = <T extends Record<string, unknown>>(
+    item: T,
+  ): T => {
+    if (isAdmin) return item;
+    const { phone: _phone, ...rest } = item;
+    return rest as T;
+  };
+
   let current;
   try {
     const championshipId = req.nextUrl.searchParams.get("championship");
@@ -26,24 +38,28 @@ export async function GET(req: NextRequest) {
     const teams = await Team.find({ championshipId: current._id })
       .sort({ number: 1, name: 1 })
       .lean();
-    const participants = teams.map((team) => ({
-      _id: String(team._id),
-      name: team.name,
-      surname: "",
-      number: team.number,
-      phone: team.phone,
-      teamIsSolo: team.isSolo,
-      teamDrivers: team.drivers ?? [],
-      createdAt: team.createdAt,
-      updatedAt: team.updatedAt,
-    }));
+    const participants = teams
+      .map((team) => ({
+        _id: String(team._id),
+        name: team.name,
+        surname: "",
+        number: team.number,
+        phone: team.phone,
+        teamIsSolo: team.isSolo,
+        teamDrivers: team.drivers ?? [],
+        createdAt: team.createdAt,
+        updatedAt: team.updatedAt,
+      }))
+      .map(hidePhoneForPublic);
     return NextResponse.json(participants);
   }
 
   const pilots = await Pilot.find({ championshipId: current._id })
     .sort({ number: 1 })
     .lean();
-  return NextResponse.json(pilots);
+  return NextResponse.json(
+    pilots.map((pilot) => hidePhoneForPublic(pilot as Record<string, unknown>)),
+  );
 }
 
 export async function POST(req: NextRequest) {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/Button";
 import { Loader } from "@/app/components/ui/Loader";
+import { defaultRegulationsForNewChampionship } from "@/lib/championship/regulations";
 import { Championship, RegulationSection, RegulationsContent } from "@/types";
 
 interface ChampionshipsResponse {
@@ -11,6 +12,10 @@ interface ChampionshipsResponse {
   current?: Championship | null;
   archived: Championship[];
   preseasonNews?: string;
+  preseasonNewsByType?: {
+    solo?: string;
+    teams?: string;
+  };
 }
 
 const emptySection: RegulationSection = { title: "", content: "" };
@@ -25,10 +30,16 @@ export default function AdminChampionshipsPage() {
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<"solo" | "teams">("solo");
   const [newFastestLapBonusEnabled, setNewFastestLapBonusEnabled] = useState(false);
+  const [newRegulations, setNewRegulations] = useState<RegulationsContent>(
+    defaultRegulationsForNewChampionship(false),
+  );
   const [activeFastestLap, setActiveFastestLap] = useState<Record<string, boolean>>({});
   const [activeRegulations, setActiveRegulations] = useState<Record<string, RegulationsContent>>({});
   const [expandedRegChampId, setExpandedRegChampId] = useState<string | null>(null);
-  const [preseasonNews, setPreseasonNews] = useState("");
+  const [preseasonNewsByType, setPreseasonNewsByType] = useState<{ solo: string; teams: string; }>({
+    solo: "",
+    teams: "",
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
@@ -49,6 +60,7 @@ export default function AdminChampionshipsPage() {
   ]);
   const [activePrizes, setActivePrizes] = useState<Record<string, { place: string; description: string; }[]>>({});
   const [expandedPrizesChampId, setExpandedPrizesChampId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"active" | "new" | "archive">("active");
 
   const loadData = async () => {
     setIsLoading(true);
@@ -59,7 +71,10 @@ export default function AdminChampionshipsPage() {
       const activeList: Championship[] = payload.active ?? (payload.current ? [payload.current] : []);
       setActive(activeList);
       setArchived(payload.archived ?? []);
-      setPreseasonNews(payload.preseasonNews ?? "");
+      setPreseasonNewsByType({
+        solo: payload.preseasonNewsByType?.solo ?? payload.preseasonNews ?? "",
+        teams: payload.preseasonNewsByType?.teams ?? "",
+      });
 
       const fastestLapMap: Record<string, boolean> = {};
       const regulationsMap: Record<string, RegulationsContent> = {};
@@ -84,9 +99,6 @@ export default function AdminChampionshipsPage() {
       }
       setActivePrizes(prizesMap);
 
-      if (activeList.length > 0 && !expandedRegChampId) {
-        setExpandedRegChampId(activeList[0]._id);
-      }
       if (activeList.length === 0) {
         setExpandedRegChampId(null);
       }
@@ -105,6 +117,19 @@ export default function AdminChampionshipsPage() {
     setError("");
     setSuccess("");
     setIsSubmitting(true);
+    const cleanedSections = newRegulations.sections
+      .map((section) => ({
+        title: section.title.trim(),
+        content: section.content.trim(),
+      }))
+      .filter((section) => section.title && section.content);
+
+    if (!newRegulations.title.trim() || !newRegulations.intro.trim() || cleanedSections.length === 0) {
+      setError("Заповніть дефолтний регламент: заголовок, вступ і хоча б один пункт");
+      setIsSubmitting(false);
+      return;
+    }
+
     const validPrizes = newPrizes
       .filter((p) => p.place.trim() && p.description.trim())
       .map((p) => ({ place: p.place.trim(), description: p.description.trim() }));
@@ -122,6 +147,11 @@ export default function AdminChampionshipsPage() {
           championshipType: newType,
           fastestLapBonusEnabled: newFastestLapBonusEnabled,
           prizes: validPrizes,
+          regulations: {
+            title: newRegulations.title.trim(),
+            intro: newRegulations.intro.trim(),
+            sections: cleanedSections,
+          },
         }),
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; _id?: string; };
@@ -147,6 +177,7 @@ export default function AdminChampionshipsPage() {
       setNewName("");
       setNewType("solo");
       setNewFastestLapBonusEnabled(false);
+      setNewRegulations(defaultRegulationsForNewChampionship(false));
       setNewPrizes([{ place: "1", description: "" }]);
       setSuccess(`Новий чемпіонат створено. Дані починаються з нуля.${telegramWarning}`);
       await loadData();
@@ -236,6 +267,26 @@ export default function AdminChampionshipsPage() {
     }
   };
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const deleteChampionship = async (id: string) => {
+    setError("");
+    setSuccess("");
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/championships/${id}`, { method: "DELETE" });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; };
+      if (!res.ok) throw new Error(body.error ?? "Не вдалося видалити чемпіонат");
+      setSuccess("Чемпіонат видалено з архіву.");
+      await loadData();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsSubmitting(false);
+      setConfirmDeleteId(null);
+    }
+  };
+
   const openRestorePreview = async (id: string) => {
     setPreviewLoading(true);
     setError("");
@@ -271,7 +322,13 @@ export default function AdminChampionshipsPage() {
       const res = await fetch("/api/championships/news", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ preseasonNews }),
+        body: JSON.stringify({
+          preseasonNews: preseasonNewsByType.solo,
+          preseasonNewsByType: {
+            solo: preseasonNewsByType.solo,
+            teams: preseasonNewsByType.teams,
+          },
+        }),
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося зберегти новину");
@@ -331,6 +388,36 @@ export default function AdminChampionshipsPage() {
         },
       };
     });
+  };
+
+  const updateNewRegulationSection = (
+    index: number,
+    field: keyof RegulationSection,
+    value: string,
+  ) => {
+    setNewRegulations((prev) => ({
+      ...prev,
+      sections: prev.sections.map((section, i) =>
+        i === index ? { ...section, [field]: value } : section,
+      ),
+    }));
+  };
+
+  const addNewRegulationSection = () => {
+    setNewRegulations((prev) => ({
+      ...prev,
+      sections: [...prev.sections, { ...emptySection }],
+    }));
+  };
+
+  const removeNewRegulationSection = (index: number) => {
+    setNewRegulations((prev) => ({
+      ...prev,
+      sections:
+        prev.sections.length === 1
+          ? [{ ...emptySection }]
+          : prev.sections.filter((_, i) => i !== index),
+    }));
   };
 
   const updateActivePrize = (
@@ -425,11 +512,7 @@ export default function AdminChampionshipsPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
-      <Link href="/admin" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
-        ← Адмін-панель
-      </Link>
-
-      <h1 className="text-3xl font-black text-white mb-8">Чемпіонати</h1>
+      <h1 className="text-2xl font-black text-white mb-6">Чемпіонати</h1>
 
       {restorePreview && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
@@ -467,57 +550,81 @@ export default function AdminChampionshipsPage() {
         <Loader className="mb-6" />
       ) : (
         <>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6 space-y-4">
-            <h2 className="text-lg font-bold text-white">Активні чемпіонати ({active.length})</h2>
-            {active.length === 0 ? (
-              <p className="text-zinc-400">Активних чемпіонатів немає.</p>
-            ) : (
-              <div className="space-y-4">
-                {active.map((item) => {
+          {/* Tabs */}
+          <div className="flex gap-1 mb-6 border-b border-zinc-800">
+            {(
+              [
+                { key: "active", label: `Активні (${active.length})` },
+                { key: "new", label: "Новий" },
+                { key: "archive", label: `Архів (${archived.length})` },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2 text-sm font-medium transition-colors -mb-px border-b-2 ${activeTab === tab.key
+                  ? "text-[#ccff00] border-[#ccff00]"
+                  : "text-zinc-400 border-transparent hover:text-white"
+                  }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Active tab ── */}
+          {activeTab === "active" && (
+            <div className="space-y-4">
+              {active.length === 0 ? (
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
+                  <p className="text-zinc-400 mb-3">Активних чемпіонатів немає.</p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("new")}
+                    className="text-sm text-[#ccff00] hover:opacity-80 transition-opacity"
+                  >
+                    Створити чемпіонат →
+                  </button>
+                </div>
+              ) : (
+                active.map((item) => {
                   const regulations = activeRegulations[item._id] ?? emptyRegulations();
                   const isExpanded = expandedRegChampId === item._id;
                   const isPrizesExpanded = expandedPrizesChampId === item._id;
                   return (
-                    <div key={item._id} className="border border-zinc-800 rounded-lg p-4 space-y-3">
+                    <div key={item._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
+                      {/* Header */}
                       <div className="flex items-start justify-between gap-4 flex-wrap">
                         <div>
-                          <p className="text-zinc-200 font-semibold">{item.name}</p>
-                          <p className="text-zinc-400 text-sm">
-                            Формат: {item.championshipType === "teams" ? "Endurance" : "Sprint"}
-                          </p>
-                          <p className="text-zinc-500 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white">{item.name}</span>
+                            <span className="text-xs text-zinc-500 border border-zinc-700 rounded px-1.5 py-0.5 shrink-0">
+                              {item.championshipType === "teams" ? "Endurance" : "Sprint"}
+                            </span>
+                          </div>
+                          <p className="text-zinc-500 text-xs mt-1">
                             Старт: {new Date(item.startedAt).toLocaleDateString("uk-UA")}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Link href={`/admin/championships/${item._id}`}>
-                            <Button type="button" variant="secondary" size="sm">Деталі</Button>
-                          </Link>
-                          <Button
-                            type="button"
-                            variant="danger"
-                            size="sm"
-                            onClick={() => void finishChampionship(item._id)}
-                            disabled={Boolean(submittingId)}
-                          >
-                            {submittingId === item._id ? "Завершення..." : "Завершити"}
-                          </Button>
-                        </div>
+                        <Link href={`/admin/championships/${item._id}`}>
+                          <Button type="button" variant="secondary" size="sm">Деталі</Button>
+                        </Link>
                       </div>
 
-                      <label className="flex items-center gap-2 text-sm text-zinc-300">
-                        <input
-                          type="checkbox"
-                          checked={activeFastestLap[item._id] ?? false}
-                          onChange={(e) =>
-                            setActiveFastestLap((prev) => ({ ...prev, [item._id]: e.target.checked }))
-                          }
-                          className="accent-red-500"
-                        />
-                        Best lap бонус (+1 очко)
-                      </label>
-
-                      <div className="flex gap-2 flex-wrap">
+                      {/* Settings row */}
+                      <div className="flex flex-wrap items-center gap-4 py-3 px-3 bg-zinc-950 rounded-lg">
+                        <label className="flex items-center gap-2 text-sm text-zinc-300">
+                          <input
+                            type="checkbox"
+                            checked={activeFastestLap[item._id] ?? false}
+                            onChange={(e) =>
+                              setActiveFastestLap((prev) => ({ ...prev, [item._id]: e.target.checked }))
+                            }
+                            className="accent-[#ccff00]"
+                          />
+                          Best lap бонус (+1 очко)
+                        </label>
                         <Button
                           type="button"
                           variant="secondary"
@@ -525,8 +632,12 @@ export default function AdminChampionshipsPage() {
                           onClick={() => void saveChampionshipSettings(item._id)}
                           disabled={Boolean(submittingId)}
                         >
-                          {submittingId === item._id ? "Збереження..." : "Зберегти налаштування"}
+                          {submittingId === item._id ? "Збереження..." : "Зберегти"}
                         </Button>
+                      </div>
+
+                      {/* Expandable buttons */}
+                      <div className="flex gap-2 flex-wrap">
                         <Button
                           type="button"
                           variant="secondary"
@@ -535,7 +646,7 @@ export default function AdminChampionshipsPage() {
                             setExpandedRegChampId((prev) => (prev === item._id ? null : item._id))
                           }
                         >
-                          {isExpanded ? "Сховати регламент" : "Редагувати регламент"}
+                          {isExpanded ? "Сховати регламент" : "Регламент"}
                         </Button>
                         <Button
                           type="button"
@@ -630,7 +741,7 @@ export default function AdminChampionshipsPage() {
                       )}
 
                       {isPrizesExpanded && (
-                        <div className="mt-2 border border-zinc-800 rounded-lg p-3 space-y-3">
+                        <div className="border border-zinc-800 rounded-lg p-4 space-y-3">
                           <div className="flex items-center justify-between">
                             <h3 className="text-sm font-bold text-white">Призовий фонд</h3>
                             <Button
@@ -644,17 +755,17 @@ export default function AdminChampionshipsPage() {
                                 }))
                               }
                             >
-                              Додати приз
+                              + Приз
                             </Button>
                           </div>
                           {(activePrizes[item._id] ?? []).map((prize, index) => (
                             <div key={`prize-${item._id}-${index}`} className="flex gap-2 items-center">
                               <input
                                 type="text"
-                                placeholder="Місце (напр. 1, Топ 3)"
+                                placeholder="Місце"
                                 value={prize.place}
                                 onChange={(e) => updateActivePrize(item._id, index, "place", e.target.value)}
-                                className="w-36 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                                className="w-28 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
                               />
                               <input
                                 type="text"
@@ -683,139 +794,265 @@ export default function AdminChampionshipsPage() {
                           </Button>
                         </div>
                       )}
+
+                      {/* Finish section */}
+                      <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-zinc-800">
+                        <label className="flex items-center gap-2 text-sm text-zinc-400">
+                          <input
+                            type="checkbox"
+                            checked={notifyFinishInTelegram}
+                            onChange={(e) => setNotifyFinishInTelegram(e.target.checked)}
+                            className="accent-[#ccff00]"
+                          />
+                          Telegram-новина про завершення
+                        </label>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          onClick={() => void finishChampionship(item._id)}
+                          disabled={Boolean(submittingId)}
+                        >
+                          {submittingId === item._id ? "Завершення..." : "Завершити чемпіонат"}
+                        </Button>
+                      </div>
                     </div>
                   );
-                })}
-              </div>
-            )}
-          </div>
+                })
+              )}
 
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6 space-y-4">
-            <h2 className="text-lg font-bold text-white">Старт нового чемпіонату</h2>
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Назва чемпіонату"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-            />
-            <div>
-              <label className="block text-zinc-400 text-sm mb-2">Формат чемпіонату</label>
-              <select
-                value={newType}
-                onChange={(e) => setNewType(e.target.value as "solo" | "teams")}
+              {/* Preseason news */}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-3">
+                <h2 className="font-bold text-white text-sm">Новини до старту</h2>
+                <p className="text-zinc-500 text-xs">Окремо для Sprint і Endurance, якщо немає активного чемпіонату</p>
+
+                <div className="space-y-2">
+                  <label className="block text-zinc-400 text-xs">Sprint</label>
+                  <textarea
+                    value={preseasonNewsByType.solo}
+                    onChange={(e) =>
+                      setPreseasonNewsByType((prev) => ({ ...prev, solo: e.target.value }))
+                    }
+                    placeholder="Новина для Sprint..."
+                    className="w-full min-h-24 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-zinc-400 text-xs">Endurance</label>
+                  <textarea
+                    value={preseasonNewsByType.teams}
+                    onChange={(e) =>
+                      setPreseasonNewsByType((prev) => ({ ...prev, teams: e.target.value }))
+                    }
+                    placeholder="Новина для Endurance..."
+                    className="w-full min-h-24 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                  />
+                </div>
+
+                <Button type="button" variant="secondary" onClick={savePreseasonNews} disabled={isSubmitting}>
+                  Зберегти
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── New championship tab ── */}
+          {activeTab === "new" && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 space-y-4">
+              <h2 className="text-lg font-bold text-white">Новий чемпіонат</h2>
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Назва чемпіонату"
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-              >
-                <option value="solo">Sprint</option>
-                <option value="teams">Endurance</option>
-              </select>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-zinc-400 text-sm">Призовий фонд *</label>
-                <button
-                  type="button"
-                  onClick={() => setNewPrizes((prev) => [...prev, { place: "", description: "" }])}
-                  className="text-xs text-zinc-400 hover:text-white transition-colors"
+              />
+              <div>
+                <label className="block text-zinc-400 text-sm mb-2">Формат</label>
+                <select
+                  value={newType}
+                  onChange={(e) => setNewType(e.target.value as "solo" | "teams")}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
                 >
-                  + Додати приз
-                </button>
+                  <option value="solo">Sprint</option>
+                  <option value="teams">Endurance</option>
+                </select>
               </div>
-              <div className="space-y-2">
-                {newPrizes.map((prize, index) => (
-                  <div key={`new-prize-${index}`} className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      placeholder="Місце (напр. 1, Топ 3)"
-                      value={prize.place}
-                      onChange={(e) =>
-                        setNewPrizes((prev) =>
-                          prev.map((p, i) => (i === index ? { ...p, place: e.target.value } : p)),
-                        )
-                      }
-                      className="w-36 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Опис призу"
-                      value={prize.description}
-                      onChange={(e) =>
-                        setNewPrizes((prev) =>
-                          prev.map((p, i) => (i === index ? { ...p, description: e.target.value } : p)),
-                        )
-                      }
-                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-                    />
-                    {newPrizes.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => setNewPrizes((prev) => prev.filter((_, i) => i !== index))}
-                        className="px-2 py-2 rounded-md border border-zinc-700 text-zinc-400 text-sm hover:border-red-500 hover:text-red-300"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-zinc-400 text-sm">Призовий фонд *</label>
+                  <button
+                    type="button"
+                    onClick={() => setNewPrizes((prev) => [...prev, { place: "", description: "" }])}
+                    className="text-xs text-zinc-400 hover:text-white transition-colors"
+                  >
+                    + Додати
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {newPrizes.map((prize, index) => (
+                    <div key={`new-prize-${index}`} className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        placeholder="Місце"
+                        value={prize.place}
+                        onChange={(e) =>
+                          setNewPrizes((prev) =>
+                            prev.map((p, i) => (i === index ? { ...p, place: e.target.value } : p)),
+                          )
+                        }
+                        className="w-28 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Опис призу"
+                        value={prize.description}
+                        onChange={(e) =>
+                          setNewPrizes((prev) =>
+                            prev.map((p, i) => (i === index ? { ...p, description: e.target.value } : p)),
+                          )
+                        }
+                        className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                      />
+                      {newPrizes.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setNewPrizes((prev) => prev.filter((_, i) => i !== index))}
+                          className="px-2 py-2 rounded-md border border-zinc-700 text-zinc-400 text-sm hover:border-zinc-500"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
+              <label className="flex items-center gap-2 text-sm text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={newFastestLapBonusEnabled}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setNewFastestLapBonusEnabled(checked);
+                    setNewRegulations(defaultRegulationsForNewChampionship(checked));
+                  }}
+                  className="accent-[#ccff00]"
+                />
+                Best lap бонус (+1 очко)
+              </label>
+
+              <div className="border border-zinc-800 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <h3 className="text-sm font-bold text-white">Дефолтний регламент для нового чемпіонату</h3>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setNewRegulations(defaultRegulationsForNewChampionship(newFastestLapBonusEnabled))}
+                  >
+                    Скинути до дефолту
+                  </Button>
+                </div>
+
+                <input
+                  type="text"
+                  value={newRegulations.title}
+                  onChange={(e) =>
+                    setNewRegulations((prev) => ({
+                      ...prev,
+                      title: e.target.value,
+                    }))
+                  }
+                  placeholder="Заголовок"
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                />
+
+                <textarea
+                  value={newRegulations.intro}
+                  onChange={(e) =>
+                    setNewRegulations((prev) => ({
+                      ...prev,
+                      intro: e.target.value,
+                    }))
+                  }
+                  placeholder="Вступ"
+                  className="w-full min-h-20 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                />
+
+                <div className="space-y-2">
+                  {newRegulations.sections.map((section, index) => (
+                    <div key={`new-reg-${index}`} className="border border-zinc-800 rounded-lg p-3 space-y-2">
+                      <input
+                        type="text"
+                        value={section.title}
+                        onChange={(e) => updateNewRegulationSection(index, "title", e.target.value)}
+                        placeholder={`Заголовок пункту ${index + 1}`}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                      />
+                      <textarea
+                        value={section.content}
+                        onChange={(e) => updateNewRegulationSection(index, "content", e.target.value)}
+                        placeholder="Текст пункту"
+                        className="w-full min-h-24 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                      />
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          onClick={() => removeNewRegulationSection(index)}
+                        >
+                          Видалити пункт
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Button type="button" variant="secondary" size="sm" onClick={addNewRegulationSection}>
+                  Додати пункт
+                </Button>
+              </div>
+
+              <label className="flex items-center gap-2 text-sm text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={notifyStartInTelegram}
+                  onChange={(e) => setNotifyStartInTelegram(e.target.checked)}
+                  className="accent-[#ccff00]"
+                />
+                Telegram-новина про старт
+              </label>
+              <Button type="button" onClick={startNewChampionship} disabled={isSubmitting}>
+                {isSubmitting ? "Створення..." : "Стартувати чемпіонат"}
+              </Button>
+              <p className="text-zinc-600 text-xs">
+                Можна запускати кілька активних чемпіонатів одночасно.
+              </p>
             </div>
-            <label className="flex items-center gap-2 text-sm text-zinc-300">
-              <input
-                type="checkbox"
-                checked={newFastestLapBonusEnabled}
-                onChange={(e) => setNewFastestLapBonusEnabled(e.target.checked)}
-                className="accent-red-500"
-              />
-              Увімкнути Best lap бонус (+1 очко)
-            </label>
-            <label className="flex items-center gap-2 text-sm text-zinc-300">
-              <input
-                type="checkbox"
-                checked={notifyStartInTelegram}
-                onChange={(e) => setNotifyStartInTelegram(e.target.checked)}
-                className="accent-red-500"
-              />
-              Надіслати новину в Telegram про старт
-            </label>
-            <Button type="button" onClick={startNewChampionship} disabled={isSubmitting}>
-              {isSubmitting ? "Створення..." : "Стартувати новий чемпіонат"}
-            </Button>
-            <p className="text-zinc-500 text-sm">
-              Можна запускати декілька активних чемпіонатів одночасно.
-            </p>
-          </div>
+          )}
 
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6 space-y-4">
-            <h2 className="text-lg font-bold text-white">Новини про майбутній старт</h2>
-            <textarea
-              value={preseasonNews}
-              onChange={(e) => setPreseasonNews(e.target.value)}
-              placeholder="Тут можна написати новину для користувачів, якщо активного чемпіонату немає"
-              className="w-full min-h-28 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-            />
-            <Button type="button" variant="secondary" onClick={savePreseasonNews} disabled={isSubmitting}>
-              Зберегти новину
-            </Button>
-          </div>
-
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-            <h2 className="text-lg font-bold text-white mb-4">Архів завершених</h2>
-            {archived.length === 0 ? (
-              <p className="text-zinc-500">Архів порожній.</p>
-            ) : (
-              <div className="space-y-2">
-                {archived.map((item) => (
-                  <div key={item._id} className="border border-zinc-800 rounded-lg px-4 py-3 flex justify-between items-center gap-4 flex-wrap">
+          {/* ── Archive tab ── */}
+          {activeTab === "archive" && (
+            <div className="space-y-2">
+              {archived.length === 0 ? (
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
+                  <p className="text-zinc-500">Архів порожній.</p>
+                </div>
+              ) : (
+                archived.map((item) => (
+                  <div key={item._id} className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 flex justify-between items-center gap-4 flex-wrap">
                     <div>
                       <span className="text-white font-medium">{item.name}</span>
-                      <span className="ml-3 text-zinc-500 text-sm">
+                      <span className="ml-2 text-xs text-zinc-600 border border-zinc-800 rounded px-1.5 py-0.5">
+                        {item.championshipType === "teams" ? "Endurance" : "Sprint"}
+                      </span>
+                      <p className="text-zinc-500 text-xs mt-0.5">
                         {item.startedAt ? new Date(item.startedAt).toLocaleDateString("uk-UA") : "—"}
                         {" → "}
                         {item.endedAt ? new Date(item.endedAt).toLocaleDateString("uk-UA") : "—"}
-                      </span>
-                      <span className="ml-3 text-zinc-600 text-xs">
-                        {item.championshipType === "teams" ? "Endurance" : "Sprint"}
-                      </span>
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -827,16 +1064,46 @@ export default function AdminChampionshipsPage() {
                         {previewLoading ? "Завантаження..." : "Відновити"}
                       </Button>
                       <Link href={`/admin/championships/${item._id}`}>
-                        <Button type="button" variant="secondary" size="sm">
-                          Деталі
-                        </Button>
+                        <Button type="button" variant="secondary" size="sm">Деталі</Button>
                       </Link>
+                      {confirmDeleteId === item._id ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-zinc-400">Впевнені?</span>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            size="sm"
+                            onClick={() => void deleteChampionship(item._id)}
+                            disabled={isSubmitting}
+                          >
+                            Так
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setConfirmDeleteId(null)}
+                          >
+                            Ні
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          onClick={() => setConfirmDeleteId(item._id)}
+                          disabled={isSubmitting}
+                        >
+                          Видалити
+                        </Button>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                ))
+              )}
+            </div>
+          )}
 
           {error && <p className="text-red-400 mt-4 text-sm">{error}</p>}
           {success && <p className="text-emerald-400 mt-4 text-sm">{success}</p>}

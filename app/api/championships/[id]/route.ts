@@ -6,6 +6,7 @@ import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
 import { calculateChampionshipStandings } from "@/lib/utils/championship";
 import { Pilot as IPilotType, Stage as IStageType } from "@/types";
+import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -13,6 +14,8 @@ interface Params {
 
 export async function GET(_req: NextRequest, { params }: Params) {
   await connectToDatabase();
+  const sessionToken = _req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const isAdmin = await isValidAdminSession(sessionToken);
   const { id } = await params;
 
   const championship = await Championship.findById(id).lean();
@@ -81,15 +84,22 @@ export async function GET(_req: NextRequest, { params }: Params) {
         })()
       : stages;
 
+  const safeParticipants = isAdmin
+    ? participants
+    : (participants as Array<Record<string, unknown>>).map((participant) => {
+        const { phone: _phone, ...rest } = participant;
+        return rest;
+      });
+
   const standings = calculateChampionshipStandings(
-    participants as unknown as IPilotType[],
+    safeParticipants as unknown as IPilotType[],
     mappedStages as unknown as IStageType[],
     championship.championshipType === "teams" ? "teams" : "solo",
   );
 
   return NextResponse.json({
     championship,
-    pilots: participants,
+    pilots: safeParticipants,
     stages: mappedStages,
     standings,
   });

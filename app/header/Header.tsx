@@ -3,17 +3,12 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AdminLogoutButton } from "@/app/header/AdminLogoutButton";
 
 const baseLinks = [{ href: "/", label: "Чемпіонат" }];
 
 export function Header() {
   const pathname = usePathname();
-  const isAdminArea = pathname.startsWith("/admin");
   const mobileMenuRef = useRef<HTMLDetailsElement>(null);
-  const adminLinkClass =
-    "px-3 py-2 rounded-md text-sm font-medium text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-700";
-
   const closeMobileMenu = () => {
     if (mobileMenuRef.current) {
       mobileMenuRef.current.open = false;
@@ -59,10 +54,7 @@ export function Header() {
               {link.label}
             </Link>
           ))}
-          <Link href="/admin" className={`ml-4 ${adminLinkClass}`}>
-            Адмін
-          </Link>
-          {isAdminArea && <AdminLogoutButton />}
+
         </nav>
 
         <details ref={mobileMenuRef} className="min-[800px]:hidden relative">
@@ -83,11 +75,7 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
-            <div className="my-1 border-t border-zinc-800" />
-            <Link href="/admin" onClick={closeMobileMenu} className={adminLinkClass}>
-              Адмін
-            </Link>
-            {isAdminArea && <AdminLogoutButton />}
+
           </div>
         </details>
       </div>

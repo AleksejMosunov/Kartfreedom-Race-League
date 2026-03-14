@@ -13,6 +13,9 @@ export async function getPublicChampionshipStatus() {
   return {
     active,
     current: active[0] ?? null,
-    preseasonNews: settings?.preseasonNews ?? "",
+    preseasonNews: {
+      solo: settings?.preseasonNewsSolo ?? settings?.preseasonNews ?? "",
+      teams: settings?.preseasonNewsTeams ?? "",
+    },
   };
 }

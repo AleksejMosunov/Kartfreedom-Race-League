@@ -88,7 +88,6 @@ function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; 
         </div>
         <div>
           <h1 className="text-2xl font-black text-white">{pilotFullName}</h1>
-          {pilot.phone && <p className="text-zinc-400 mt-1">Телефон: {pilot.phone}</p>}
         </div>
         {standing && (
           <div className="ml-auto text-right">
@@ -129,13 +128,6 @@ function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; 
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {!standing && pilot.phone && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-300">
-          <p className="text-sm text-zinc-500 mb-1">Додаткова інформація</p>
-          <p>Телефон: {pilot.phone}</p>
         </div>
       )}
 

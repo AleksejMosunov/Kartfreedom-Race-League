@@ -22,7 +22,7 @@ export function HomeChampionshipHub({
   preseasonNews,
 }: {
   active: ActiveChampionship[];
-  preseasonNews: string;
+  preseasonNews: string | { solo?: string; teams?: string; };
 }) {
   const [selectedChampionshipId, setSelectedChampionshipId] = useState(
     getPreferredUiChampionshipId(active),
@@ -30,6 +30,12 @@ export function HomeChampionshipHub({
   const { stages, isLoading } = useStages(selectedChampionshipId || undefined);
   const { standings } = useChampionship(selectedChampionshipId || undefined);
   const selectedChampionship = active.find((c) => c._id === selectedChampionshipId);
+  const selectedPreseasonNews =
+    typeof preseasonNews === "string"
+      ? preseasonNews
+      : selectedChampionship?.championshipType === "teams"
+        ? (preseasonNews.teams ?? "")
+        : (preseasonNews.solo ?? "");
 
   const nextStage = useMemo(
     () => stages.find((stage) => !stage.isCompleted) ?? null,
@@ -173,10 +179,10 @@ export function HomeChampionshipHub({
                 </p>
               </div>
             ) : null}
-            {preseasonNews ? (
+            {selectedPreseasonNews ? (
               <div className="rounded-lg border border-zinc-800 px-4 py-3">
                 <p className="text-zinc-400 text-xs uppercase tracking-wider">Від організаторів</p>
-                <p className="text-zinc-200 mt-1 whitespace-pre-line">{preseasonNews}</p>
+                <p className="text-zinc-200 mt-1 whitespace-pre-line">{selectedPreseasonNews}</p>
               </div>
             ) : (
               <p className="text-zinc-500 text-sm">Публічних оголошень наразі немає.</p>

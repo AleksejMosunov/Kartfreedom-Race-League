@@ -9,59 +9,57 @@ export const metadata = {
 export default async function AdminPage() {
   await connectToDatabase();
   const active = await Championship.find({ status: "active" }).lean();
-  const activeTypes = new Set(active.map((item) => item.championshipType));
-  const hasMixedTypes = activeTypes.size > 1;
-  const isTeams = !hasMixedTypes && active.length > 0 && active[0].championshipType === "teams";
-
-  const sections = [
-    {
-      key: "participants",
-      href: hasMixedTypes ? "/admin/participants" : isTeams ? "/admin/teams" : "/admin/pilots",
-      icon: hasMixedTypes ? "🧭" : isTeams ? "👥" : "🏎️",
-      title: hasMixedTypes
-        ? "Керування учасниками"
-        : isTeams
-          ? "Керування командами"
-          : "Керування пілотами",
-      description: hasMixedTypes
-        ? "У вас одночасно активні Sprint і Endurance. Оберіть чемпіонат у розділі чемпіонатів."
-        : isTeams
-          ? "Додавати, редагувати та видаляти команди"
-          : "Додавати, редагувати та видаляти пілотів",
-    },
-    {
-      key: "stages",
-      href: "/admin/stages",
-      icon: "🏁",
-      title: "Керування етапами",
-      description: "Створювати етапи та вносити результати гонок",
-    },
-    {
-      key: "championships",
-      href: "/admin/championships",
-      icon: "🏆",
-      title: "Керування чемпіонатами",
-      description: "Старт нового чемпіонату та архів завершених",
-    },
-  ];
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-white">Адмін-панель</h1>
-        <p className="text-zinc-400 mt-1">Керування чемпіонатом KartFreedom Race League</p>
+      <h1 className="text-2xl font-black text-white mb-1">Дашборд</h1>
+      <p className="text-zinc-500 text-sm mb-8">KartFreedom Race League</p>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <div className="text-3xl font-black text-[#ccff00]">{active.length}</div>
+          <div className="text-zinc-400 text-sm mt-1">Активних чемпіонатів</div>
+        </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {sections.map((section) => (
-          <Link key={section.key} href={section.href}>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-red-600 transition-colors cursor-pointer">
-              <span className="text-3xl">{section.icon}</span>
-              <h2 className="text-white font-bold text-lg mt-3">{section.title}</h2>
-              <p className="text-zinc-400 text-sm mt-1">{section.description}</p>
-            </div>
+
+      {active.length > 0 ? (
+        <div>
+          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+            Активні чемпіонати
+          </h2>
+          <div className="space-y-2">
+            {active.map((champ) => (
+              <div
+                key={String(champ._id)}
+                className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-semibold text-white text-sm truncate">{champ.name}</span>
+                  <span className="text-xs text-zinc-500 border border-zinc-700 rounded px-1.5 py-0.5 shrink-0">
+                    {champ.championshipType === "solo" ? "Sprint" : "Endurance"}
+                  </span>
+                </div>
+                <Link
+                  href="/admin/stages"
+                  className="text-xs text-[#ccff00] hover:opacity-80 transition-opacity shrink-0 ml-4"
+                >
+                  До етапів →
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
+          <p className="text-zinc-400 text-sm">Немає активних чемпіонатів</p>
+          <Link
+            href="/admin/championships"
+            className="inline-block mt-3 text-sm text-[#ccff00] hover:opacity-80 transition-opacity"
+          >
+            Створити чемпіонат →
           </Link>
-        ))}
-      </div>
+        </div>
+      )}
     </main>
   );
 }

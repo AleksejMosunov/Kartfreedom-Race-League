@@ -4,6 +4,7 @@ import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
+import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
 
 async function getNextTeamNumber(championshipId: string) {
   const last = await Team.findOne({ championshipId })
@@ -15,6 +16,9 @@ async function getNextTeamNumber(championshipId: string) {
 
 export async function GET(req: NextRequest) {
   await connectToDatabase();
+  const sessionToken = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const isAdmin = await isValidAdminSession(sessionToken);
+
   let current;
   try {
     const championshipId = req.nextUrl.searchParams.get("championship");
@@ -37,7 +41,16 @@ export async function GET(req: NextRequest) {
     .sort({ number: 1, name: 1 })
     .lean();
 
-  return NextResponse.json(teams);
+  if (isAdmin) {
+    return NextResponse.json(teams);
+  }
+
+  const publicTeams = teams.map((team) => {
+    const { phone: _phone, ...publicTeam } = team as Record<string, unknown>;
+    return publicTeam;
+  });
+
+  return NextResponse.json(publicTeams);
 }
 
 export async function POST(req: NextRequest) {

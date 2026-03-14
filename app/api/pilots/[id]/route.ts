@@ -4,6 +4,7 @@ import { Pilot } from "@/lib/models/Pilot";
 import { Championship } from "@/lib/models/Championship";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
+import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -11,6 +12,8 @@ interface Params {
 
 export async function GET(_req: NextRequest, { params }: Params) {
   await connectToDatabase();
+  const sessionToken = _req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const isAdmin = await isValidAdminSession(sessionToken);
   let current;
   try {
     current = await requireCurrentChampionship();
@@ -24,7 +27,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }).lean();
   if (!pilot)
     return NextResponse.json({ error: "Pilot not found" }, { status: 404 });
-  return NextResponse.json(pilot);
+  if (isAdmin) {
+    return NextResponse.json(pilot);
+  }
+  const { phone: _phone, ...publicPilot } = pilot as Record<string, unknown>;
+  return NextResponse.json(publicPilot);
 }
 
 export async function PUT(req: NextRequest, { params }: Params) {

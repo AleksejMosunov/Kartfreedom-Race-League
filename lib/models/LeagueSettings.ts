@@ -3,6 +3,8 @@ import { Document, Schema, model, models } from "mongoose";
 export interface ILeagueSettings extends Document {
   key: string;
   preseasonNews: string;
+  preseasonNewsSolo?: string;
+  preseasonNewsTeams?: string;
   updatedAt: Date;
 }
 
@@ -10,6 +12,8 @@ const LeagueSettingsSchema = new Schema<ILeagueSettings>(
   {
     key: { type: String, required: true, unique: true, default: "global" },
     preseasonNews: { type: String, default: "", trim: true },
+    preseasonNewsSolo: { type: String, default: "", trim: true },
+    preseasonNewsTeams: { type: String, default: "", trim: true },
   },
   { timestamps: true },
 );

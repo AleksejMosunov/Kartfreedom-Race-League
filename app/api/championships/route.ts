@@ -1,4 +1,5 @@
 import { defaultRegulationsForNewChampionship } from "@/lib/championship/regulations";
+import { normalizeRegulationsPayload } from "@/lib/championship/regulations";
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
@@ -22,6 +23,10 @@ export async function GET() {
     current: active[0] ?? null,
     archived,
     preseasonNews: settings?.preseasonNews ?? "",
+    preseasonNewsByType: {
+      solo: settings?.preseasonNewsSolo ?? settings?.preseasonNews ?? "",
+      teams: settings?.preseasonNewsTeams ?? "",
+    },
   });
 }
 
@@ -33,6 +38,11 @@ export async function POST(req: NextRequest) {
     championshipType?: "solo" | "teams";
     fastestLapBonusEnabled?: boolean;
     prizes?: { place?: string; description?: string }[];
+    regulations?: {
+      title?: string;
+      intro?: string;
+      sections?: Array<{ title?: string; content?: string }>;
+    };
   };
   const name =
     typeof body.name === "string" && body.name.trim()
@@ -69,6 +79,14 @@ export async function POST(req: NextRequest) {
 
   const championshipType = body.championshipType;
   const fastestLapBonusEnabled = Boolean(body.fastestLapBonusEnabled);
+  const regulations = normalizeRegulationsPayload(body.regulations ?? {});
+
+  if (body.regulations && !regulations) {
+    return NextResponse.json(
+      { error: "Заповніть регламент: заголовок, вступ і хоча б один пункт" },
+      { status: 400 },
+    );
+  }
 
   const created = await Championship.create({
     name,
@@ -76,7 +94,9 @@ export async function POST(req: NextRequest) {
     championshipType,
     fastestLapBonusEnabled,
     startedAt: new Date(),
-    regulations: defaultRegulationsForNewChampionship(fastestLapBonusEnabled),
+    regulations:
+      regulations ??
+      defaultRegulationsForNewChampionship(fastestLapBonusEnabled),
     prizes,
   });
 
