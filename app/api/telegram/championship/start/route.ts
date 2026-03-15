@@ -33,10 +33,6 @@ export async function POST(req: NextRequest) {
     `Назва: <b>${escapeHtml(championship.name)}</b>`,
     `Формат: <b>${championship.championshipType === "teams" ? "Endurance" : "Sprint"}</b>`,
     `Дата старту: <b>${new Date(championship.startedAt).toLocaleDateString("uk-UA")}</b>`,
-    championship.fastestLapBonusEnabled
-      ? "Правило: <b>Best lap +1 очко</b> увімкнено"
-      : "Правило: <b>Best lap +1 очко</b> вимкнено",
-    "",
     "Реєстрацію відкрито. Успіхів усім учасникам! 🔥",
     "",
     registrationLinkLine(String(championship._id)),

@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChampionshipTable } from "@/app/components/championship/ChampionshipTable";
-import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
+import {
+  getPreferredUiChampionshipId,
+  sortSprintFirst,
+} from "@/lib/utils/uiChampionship";
 
 interface ChampionshipMeta {
   _id: string;
@@ -15,12 +18,16 @@ export function MultiChampionshipTabs({
 }: {
   championships: ChampionshipMeta[];
 }) {
+  const sortedChampionships = useMemo(
+    () => sortSprintFirst(championships),
+    [championships],
+  );
   const [activeId, setActiveId] = useState(getPreferredUiChampionshipId(championships));
 
   return (
     <div>
       <div className="flex gap-2 mb-6 flex-wrap">
-        {championships.map((c) => (
+        {sortedChampionships.map((c) => (
           <button
             key={c._id}
             onClick={() => setActiveId(c._id)}
@@ -37,7 +44,7 @@ export function MultiChampionshipTabs({
         ))}
       </div>
 
-      {championships.map((c) =>
+      {sortedChampionships.map((c) =>
         activeId === c._id ? (
           <ChampionshipTable key={c._id} championshipId={c._id} championshipType={c.championshipType} />
         ) : null,

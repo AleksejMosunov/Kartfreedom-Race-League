@@ -51,24 +51,17 @@ async function mapStageParticipantsForTeams(
 
 export async function GET(_req: NextRequest, { params }: Params) {
   await connectToDatabase();
-  let current;
-  try {
-    const championshipId = _req.nextUrl.searchParams.get("championship");
-    current = championshipId
-      ? await Championship.findById(championshipId).lean()
-      : await requireCurrentChampionship();
-  } catch {
-    return NextResponse.json({ error: "Stage not found" }, { status: 404 });
-  }
   const { id } = await params;
-  const stage =
-    current.championshipType === "teams"
-      ? await Stage.findOne({ _id: id, championshipId: current._id }).lean()
-      : await Stage.findOne({ _id: id, championshipId: current._id })
-          .populate("results.pilotId", "name surname number team avatar")
-          .lean();
+  const stage = await Stage.findById(id)
+    .populate("results.pilotId", "name surname number team avatar")
+    .lean();
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
+
+  const current = await Championship.findById(stage.championshipId).lean();
+  if (!current) {
+    return NextResponse.json({ error: "Stage not found" }, { status: 404 });
+  }
 
   if (current.championshipType === "teams") {
     const teams = await Team.find({ championshipId: current._id })

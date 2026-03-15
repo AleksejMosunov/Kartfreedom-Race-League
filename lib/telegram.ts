@@ -51,8 +51,14 @@ export function stageLinkLine(stageId: string) {
   return `🔗 <a href="${buildAppUrl(`/stages/${encodeURIComponent(stageId)}`)}">Інформація про етап</a>`;
 }
 
-export function stageResultsLinkLine(stageId: string) {
-  return `🔗 <a href="${buildAppUrl(`/stages/${encodeURIComponent(stageId)}`)}">Результати етапу</a>`;
+export function stageResultsLinkLine(
+  stageId: string,
+  championshipId?: string,
+) {
+  const query = championshipId
+    ? `?championship=${encodeURIComponent(championshipId)}`
+    : "";
+  return `🔗 <a href="${buildAppUrl(`/stages/${encodeURIComponent(stageId)}${query}`)}">Результати етапу</a>`;
 }
 
 export async function sendTelegramMessage(text: string) {

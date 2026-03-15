@@ -114,7 +114,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       ? `Вітаємо переможця та призерів! 👏`
       : "Результати опубліковано.",
     "",
-    stageResultsLinkLine(String(stage._id)),
+    stageResultsLinkLine(String(stage._id), String(championship._id)),
   ]
     .filter(Boolean)
     .join("\n");
