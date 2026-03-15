@@ -42,11 +42,17 @@ export default function StagesPage() {
 
   const upcomingStages = stages
     .filter((stage) => !stage.isCompleted)
-    .sort((a, b) => a.number - b.number);
+    .sort((a, b) => {
+      const byDate = new Date(a.date).getTime() - new Date(b.date).getTime();
+      return byDate !== 0 ? byDate : a.number - b.number;
+    });
 
   const archivedStages = stages
     .filter((stage) => stage.isCompleted)
-    .sort((a, b) => b.number - a.number);
+    .sort((a, b) => {
+      const byDate = new Date(b.date).getTime() - new Date(a.date).getTime();
+      return byDate !== 0 ? byDate : b.number - a.number;
+    });
 
   return (
     <NoActiveClientGate>
@@ -91,7 +97,11 @@ export default function StagesPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {upcomingStages.map((stage) => (
-                    <StageCard key={stage._id} stage={stage} />
+                    <StageCard
+                      key={stage._id}
+                      stage={stage}
+                      championshipId={selectedChampionshipId || undefined}
+                    />
                   ))}
                 </div>
               )}
@@ -107,7 +117,11 @@ export default function StagesPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {archivedStages.map((stage) => (
-                    <StageCard key={stage._id} stage={stage} />
+                    <StageCard
+                      key={stage._id}
+                      stage={stage}
+                      championshipId={selectedChampionshipId || undefined}
+                    />
                   ))}
                 </div>
               )}

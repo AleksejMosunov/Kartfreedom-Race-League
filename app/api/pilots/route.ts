@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Pilot } from "@/lib/models/Pilot";
+import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
@@ -53,7 +54,40 @@ export async function GET(req: NextRequest) {
     .sort({ number: 1 })
     .select(isAdmin ? {} : { phone: 0, __v: 0 })
     .lean();
-  return NextResponse.json(pilots);
+
+  if (!pilots.length) {
+    return NextResponse.json([]);
+  }
+
+  const completedStagesByPilot = (await Stage.aggregate([
+    {
+      $match: {
+        championshipId: current._id,
+        isCompleted: true,
+      },
+    },
+    { $unwind: "$results" },
+    {
+      $group: {
+        _id: "$results.pilotId",
+        completedStagesCount: { $sum: 1 },
+      },
+    },
+  ])) as Promise<Array<{ _id: unknown; completedStagesCount: number }>>;
+
+  const completedStagesMap = new Map(
+    completedStagesByPilot.map((entry) => [
+      String(entry._id),
+      entry.completedStagesCount,
+    ]),
+  );
+
+  const participants = pilots.map((pilot) => ({
+    ...pilot,
+    completedStagesCount: completedStagesMap.get(String(pilot._id)) ?? 0,
+  }));
+
+  return NextResponse.json(participants);
 }
 
 export async function POST(req: NextRequest) {

@@ -21,9 +21,9 @@ export async function Footer() {
   return (
     <footer className="bg-black border-t border-zinc-900 mt-auto">
       <div className="max-w-6xl mx-auto px-4 py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pb-8 border-b border-zinc-900">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 pb-8 border-b border-zinc-900 sm:grid-cols-3">
 
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <div className="flex items-center gap-2 mb-3">
               <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
                 <polygon points="0,0 13,10 0,20" fill="#ccff00" />
@@ -61,7 +61,7 @@ export async function Footer() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-zinc-400 text-sm hover:text-white transition-colors"
+                  className="inline-block w-fit text-zinc-400 text-sm hover:text-white transition-colors"
                 >
                   {link.label}
                 </Link>
@@ -78,7 +78,7 @@ export async function Footer() {
                   href={socialLinks[s.key]}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-zinc-400 text-sm hover:text-white transition-colors"
+                  className="inline-flex w-fit items-center gap-2 text-zinc-400 text-sm hover:text-white transition-colors"
                 >
                   <span className="text-[#ccff00] text-[10px] font-black w-5">{s.tag}</span>
                   {s.label}

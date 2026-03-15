@@ -6,6 +6,7 @@ export interface Pilot {
   phone?: string;
   teamIsSolo?: boolean;
   teamDrivers?: TeamDriver[];
+  completedStagesCount?: number;
   avatar?: string;
   createdAt?: string;
 }
