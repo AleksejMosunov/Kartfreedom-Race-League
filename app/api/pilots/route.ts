@@ -59,7 +59,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json([]);
   }
 
-  const completedStagesByPilot = (await Stage.aggregate([
+  const completedStagesByPilot = await Stage.aggregate<{
+    _id: unknown;
+    completedStagesCount: number;
+  }>([
     {
       $match: {
         championshipId: current._id,
@@ -73,7 +76,7 @@ export async function GET(req: NextRequest) {
         completedStagesCount: { $sum: 1 },
       },
     },
-  ])) as Promise<Array<{ _id: unknown; completedStagesCount: number }>>;
+  ]);
 
   const completedStagesMap = new Map(
     completedStagesByPilot.map((entry) => [
