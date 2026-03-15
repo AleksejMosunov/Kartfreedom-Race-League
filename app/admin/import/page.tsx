@@ -3,6 +3,7 @@
 import { ChangeEvent, useMemo, useState } from "react";
 import { Button } from "@/app/components/ui/Button";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
+import { apiFetch } from "@/app/services/api/request";
 
 type ChampionshipType = "solo" | "teams";
 
@@ -146,8 +147,8 @@ export default function AdminImportPage() {
       }
 
       const [pilotsRes, teamsRes] = await Promise.all([
-        fetch(`/api/pilots?championship=${encodeURIComponent(selected._id)}`, { cache: "no-store" }),
-        fetch(`/api/teams?championship=${encodeURIComponent(selected._id)}`, { cache: "no-store" }),
+        apiFetch(`/api/pilots?championship=${encodeURIComponent(selected._id)}`, { cache: "no-store" }),
+        apiFetch(`/api/teams?championship=${encodeURIComponent(selected._id)}`, { cache: "no-store" }),
       ]);
 
       const pilots = pilotsRes.ok ? ((await pilotsRes.json()) as Array<{ number?: number; phone?: string; }>) : [];
@@ -222,7 +223,7 @@ export default function AdminImportPage() {
 
       for (const row of valid) {
         if (selected.championshipType === "solo") {
-          const res = await fetch(`/api/pilots?championship=${encodeURIComponent(selected._id)}`, {
+          const res = await apiFetch(`/api/pilots?championship=${encodeURIComponent(selected._id)}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -240,7 +241,7 @@ export default function AdminImportPage() {
           imported += 1;
         } else {
           if (row.surname) {
-            const res = await fetch("/api/pilot-registration", {
+            const res = await apiFetch("/api/pilot-registration", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -258,7 +259,7 @@ export default function AdminImportPage() {
               continue;
             }
           } else {
-            const res = await fetch(`/api/teams?championship=${encodeURIComponent(selected._id)}`, {
+            const res = await apiFetch(`/api/teams?championship=${encodeURIComponent(selected._id)}`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({

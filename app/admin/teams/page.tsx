@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { Button } from "@/app/components/ui/Button";
 import { Loader } from "@/app/components/ui/Loader";
+import { apiFetch } from "@/app/services/api/request";
 import { Team } from "@/types";
 
 type ChampionshipType = "solo" | "teams";
@@ -53,7 +54,7 @@ function AdminTeamsPageContent() {
       setIsLoading(true);
       setError("");
       try {
-        const res = await fetch(`/api/teams?championship=${encodeURIComponent(championshipId)}`, {
+        const res = await apiFetch(`/api/teams?championship=${encodeURIComponent(championshipId)}`, {
           cache: "no-store",
         });
         const body = (await res.json().catch(() => [])) as Team[] | { error?: string; };
@@ -77,7 +78,7 @@ function AdminTeamsPageContent() {
     setError("");
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `/api/teams/${teamId}?championship=${encodeURIComponent(championshipId)}`,
         { method: "DELETE" },
       );

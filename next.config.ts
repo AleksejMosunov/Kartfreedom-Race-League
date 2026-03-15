@@ -13,9 +13,14 @@ export default withSentryConfig(nextConfig, {
   silent: !process.env.NEXT_PUBLIC_SENTRY_DSN,
   // Disable source map upload in local dev to speed up builds
   widenClientFileUpload: true,
-  // Automatically tree-shake Sentry logger statements to reduce bundle size
-  disableLogger: true,
-  // Auto-instrument route handlers
-  autoInstrumentServerFunctions: true,
-  autoInstrumentMiddleware: false,
+  // Next.js 16+ Sentry options moved under webpack.*
+  webpack: {
+    // Automatically tree-shake Sentry logger statements to reduce bundle size
+    treeshake: {
+      removeDebugLogging: true,
+    },
+    // Auto-instrument route handlers
+    autoInstrumentServerFunctions: true,
+    autoInstrumentMiddleware: false,
+  },
 });

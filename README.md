@@ -58,6 +58,25 @@ Available admin actions:
 - Send stage results with winner and podium congratulation
 - Send championship finish news with final podium
 
+## Health Check & Uptime Monitor
+
+Public health endpoint:
+
+- `GET /api/health`
+
+Example local check:
+
+```bash
+curl -s http://localhost:3000/api/health
+```
+
+For basic uptime monitoring, configure UptimeRobot with:
+
+- URL: `https://your-domain.com/api/health`
+- Method: `GET`
+- Interval: 5 minutes
+- Expected status: `200`
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

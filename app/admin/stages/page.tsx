@@ -8,6 +8,7 @@ import { useStagesStore } from "@/store/stagesStore";
 import { Loader } from "@/app/components/ui/Loader";
 import { Button } from "@/app/components/ui/Button";
 import { Badge } from "@/app/components/ui/Badge";
+import { apiFetch } from "@/app/services/api/request";
 import { getPointsByPosition } from "@/lib/utils/championship";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiChampionship";
@@ -74,7 +75,7 @@ export default function AdminStagesPage() {
   useEffect(() => {
     void (async () => {
       try {
-        const res = await fetch("/api/auth/session", { cache: "no-store" });
+        const res = await apiFetch("/api/auth/session", { cache: "no-store" });
         if (!res.ok) return;
         const data = (await res.json()) as { role: "organizer" | "marshal" | "editor" | null; };
         setRole(data.role ?? null);
@@ -125,7 +126,7 @@ export default function AdminStagesPage() {
     setSubmitting(true);
     setFormError("");
     try {
-      const res = await fetch("/api/stages", {
+      const res = await apiFetch("/api/stages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -139,7 +140,7 @@ export default function AdminStagesPage() {
       if (!res.ok) throw new Error(created.error ?? "Помилка додавання етапу");
 
       if (notifyNewStageInTelegram && created._id) {
-        const tgRes = await fetch("/api/telegram/stages/new", {
+        const tgRes = await apiFetch("/api/telegram/stages/new", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ stageId: created._id }),
@@ -170,7 +171,7 @@ export default function AdminStagesPage() {
     setFormError("");
     setResultsError("");
     try {
-      const res = await fetch(`/api/telegram/stages/${stageId}/results`, {
+      const res = await apiFetch(`/api/telegram/stages/${stageId}/results`, {
         method: "POST",
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };

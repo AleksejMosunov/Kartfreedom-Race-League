@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { Stage, StageResult } from "@/types";
+import { apiFetch } from "@/app/services/api/request";
 
 interface StagesState {
   stages: Stage[];
@@ -45,7 +46,7 @@ export const useStagesStore = create<StagesState>((set) => ({
         const url = championshipId
           ? `/api/stages?championship=${encodeURIComponent(championshipId)}`
           : "/api/stages";
-        const res = await fetch(url);
+        const res = await apiFetch(url);
         if (!res.ok) throw new Error("Помилка завантаження етапів");
         const data: Stage[] = await res.json();
         set({ stages: data });
@@ -70,7 +71,7 @@ export const useStagesStore = create<StagesState>((set) => ({
         const url = championshipId
           ? `/api/stages/${id}?championship=${encodeURIComponent(championshipId)}`
           : `/api/stages/${id}`;
-        const res = await fetch(url);
+        const res = await apiFetch(url);
         if (!res.ok) throw new Error("Помилка завантаження етапу");
         const data: Stage = await res.json();
         set({ selectedStage: data });
@@ -86,7 +87,7 @@ export const useStagesStore = create<StagesState>((set) => ({
   },
 
   addStage: async (stage) => {
-    const res = await fetch("/api/stages", {
+    const res = await apiFetch("/api/stages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(stage),
@@ -103,7 +104,7 @@ export const useStagesStore = create<StagesState>((set) => ({
     const url = championshipId
       ? `/api/stages/${id}?championship=${encodeURIComponent(championshipId)}`
       : `/api/stages/${id}`;
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -121,7 +122,7 @@ export const useStagesStore = create<StagesState>((set) => ({
     const url = championshipId
       ? `/api/stages/${id}?championship=${encodeURIComponent(championshipId)}`
       : `/api/stages/${id}`;
-    const res = await fetch(url, { method: "DELETE" });
+    const res = await apiFetch(url, { method: "DELETE" });
     if (!res.ok) throw new Error("Помилка видалення етапу");
     set((state) => ({ stages: state.stages.filter((s) => s._id !== id) }));
   },
@@ -130,7 +131,7 @@ export const useStagesStore = create<StagesState>((set) => ({
     const url = championshipId
       ? `/api/stages/${stageId}/results?championship=${encodeURIComponent(championshipId)}`
       : `/api/stages/${stageId}/results`;
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ results }),

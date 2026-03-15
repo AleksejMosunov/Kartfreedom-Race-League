@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/app/components/ui/Button";
 import { Loader } from "@/app/components/ui/Loader";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
+import { apiFetch } from "@/app/services/api/request";
 import { RegulationSection, RegulationsContent } from "@/types";
 import { buildDefaultRegulations } from "@/lib/regulations/defaultContent";
 
@@ -28,7 +29,7 @@ export default function AdminRegulationsPage() {
       setIsLoading(true);
       setError("");
       try {
-        const regRes = await fetch("/api/regulations");
+        const regRes = await apiFetch("/api/regulations");
         if (!regRes.ok) throw new Error("Не вдалося завантажити регламент");
         const payload = (await regRes.json()) as RegulationsContent;
         setData({
@@ -100,7 +101,7 @@ export default function AdminRegulationsPage() {
 
     setIsSaving(true);
     try {
-      const res = await fetch("/api/regulations", {
+      const res = await apiFetch("/api/regulations", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

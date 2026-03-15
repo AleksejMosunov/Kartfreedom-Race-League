@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
+import { apiFetch } from "@/app/services/api/request";
 
 export function AdminLogoutButton() {
   const router = useRouter();
@@ -11,7 +12,7 @@ export function AdminLogoutButton() {
   const handleLogout = async () => {
     setIsSubmitting(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
     } finally {
       router.replace("/login");
       router.refresh();

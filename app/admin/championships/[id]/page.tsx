@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/app/components/ui/Button";
 import { Badge } from "@/app/components/ui/Badge";
 import { Loader } from "@/app/components/ui/Loader";
+import { apiFetch } from "@/app/services/api/request";
 import { Championship, ChampionshipStanding, Pilot, Stage } from "@/types";
 import { POINTS_TABLE } from "@/lib/utils/championship";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
@@ -34,7 +35,7 @@ export default function AdminChampionshipDetailsPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(`/api/championships/${id}`);
+        const res = await apiFetch(`/api/championships/${id}`);
         if (!res.ok) throw new Error("Не вдалося завантажити дані");
         const json = (await res.json()) as ChampionshipDetailsResponse;
         setData(json);
@@ -50,7 +51,7 @@ export default function AdminChampionshipDetailsPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/championships/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/championships/${id}`, { method: "DELETE" });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Помилка видалення");
       router.push("/admin/championships");
@@ -64,7 +65,7 @@ export default function AdminChampionshipDetailsPage() {
     setError("");
     setIsRestoring(true);
     try {
-      const res = await fetch(`/api/championships/${id}/restore`, { method: "POST" });
+      const res = await apiFetch(`/api/championships/${id}/restore`, { method: "POST" });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося відновити чемпіонат");
       router.push("/admin/championships");

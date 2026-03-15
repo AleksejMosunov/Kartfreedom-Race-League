@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
+import { apiFetch } from "@/app/services/api/request";
 
 export default function LoginPage() {
   return (
@@ -45,7 +46,7 @@ function LoginPageContent() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

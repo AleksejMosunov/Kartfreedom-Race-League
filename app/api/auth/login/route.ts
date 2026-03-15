@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   AUTH_COOKIE_NAME,
   authenticateAdminCredentials,
+  createCsrfToken,
   createAdminSessionToken,
   ensureBootstrapOrganizerExists,
   getBootstrapOrganizerCredentials,
   getAdminSessionCookieOptions,
+  getCsrfCookieOptions,
+  CSRF_COOKIE_NAME,
 } from "@/lib/auth";
 import { getAuditIp, logAudit } from "@/lib/audit";
 import { AdminUser } from "@/lib/models/AdminUser";
@@ -92,6 +95,11 @@ export async function POST(req: NextRequest) {
       AUTH_COOKIE_NAME,
       sessionToken,
       getAdminSessionCookieOptions(),
+    );
+    response.cookies.set(
+      CSRF_COOKIE_NAME,
+      createCsrfToken(),
+      getCsrfCookieOptions(),
     );
 
     return response;

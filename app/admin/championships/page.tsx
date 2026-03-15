@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/Button";
 import { Loader } from "@/app/components/ui/Loader";
+import { apiFetch } from "@/app/services/api/request";
 import { defaultRegulationsForNewChampionship } from "@/lib/championship/regulations";
 import { Championship, RegulationSection, RegulationsContent } from "@/types";
 
@@ -68,7 +69,7 @@ export default function AdminChampionshipsPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/championships");
+      const res = await apiFetch("/api/championships");
       if (!res.ok) throw new Error("Не вдалося завантажити чемпіонати");
       const payload = (await res.json()) as ChampionshipsResponse;
       const activeList: Championship[] = payload.active ?? (payload.current ? [payload.current] : []);
@@ -189,7 +190,7 @@ export default function AdminChampionshipsPage() {
       .filter((p) => p.place.trim() && p.description.trim())
       .map((p) => ({ place: p.place.trim(), description: p.description.trim() }));
     try {
-      const res = await fetch("/api/championships", {
+      const res = await apiFetch("/api/championships", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -210,7 +211,7 @@ export default function AdminChampionshipsPage() {
       let telegramWarning = "";
       if (notifyStartInTelegram && body._id) {
         try {
-          const tgRes = await fetch("/api/telegram/championship/start", {
+          const tgRes = await apiFetch("/api/telegram/championship/start", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ championshipId: body._id }),
@@ -245,7 +246,7 @@ export default function AdminChampionshipsPage() {
     setSuccess("");
     setSubmittingId(id);
     try {
-      const res = await fetch(`/api/championships/${id}`, {
+      const res = await apiFetch(`/api/championships/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -268,7 +269,7 @@ export default function AdminChampionshipsPage() {
     setSuccess("");
     setSubmittingId(id);
     try {
-      const res = await fetch(`/api/championships/${id}/finish`, {
+      const res = await apiFetch(`/api/championships/${id}/finish`, {
         method: "POST",
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
@@ -277,7 +278,7 @@ export default function AdminChampionshipsPage() {
       let telegramWarning = "";
       if (notifyFinishInTelegram) {
         try {
-          const tgRes = await fetch("/api/telegram/championship/finish", {
+          const tgRes = await apiFetch("/api/telegram/championship/finish", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ championshipId: id }),
@@ -305,7 +306,7 @@ export default function AdminChampionshipsPage() {
     setSuccess("");
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/championships/${id}/restore`, {
+      const res = await apiFetch(`/api/championships/${id}/restore`, {
         method: "POST",
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
@@ -326,7 +327,7 @@ export default function AdminChampionshipsPage() {
     setSuccess("");
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/championships/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/championships/${id}`, { method: "DELETE" });
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
       if (!res.ok) throw new Error(body.error ?? "Не вдалося видалити чемпіонат");
       setSuccess("Чемпіонат видалено з архіву.");
@@ -343,7 +344,7 @@ export default function AdminChampionshipsPage() {
     setPreviewLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/championships/${id}`);
+      const res = await apiFetch(`/api/championships/${id}`);
       if (!res.ok) throw new Error("Не вдалося завантажити preview");
       const body = (await res.json()) as {
         championship: { _id: string; name: string; };
@@ -371,7 +372,7 @@ export default function AdminChampionshipsPage() {
     setSuccess("");
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/championships/news", {
+      const res = await apiFetch("/api/championships/news", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -501,7 +502,7 @@ export default function AdminChampionshipsPage() {
     setSuccess("");
     setSubmittingId(id);
     try {
-      const res = await fetch(`/api/championships/${id}`, {
+      const res = await apiFetch(`/api/championships/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prizes }),
@@ -536,7 +537,7 @@ export default function AdminChampionshipsPage() {
     setSuccess("");
     setSubmittingId(id);
     try {
-      const res = await fetch(`/api/championships/${id}/regulations`, {
+      const res = await apiFetch(`/api/championships/${id}/regulations`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

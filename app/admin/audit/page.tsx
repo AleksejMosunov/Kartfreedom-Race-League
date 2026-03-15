@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader } from "@/app/components/ui/Loader";
+import { apiFetch } from "@/app/services/api/request";
 
 type AuditAction =
   | "create"
@@ -106,7 +107,7 @@ export default function AdminAuditPage() {
         if (filterUser) sp.set("adminUsername", filterUser);
         if (filterFrom) sp.set("from", filterFrom);
         if (filterTo) sp.set("to", filterTo);
-        const res = await fetch(`/api/audit?${sp.toString()}`, { cache: "no-store" });
+        const res = await apiFetch(`/api/audit?${sp.toString()}`, { cache: "no-store" });
         const data = (await res.json().catch(() => ({}))) as {
           logs?: AuditLogEntry[];
           total?: number;
@@ -161,7 +162,7 @@ export default function AdminAuditPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/audit", {
+      const res = await apiFetch("/api/audit", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scope }),

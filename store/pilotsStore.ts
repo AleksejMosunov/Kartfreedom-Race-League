@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { Pilot } from "@/types";
+import { apiFetch } from "@/app/services/api/request";
 
 interface PilotsState {
   pilots: Pilot[];
@@ -28,7 +29,7 @@ export const usePilotsStore = create<PilotsState>((set) => ({
         const url = championshipId
           ? `/api/pilots?championship=${encodeURIComponent(championshipId)}`
           : "/api/pilots";
-        const res = await fetch(url);
+        const res = await apiFetch(url);
         if (!res.ok) throw new Error("Помилка завантаження пілотів");
         const data: Pilot[] = await res.json();
         set({ pilots: data });
@@ -44,7 +45,7 @@ export const usePilotsStore = create<PilotsState>((set) => ({
   },
 
   addPilot: async (pilot) => {
-    const res = await fetch("/api/pilots", {
+    const res = await apiFetch("/api/pilots", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(pilot),
@@ -58,7 +59,7 @@ export const usePilotsStore = create<PilotsState>((set) => ({
   },
 
   updatePilot: async (id, data) => {
-    const res = await fetch(`/api/pilots/${id}`, {
+    const res = await apiFetch(`/api/pilots/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -71,7 +72,7 @@ export const usePilotsStore = create<PilotsState>((set) => ({
   },
 
   deletePilot: async (id) => {
-    const res = await fetch(`/api/pilots/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/api/pilots/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Помилка видалення пілота");
     set((state) => ({ pilots: state.pilots.filter((p) => p._id !== id) }));
   },

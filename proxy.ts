@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   AUTH_COOKIE_NAME,
+  CSRF_COOKIE_NAME,
+  CSRF_HEADER_NAME,
   AdminRole,
   getAuthenticatedAdminSession,
   sanitizeNextPath,
 } from "@/lib/auth";
 
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const ALLOWED_CORS_ORIGINS = new Set([
   "https://kartfreedom-race-league.vercel.app",
   "http://localhost:3000",
 ]);
+
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 function applySecurityHeaders(response: NextResponse) {
   response.headers.set("X-Content-Type-Options", "nosniff");
@@ -45,6 +50,77 @@ function applyCorsHeaders(request: NextRequest, response: NextResponse) {
 
 function applyResponseHeaders(request: NextRequest, response: NextResponse) {
   return applySecurityHeaders(applyCorsHeaders(request, response));
+}
+
+function applyResponseHeadersWithCsrf(
+  request: NextRequest,
+  response: NextResponse,
+  csrfToken: string | null,
+) {
+  const prepared = applyResponseHeaders(request, response);
+  if (!csrfToken) {
+    return prepared;
+  }
+
+  prepared.cookies.set(CSRF_COOKIE_NAME, csrfToken, {
+    httpOnly: false,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  });
+
+  return prepared;
+}
+
+function isWriteMethod(method: string) {
+  return !SAFE_METHODS.has(method.toUpperCase());
+}
+
+function isAllowedRequestOrigin(request: NextRequest) {
+  const sameOrigin = request.nextUrl.origin;
+  const origin = request.headers.get("origin");
+
+  if (origin) {
+    return origin === sameOrigin || ALLOWED_CORS_ORIGINS.has(origin);
+  }
+
+  const referer = request.headers.get("referer");
+  if (!referer) {
+    return false;
+  }
+
+  try {
+    const refererOrigin = new URL(referer).origin;
+    return (
+      refererOrigin === sameOrigin || ALLOWED_CORS_ORIGINS.has(refererOrigin)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function createCsrfToken() {
+  return (
+    crypto.randomUUID().replace(/-/g, "") +
+    crypto.randomUUID().replace(/-/g, "")
+  );
+}
+
+function isValidCsrfRequest(
+  request: NextRequest,
+  csrfCookieToken: string | undefined,
+) {
+  if (!csrfCookieToken) {
+    return false;
+  }
+
+  const csrfHeaderToken = request.headers.get(CSRF_HEADER_NAME);
+  if (!csrfHeaderToken) {
+    return false;
+  }
+
+  return csrfHeaderToken === csrfCookieToken;
 }
 
 function isProtectedRequest(request: NextRequest) {
@@ -161,36 +237,78 @@ export async function proxy(request: NextRequest) {
   const sessionToken = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   const session = await getAuthenticatedAdminSession(sessionToken);
   const role = session?.role ?? null;
+  const csrfCookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
+  const csrfTokenToSet = role && !csrfCookieToken ? createCsrfToken() : null;
+  const effectiveCsrfToken = csrfCookieToken ?? csrfTokenToSet ?? undefined;
 
   if (!role) {
-    return applyResponseHeaders(
+    return applyResponseHeadersWithCsrf(
       request,
       request.nextUrl.pathname.startsWith("/api/")
         ? unauthorizedApiResponse()
         : unauthorizedPageResponse(request),
+      null,
     );
   }
 
   if (request.nextUrl.pathname.startsWith("/admin")) {
     if (role === "marshal" && request.nextUrl.pathname === "/admin") {
-      return applyResponseHeaders(
+      return applyResponseHeadersWithCsrf(
         request,
         NextResponse.redirect(new URL("/admin/stages", request.url)),
+        csrfTokenToSet,
       );
     }
     if (!canAccessAdminPage(role, request.nextUrl.pathname)) {
-      return applyResponseHeaders(request, forbiddenPageResponse());
+      return applyResponseHeadersWithCsrf(
+        request,
+        forbiddenPageResponse(),
+        csrfTokenToSet,
+      );
     }
-    return applyResponseHeaders(request, NextResponse.next());
+    return applyResponseHeadersWithCsrf(
+      request,
+      NextResponse.next(),
+      csrfTokenToSet,
+    );
   }
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
     if (!canAccessApi(role, request)) {
-      return applyResponseHeaders(request, forbiddenApiResponse());
+      return applyResponseHeadersWithCsrf(
+        request,
+        forbiddenApiResponse(),
+        csrfTokenToSet,
+      );
+    }
+
+    if (isWriteMethod(request.method)) {
+      if (!isAllowedRequestOrigin(request)) {
+        return applyResponseHeadersWithCsrf(
+          request,
+          NextResponse.json(
+            { error: "Invalid request origin" },
+            { status: 403 },
+          ),
+          csrfTokenToSet,
+        );
+      }
+
+      if (!isValidCsrfRequest(request, effectiveCsrfToken)) {
+        return applyResponseHeadersWithCsrf(
+          request,
+          NextResponse.json({ error: "CSRF token mismatch" }, { status: 403 }),
+          csrfTokenToSet,
+        );
+      }
     }
   }
 
-  return applyResponseHeaders(request, NextResponse.next());
+  return applyResponseHeadersWithCsrf(
+    request,
+    NextResponse.next(),
+    csrfTokenToSet,
+  );
 }
 
 export const config = {

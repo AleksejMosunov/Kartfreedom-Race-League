@@ -3,6 +3,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { AdminUser, AdminUserRole } from "@/lib/models/AdminUser";
 
 export const AUTH_COOKIE_NAME = "kartfreedom_admin_session";
+export const CSRF_COOKIE_NAME = "kartfreedom_csrf_token";
+export const CSRF_HEADER_NAME = "x-csrf-token";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 
 export type AdminRole = AdminUserRole;
@@ -161,6 +163,20 @@ export async function getAdminSessionRole(
 export function getAdminSessionCookieOptions() {
   return {
     httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: SESSION_MAX_AGE,
+  };
+}
+
+export function createCsrfToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+export function getCsrfCookieOptions() {
+  return {
+    httpOnly: false,
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",

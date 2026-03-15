@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/Button";
+import { apiFetch } from "@/app/services/api/request";
 
 type SocialLinkKey = "telegram" | "instagram" | "facebook" | "youtube";
 
@@ -51,7 +52,7 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/admin-users", { cache: "no-store" });
+      const res = await apiFetch("/api/admin-users", { cache: "no-store" });
       const body = (await res.json().catch(() => ({}))) as {
         users?: AdminUserRow[];
         error?: string;
@@ -69,7 +70,7 @@ export default function AdminUsersPage() {
     void load();
     void (async () => {
       try {
-        const res = await fetch("/api/settings", { cache: "no-store" });
+        const res = await apiFetch("/api/settings", { cache: "no-store" });
         const data = (await res.json().catch(() => ({}))) as {
           alertChatId?: string;
           socialLinks?: Partial<SocialLinks>;
@@ -94,7 +95,7 @@ export default function AdminUsersPage() {
     setError("");
     setSuccess("");
     try {
-      const res = await fetch("/api/settings", {
+      const res = await apiFetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alertChatId, socialLinks }),
@@ -114,7 +115,7 @@ export default function AdminUsersPage() {
     setError("");
     setSuccess("");
     try {
-      const res = await fetch("/api/settings", {
+      const res = await apiFetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alertChatId, socialLinks }),
@@ -134,7 +135,7 @@ export default function AdminUsersPage() {
     setError("");
     setSuccess("");
     try {
-      const res = await fetch("/api/admin-users", {
+      const res = await apiFetch("/api/admin-users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, role, isActive: true }),
@@ -157,7 +158,7 @@ export default function AdminUsersPage() {
     setError("");
     setSuccess("");
     try {
-      const res = await fetch(`/api/admin-users/${id}`, {
+      const res = await apiFetch(`/api/admin-users/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

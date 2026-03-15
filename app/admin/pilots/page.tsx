@@ -7,6 +7,7 @@ import { usePilots } from "@/app/hooks/usePilots";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { Button } from "@/app/components/ui/Button";
 import { Loader } from "@/app/components/ui/Loader";
+import { apiFetch } from "@/app/services/api/request";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 type ChampionshipType = "solo" | "teams";
@@ -48,7 +49,7 @@ function AdminPilotsPageContent() {
     setDeletingId(pilotId);
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `/api/pilots/${pilotId}?championship=${encodeURIComponent(championshipId)}`,
         { method: "DELETE" },
       );
