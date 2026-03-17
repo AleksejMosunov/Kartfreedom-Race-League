@@ -88,12 +88,12 @@ export default function App() {
   const calendarRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] selection:bg-red-500 selection:text-white">
+    <div className="min-h-screen selection:bg-red-500 selection:text-white">
 
       {/* Main Calendar Container */}
       <div
         ref={calendarRef}
-        className="min-h-screen bg-[#0a0a0a] racing-grid p-4 md:p-8 lg:p-12"
+        className="min-h-screen racing-grid p-4 md:p-8 lg:p-12"
       >
         <div className="max-w-6xl mx-auto">
           {/* Header */}
