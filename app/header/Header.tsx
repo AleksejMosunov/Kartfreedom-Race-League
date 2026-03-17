@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 const baseLinks = [
   { href: "/", label: "Головна" },
   { href: "/championship", label: "Чемпіонат" },
+  { href: "/calendar", label: "Календар" },
 ];
 
 export function Header() {
