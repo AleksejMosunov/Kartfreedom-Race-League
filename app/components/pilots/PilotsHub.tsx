@@ -7,7 +7,7 @@ import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 type ActiveChampionship = {
   _id: string;
   name: string;
-  championshipType: "solo" | "teams";
+  championshipType: "solo" | "teams" | "sprint-pro";
 };
 
 export function PilotsHub({

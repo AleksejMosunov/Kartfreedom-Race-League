@@ -4,7 +4,7 @@ import { usePilots } from "@/app/hooks/usePilots";
 import { PilotCard } from "@/app/components/pilots/PilotCard";
 import { Loader } from "@/app/components/ui/Loader";
 
-type ChampionshipType = "solo" | "teams";
+type ChampionshipType = "solo" | "teams" | "sprint-pro";
 
 export function PilotsList({
   championshipId,

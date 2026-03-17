@@ -10,14 +10,14 @@ import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
-type ChampionshipType = "solo" | "teams";
+type ChampionshipType = "solo" | "teams" | "sprint-pro";
 
 export function ChampionshipTable({
   championshipId,
   championshipType: propChampionshipType,
 }: {
   championshipId?: string;
-  championshipType?: "solo" | "teams";
+  championshipType?: "solo" | "teams" | "sprint-pro";
 }) {
   const { standings, isLoading, error } = useChampionship(championshipId);
   const { stages } = useStages(championshipId);
@@ -34,7 +34,16 @@ export function ChampionshipTable({
       ? championshipTypeById
       : current?.championshipType === "teams"
         ? "teams"
-        : "solo");
+        : current?.championshipType === "sprint-pro"
+          ? "sprint-pro"
+          : "solo");
+
+  useEffect(() => {
+    // default class filter to 'pro' for sprint-pro championships
+    if (championshipType === "sprint-pro" && classFilter === "newbie") {
+      setClassFilter("pro");
+    }
+  }, [championshipType]);
 
   useEffect(() => {
     // prop fully defines the type

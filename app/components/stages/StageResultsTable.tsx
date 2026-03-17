@@ -10,12 +10,19 @@ interface StageResultsTableProps {
 
 const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
-type ChampionshipType = "solo" | "teams";
+type ChampionshipType = "solo" | "teams" | "sprint-pro";
 
 export function StageResultsTable({ stage }: StageResultsTableProps) {
   const { current } = useChampionshipsCatalog();
   const championshipType: ChampionshipType =
-    current?.championshipType === "teams" ? "teams" : "solo";
+    current?.championshipType === "teams"
+      ? "teams"
+      : current?.championshipType === "sprint-pro"
+        ? "sprint-pro"
+        : "solo";
+  const [leagueFilter, setLeagueFilter] = useState<"all" | "pro" | "newbie">(
+    championshipType === "sprint-pro" ? "pro" : "all",
+  );
   const [statusFilter, setStatusFilter] = useState<"all" | "fin" | "dnf" | "dns">("all");
   const [teamFilter, setTeamFilter] = useState("");
 
@@ -36,7 +43,15 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
     const search = teamFilter.trim().toLowerCase();
     const searchMatch = !search || title.includes(search) || number.includes(search);
 
-    return statusMatch && searchMatch;
+    // league filtering (only for solo-like championships)
+    let leagueMatch = true;
+    if (championshipType !== "teams") {
+      const pilotLeague = (pilotObj as any)?.league ?? "newbie";
+      if (leagueFilter === "pro") leagueMatch = pilotLeague === "pro";
+      if (leagueFilter === "newbie") leagueMatch = pilotLeague === "newbie";
+    }
+
+    return statusMatch && searchMatch && leagueMatch;
   });
 
   if (!sorted.length) {
@@ -68,6 +83,21 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
             className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
           />
         </label>
+        {championshipType !== "teams" && (
+          <label className="text-sm text-zinc-300">
+            Залік
+            <select
+              value={leagueFilter}
+              onChange={(e) => setLeagueFilter(e.target.value as "all" | "pro" | "newbie")}
+              className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+              disabled={championshipType === "sprint-pro"}
+            >
+              <option value="all">Усі</option>
+              <option value="pro">Про</option>
+              <option value="newbie">Новачки</option>
+            </select>
+          </label>
+        )}
       </div>
 
       <div className="hidden md:block overflow-x-auto rounded-xl border border-zinc-800">

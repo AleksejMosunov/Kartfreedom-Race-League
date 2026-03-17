@@ -28,7 +28,7 @@ export default function AdminChampionshipsPage() {
   const [active, setActive] = useState<Championship[]>([]);
   const [archived, setArchived] = useState<Championship[]>([]);
   const [newName, setNewName] = useState("");
-  const [newType, setNewType] = useState<"solo" | "teams">("solo");
+  const [newType, setNewType] = useState<"solo" | "teams" | "sprint-pro">("solo");
   const [newFastestLapBonusEnabled, setNewFastestLapBonusEnabled] = useState(false);
   const [newRegulations, setNewRegulations] = useState<RegulationsContent>(
     defaultRegulationsForNewChampionship(false),
@@ -122,14 +122,14 @@ export default function AdminChampionshipsPage() {
       if (!raw) return;
       const draft = JSON.parse(raw) as {
         newName?: string;
-        newType?: "solo" | "teams";
+        newType?: "solo" | "teams" | "sprint-pro";
         newFastestLapBonusEnabled?: boolean;
         newPrizes?: { place: string; description: string; }[];
         preseasonNewsByType?: { solo: string; teams: string; };
       };
 
       if (typeof draft.newName === "string") setNewName(draft.newName);
-      if (draft.newType === "solo" || draft.newType === "teams") setNewType(draft.newType);
+      if (draft.newType === "solo" || draft.newType === "teams" || draft.newType === "sprint-pro") setNewType(draft.newType);
       if (typeof draft.newFastestLapBonusEnabled === "boolean") {
         setNewFastestLapBonusEnabled(draft.newFastestLapBonusEnabled);
       }
@@ -923,10 +923,11 @@ export default function AdminChampionshipsPage() {
                 <label className="block text-zinc-400 text-sm mb-2">Формат</label>
                 <select
                   value={newType}
-                  onChange={(e) => setNewType(e.target.value as "solo" | "teams")}
+                  onChange={(e) => setNewType(e.target.value as "solo" | "teams" | "sprint-pro")}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
                 >
                   <option value="solo">Sprint</option>
+                  <option value="sprint-pro">Sprint (Pro)</option>
                   <option value="teams">Endurance</option>
                 </select>
               </div>
@@ -1097,7 +1098,7 @@ export default function AdminChampionshipsPage() {
                     <div>
                       <span className="text-white font-medium">{item.name}</span>
                       <span className="ml-2 text-xs text-zinc-600 border border-zinc-800 rounded px-1.5 py-0.5">
-                        {item.championshipType === "teams" ? "Endurance" : "Sprint"}
+                        {item.championshipType === "teams" ? "Endurance" : item.championshipType === "sprint-pro" ? "Sprint (Pro)" : "Sprint"}
                       </span>
                       <p className="text-zinc-500 text-xs mt-0.5">
                         {item.startedAt ? new Date(item.startedAt).toLocaleDateString("uk-UA") : "—"}

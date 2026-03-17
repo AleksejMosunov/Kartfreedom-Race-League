@@ -9,7 +9,7 @@ import { Loader } from "@/app/components/ui/Loader";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiChampionship";
 
-type ChampionshipMode = "solo" | "teams";
+type ChampionshipMode = "solo" | "teams" | "sprint-pro";
 type ActiveChampionship = {
   _id: string;
   name: string;
@@ -112,13 +112,22 @@ function RegisterPageInner() {
                   }))
                   .filter((driver) => driver.name && driver.surname),
               }
-            : {
-              championshipId: selectedChampionshipId,
-              name: name.trim(),
-              surname: surname.trim(),
-              number: Number(number),
-              phone: phone.trim(),
-            },
+            : (() => {
+              const base: Record<string, unknown> = {
+                championshipId: selectedChampionshipId,
+                name: name.trim(),
+                surname: surname.trim(),
+                number: Number(number),
+                phone: phone.trim(),
+              };
+              if (championshipMode === "solo") {
+                base.league = league;
+              }
+              if (championshipMode === "sprint-pro") {
+                base.league = "pro";
+              }
+              return base;
+            })(),
         ),
       });
 
@@ -416,19 +425,21 @@ function RegisterPageInner() {
                       title="Тільки українські номери: +380XXXXXXXXX"
                       required
                     />
-                    <div className="sm:col-span-2">
-                      <label className="text-sm text-zinc-400 block mb-2">Ліга *</label>
-                      <select
-                        value={league}
-                        onChange={(e) => setLeague(e.target.value)}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-                        required
-                      >
-                        <option value="">-- оберіть лігу --</option>
-                        <option value="pro">Про</option>
-                        <option value="newbie">Новачки</option>
-                      </select>
-                    </div>
+                    {championshipMode === "solo" && (
+                      <div className="sm:col-span-2">
+                        <label className="text-sm text-zinc-400 block mb-2">Ліга *</label>
+                        <select
+                          value={league}
+                          onChange={(e) => setLeague(e.target.value)}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                          required
+                        >
+                          <option value="">-- оберіть лігу --</option>
+                          <option value="pro">Про</option>
+                          <option value="newbie">Новачки</option>
+                        </select>
+                      </div>
+                    )}
                   </>
                 )}
 

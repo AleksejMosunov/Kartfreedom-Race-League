@@ -52,11 +52,11 @@ export function PilotCard({ pilot, championshipId }: PilotCardProps) {
           </div>
 
           <div className="min-w-0">
-            <p className="truncate text-3xl font-black tracking-tight text-white sm:text-4xl">
+            <p className="whitespace-normal text-2xl font-black leading-tight text-white sm:text-3xl">
               {fullName}
             </p>
             <p className="mt-1 text-xs uppercase tracking-[0.18em] text-zinc-500">
-              Учасник #{pilot.number}
+              {pilot.league === "pro" ? "Про" : "Новачок"}
             </p>
             <p className="mt-3 text-sm text-zinc-400 transition-colors group-hover:text-zinc-300">
               {participantStat}

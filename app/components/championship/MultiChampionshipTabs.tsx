@@ -10,7 +10,7 @@ import {
 interface ChampionshipMeta {
   _id: string;
   name: string;
-  championshipType: "solo" | "teams";
+  championshipType: "solo" | "teams" | "sprint-pro";
 }
 
 export function MultiChampionshipTabs({

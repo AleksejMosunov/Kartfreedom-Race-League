@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
             })),
           )
       : Pilot.find({ championshipId: current._id })
-          .select({ name: 1, surname: 1, number: 1 })
+          .select({ name: 1, surname: 1, number: 1, league: 1 })
           .sort({ number: 1 })
           .lean()
           .then((pilots) =>
@@ -86,6 +86,7 @@ export async function GET(req: NextRequest) {
               name: pilot.name,
               surname: pilot.surname,
               number: pilot.number,
+              league: (pilot.league ?? "newbie") as "pro" | "newbie",
             })),
           ),
     Stage.find({ championshipId: current._id })

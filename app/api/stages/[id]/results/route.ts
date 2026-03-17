@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
+import { Pilot } from "@/lib/models/Pilot";
 import { getPointsByPosition } from "@/lib/utils/championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
@@ -76,8 +77,11 @@ export async function POST(req: NextRequest, { params }: Params) {
   const enrichedResults = results.map((r) => {
     const fastestLapBonus =
       current.fastestLapBonusEnabled && r.bestLap && !r.dnf && !r.dns ? 1 : 0;
-    const basePoints = r.dnf || r.dns ? 0 : getPointsByPosition(r.position);
     const penaltyPoints = Math.max(0, Number(r.penaltyPoints ?? 0));
+    // pilot league lookup will be filled below; default to 'newbie'
+    const pilotLeague = "newbie" as "pro" | "newbie";
+    const basePoints =
+      r.dnf || r.dns ? 0 : getPointsByPosition(r.position, pilotLeague);
     const penaltyReason =
       penaltyPoints > 0 ? (r.penaltyReason ?? "").trim() : "";
 
@@ -92,6 +96,32 @@ export async function POST(req: NextRequest, { params }: Params) {
       penaltyReason,
     };
   });
+
+  // Ensure points reflect pilot leagues (pro x2). We need to fetch pilots to read their league.
+  try {
+    const pilotIds = Array.from(
+      new Set(results.map((r) => String(r.pilotId))),
+    ).filter(Boolean);
+    if (pilotIds.length) {
+      const pilots = await Pilot.find({ _id: { $in: pilotIds } }).lean();
+      const leagueById = new Map(
+        pilots.map((p) => [String(p._id), p.league ?? "newbie"]),
+      );
+      for (const row of enrichedResults) {
+        const id = String(row.pilotId);
+        const league = (leagueById.get(id) as "pro" | "newbie") ?? "newbie";
+        const fastestLapBonus =
+          current.fastestLapBonusEnabled && row.bestLap && !row.dnf && !row.dns
+            ? 1
+            : 0;
+        const base =
+          row.dnf || row.dns ? 0 : getPointsByPosition(row.position, league);
+        row.points = base + fastestLapBonus - (row.penaltyPoints ?? 0);
+      }
+    }
+  } catch {
+    // If pilot lookup fails, keep computed defaults (assume newbie)
+  }
 
   // Snapshot before state for audit log
   const stageBefore = await Stage.findOne({

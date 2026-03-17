@@ -8,7 +8,7 @@ import { Loader } from "@/app/components/ui/Loader";
 type ActiveChampionship = {
   _id: string;
   name: string;
-  championshipType: "solo" | "teams";
+  championshipType: "solo" | "teams" | "sprint-pro";
 };
 
 export function RegulationsHub({

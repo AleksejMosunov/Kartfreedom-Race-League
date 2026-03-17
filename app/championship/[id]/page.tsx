@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ChampionshipTable } from "@/app/components/championship/ChampionshipTable";
 import { DetailPageSkeleton } from "@/app/components/ui/PageSkeletons";
 
-type ChampionshipType = "solo" | "teams";
+type ChampionshipType = "solo" | "teams" | "sprint-pro";
 
 type ChampionshipPayload = {
   championship?: {

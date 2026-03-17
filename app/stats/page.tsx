@@ -10,6 +10,7 @@ type StatsParticipant = {
   participantId: string;
   participantNumber: number;
   participantName: string;
+  league?: "pro" | "newbie";
   totalPoints: number;
   averagePosition: number | null;
   stability: number | null;
@@ -19,7 +20,7 @@ type StatsParticipant = {
 };
 
 type StatsPayload = {
-  championshipType: "solo" | "teams";
+  championshipType: "solo" | "teams" | "sprint-pro";
   participants: StatsParticipant[];
   stageLabels: Array<{ id: string; number: number; name: string; }>;
 };
@@ -151,7 +152,10 @@ export default function StatsPage() {
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
                 <p className="text-zinc-400 text-xs">#{participant.participantNumber}</p>
-                <h3 className="text-lg font-bold text-white">{participant.participantName}</h3>
+                <h3 className="flex items-center gap-2 text-lg font-bold text-white">
+                  <span>{participant.participantName}</span>
+                  <span className="ml-1 text-xs uppercase text-zinc-400 tracking-wide">{participant.league === "pro" ? "Про" : "Новачок"}</span>
+                </h3>
               </div>
               <p className="text-2xl font-black text-white">{participant.totalPoints}</p>
             </div>

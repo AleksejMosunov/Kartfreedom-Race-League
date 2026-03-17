@@ -9,7 +9,7 @@ import { Loader } from "@/app/components/ui/Loader";
 import { apiFetch } from "@/app/services/api/request";
 import { Team } from "@/types";
 
-type ChampionshipType = "solo" | "teams";
+type ChampionshipType = "solo" | "teams" | "sprint-pro";
 
 export default function AdminTeamsPage() {
   return (

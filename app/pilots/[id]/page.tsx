@@ -10,7 +10,7 @@ import { DetailPageSkeleton } from "@/app/components/ui/PageSkeletons";
 import Link from "next/link";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
-type ChampionshipType = "solo" | "teams";
+type ChampionshipType = "solo" | "teams" | "sprint-pro";
 
 export default function PilotDetailPage({ params }: { params: Promise<{ id: string; }>; }) {
   return (

@@ -149,7 +149,7 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
             </div>
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3">
               <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">Результати</p>
-              <p className="mt-1 text-lg font-bold text-white">Після фінішу</p>
+              <p className="mt-1 text-lg font-bold text-white">Очікуються</p>
             </div>
           </div>
         )}

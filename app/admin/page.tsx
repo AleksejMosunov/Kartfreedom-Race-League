@@ -36,7 +36,7 @@ export default async function AdminPage() {
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold text-white text-sm truncate">{champ.name}</span>
                   <span className="text-xs text-zinc-500 border border-zinc-700 rounded px-1.5 py-0.5 shrink-0">
-                    {champ.championshipType === "solo" ? "Sprint" : "Endurance"}
+                    {champ.championshipType === "teams" ? "Endurance" : champ.championshipType === "sprint-pro" ? "Sprint (Pro)" : "Sprint"}
                   </span>
                 </div>
                 <Link

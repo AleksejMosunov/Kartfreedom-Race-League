@@ -225,19 +225,40 @@ export async function POST(req: NextRequest) {
   const phone = normalizePhone(
     typeof body.phone === "string" ? body.phone : "",
   );
-  // league MUST be provided by the registrant (no default)
-  const league = typeof body.league === "string" ? body.league : "";
-  if (!league) {
-    return NextResponse.json(
-      { error: "Вкажіть лігу пілота (pro або newbie)" },
-      { status: 400 },
-    );
-  }
-  if (league !== "pro" && league !== "newbie") {
-    return NextResponse.json(
-      { error: "Невірне значення ліги" },
-      { status: 400 },
-    );
+  // league handling differs by championship type
+  // - for 'sprint-pro' championships league is optional and defaults to 'pro'
+  // - for regular 'solo' sprint championships league must be provided (pro|newbie)
+  const providedLeague =
+    typeof body.league === "string" ? body.league : undefined;
+  let leagueToSave: "pro" | "newbie" | undefined;
+  if (current.championshipType === "sprint-pro") {
+    // accept provided valid league, otherwise default to 'pro'
+    if (
+      providedLeague &&
+      providedLeague !== "pro" &&
+      providedLeague !== "newbie"
+    ) {
+      return NextResponse.json(
+        { error: "Невірне значення ліги" },
+        { status: 400 },
+      );
+    }
+    leagueToSave = (providedLeague as "pro" | "newbie") ?? "pro";
+  } else {
+    // existing behavior: league MUST be provided for solo sprint championships
+    if (!providedLeague) {
+      return NextResponse.json(
+        { error: "Вкажіть лігу пілота (pro або newbie)" },
+        { status: 400 },
+      );
+    }
+    if (providedLeague !== "pro" && providedLeague !== "newbie") {
+      return NextResponse.json(
+        { error: "Невірне значення ліги" },
+        { status: 400 },
+      );
+    }
+    leagueToSave = providedLeague as "pro" | "newbie";
   }
 
   if (!isValidUkrPhone(phone)) {
@@ -286,7 +307,7 @@ export async function POST(req: NextRequest) {
       number,
       phone,
       avatar: typeof body.avatar === "string" ? body.avatar : undefined,
-      league,
+      league: leagueToSave,
     });
 
     return NextResponse.json(pilot, { status: 201 });

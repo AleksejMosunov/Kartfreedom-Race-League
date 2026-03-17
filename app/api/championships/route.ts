@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json().catch(() => ({}))) as {
     name?: string;
-    championshipType?: "solo" | "teams";
+    championshipType?: "solo" | "teams" | "sprint-pro";
     fastestLapBonusEnabled?: boolean;
     prizes?: { place?: string; description?: string }[];
     regulations?: {
@@ -54,9 +54,15 @@ export async function POST(req: NextRequest) {
     typeof body.name === "string" && body.name.trim()
       ? body.name.trim()
       : `Чемпіонат ${new Date().toLocaleDateString("uk-UA")}`;
-  if (body.championshipType !== "solo" && body.championshipType !== "teams") {
+  if (
+    body.championshipType !== "solo" &&
+    body.championshipType !== "teams" &&
+    body.championshipType !== "sprint-pro"
+  ) {
     return NextResponse.json(
-      { error: "Оберіть формат чемпіонату: Sprint або Endurance" },
+      {
+        error: "Оберіть формат чемпіонату: Sprint, Sprint (Pro) або Endurance",
+      },
       { status: 400 },
     );
   }

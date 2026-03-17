@@ -192,6 +192,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const defaultLeague =
+      current.championshipType === "sprint-pro" ? "pro" : "newbie";
     const pilot = await Pilot.create({
       ...body,
       championshipId: current._id,
@@ -199,8 +201,8 @@ export async function POST(req: NextRequest) {
       surname,
       number,
       phone: phone || undefined,
-      // if admin didn't provide league, set default to newbie to avoid breaking admin flows
-      league: typeof body.league === "string" ? body.league : "newbie",
+      // if admin didn't provide league, choose sensible default depending on championship type
+      league: typeof body.league === "string" ? body.league : defaultLeague,
     });
     return NextResponse.json(pilot, { status: 201 });
   } catch (err: unknown) {

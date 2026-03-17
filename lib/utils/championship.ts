@@ -14,8 +14,13 @@ export const POINTS_TABLE: Record<number, number> = {
   10: 1,
 };
 
-export function getPointsByPosition(position: number): number {
-  return POINTS_TABLE[position] ?? 0;
+export function getPointsByPosition(
+  position: number,
+  league?: "pro" | "newbie",
+): number {
+  const base = POINTS_TABLE[position] ?? 0;
+  const multiplier = league === "pro" ? 2 : 1;
+  return base * multiplier;
 }
 
 /**
@@ -27,10 +32,10 @@ export function getPointsByPosition(position: number): number {
 export function calculateChampionshipStandings(
   pilots: Pilot[],
   stages: Stage[],
-  championshipType: "solo" | "teams" = "solo",
+  championshipType: "solo" | "teams" | "sprint-pro" = "solo",
 ): ChampionshipStanding[] {
   const completedStages = stages.filter((s) => s.isCompleted);
-  const dropsCount = championshipType === "solo" ? 2 : 1;
+  const dropsCount = championshipType === "teams" ? 1 : 2;
 
   const standings: ChampionshipStanding[] = pilots.map((pilot) => {
     const pilotStandings: PilotStanding[] = completedStages.map((stage) => {

@@ -5,7 +5,7 @@ import { Button } from "@/app/components/ui/Button";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { apiFetch } from "@/app/services/api/request";
 
-type ChampionshipType = "solo" | "teams";
+type ChampionshipType = "solo" | "teams" | "sprint-pro";
 
 type ActiveChampionship = {
   _id: string;
