@@ -13,7 +13,7 @@ export default function SponsorsSection() {
         <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[#ccff00] mb-2">Партнери та спонсори</p>
-            <h2 className="text-2xl sm:text-3xl font-black text-white">Тут може бути ваш бренд</h2>
+            {/* <h2 className="text-2xl sm:text-3xl font-black text-white">Тут може бути ваш бренд</h2> */}
           </div>
         </div>
 
