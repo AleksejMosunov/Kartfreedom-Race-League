@@ -15,6 +15,7 @@ interface ChampionshipsResponse {
   preseasonNewsByType?: {
     solo?: string;
     teams?: string;
+    sprintPro?: string;
   };
 }
 
@@ -36,9 +37,10 @@ export default function AdminChampionshipsPage() {
   const [activeFastestLap, setActiveFastestLap] = useState<Record<string, boolean>>({});
   const [activeRegulations, setActiveRegulations] = useState<Record<string, RegulationsContent>>({});
   const [expandedRegChampId, setExpandedRegChampId] = useState<string | null>(null);
-  const [preseasonNewsByType, setPreseasonNewsByType] = useState<{ solo: string; teams: string; }>({
+  const [preseasonNewsByType, setPreseasonNewsByType] = useState<{ solo: string; teams: string; sprintPro: string; }>({
     solo: "",
     teams: "",
+    sprintPro: "",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,6 +79,7 @@ export default function AdminChampionshipsPage() {
       setPreseasonNewsByType({
         solo: payload.preseasonNewsByType?.solo ?? payload.preseasonNews ?? "",
         teams: payload.preseasonNewsByType?.teams ?? "",
+        sprintPro: payload.preseasonNewsByType?.sprintPro ?? payload.preseasonNews ?? "",
       });
 
       const fastestLapMap: Record<string, boolean> = {};
@@ -125,7 +128,7 @@ export default function AdminChampionshipsPage() {
         newType?: "solo" | "teams" | "sprint-pro";
         newFastestLapBonusEnabled?: boolean;
         newPrizes?: { place: string; description: string; }[];
-        preseasonNewsByType?: { solo: string; teams: string; };
+        preseasonNewsByType?: { solo: string; teams: string; sprintPro?: string; };
       };
 
       if (typeof draft.newName === "string") setNewName(draft.newName);
@@ -140,6 +143,7 @@ export default function AdminChampionshipsPage() {
         setPreseasonNewsByType({
           solo: draft.preseasonNewsByType.solo ?? "",
           teams: draft.preseasonNewsByType.teams ?? "",
+          sprintPro: draft.preseasonNewsByType.sprintPro ?? "",
         });
       }
       setHasDraftChanges(true);
@@ -164,7 +168,8 @@ export default function AdminChampionshipsPage() {
       newFastestLapBonusEnabled ||
       newPrizes.some((p) => p.place.trim() || p.description.trim()) ||
       Boolean(preseasonNewsByType.solo.trim()) ||
-      Boolean(preseasonNewsByType.teams.trim());
+      Boolean(preseasonNewsByType.teams.trim()) ||
+      Boolean(preseasonNewsByType.sprintPro.trim());
     setHasDraftChanges(isDirty);
   }, [newName, newType, newFastestLapBonusEnabled, newPrizes, preseasonNewsByType]);
 
@@ -379,6 +384,7 @@ export default function AdminChampionshipsPage() {
           preseasonNewsByType: {
             solo: preseasonNewsByType.solo,
             teams: preseasonNewsByType.teams,
+            sprintPro: preseasonNewsByType.sprintPro,
           },
         }),
       });
@@ -885,6 +891,18 @@ export default function AdminChampionshipsPage() {
                       setPreseasonNewsByType((prev) => ({ ...prev, solo: e.target.value }))
                     }
                     placeholder="Новина для Sprint..."
+                    className="w-full min-h-24 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-zinc-400 text-xs">Sprint (Pro)</label>
+                  <textarea
+                    value={preseasonNewsByType.sprintPro}
+                    onChange={(e) =>
+                      setPreseasonNewsByType((prev) => ({ ...prev, sprintPro: e.target.value }))
+                    }
+                    placeholder="Новина для Sprint Pro..."
                     className="w-full min-h-24 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
                   />
                 </div>

@@ -6,6 +6,7 @@ export interface ILeagueSettings extends Document {
   preseasonNews: string;
   preseasonNewsSolo?: string;
   preseasonNewsTeams?: string;
+  preseasonNewsSprintPro?: string;
   alertChatId?: string;
   socialLinks?: SocialLinks;
   updatedAt: Date;
@@ -17,6 +18,7 @@ const LeagueSettingsSchema = new Schema<ILeagueSettings>(
     preseasonNews: { type: String, default: "", trim: true },
     preseasonNewsSolo: { type: String, default: "", trim: true },
     preseasonNewsTeams: { type: String, default: "", trim: true },
+    preseasonNewsSprintPro: { type: String, default: "", trim: true },
     alertChatId: { type: String, default: "", trim: true },
     socialLinks: {
       telegram: {

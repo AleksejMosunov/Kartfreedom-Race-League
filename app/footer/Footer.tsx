@@ -89,8 +89,8 @@ export async function Footer() {
   return (
     <footer className="bg-black border-t border-zinc-900 mt-auto">
       <div className="max-w-6xl mx-auto px-4 py-10">
-        <div className="grid grid-cols-2 gap-x-8 gap-y-10 pb-8 border-b border-zinc-900 sm:grid-cols-3">
-          <div className="col-span-2 sm:col-span-1">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-10 pb-8 border-b border-zinc-900 sm:grid-cols-3">
+          <div className="sm:col-span-1">
             <div className="flex items-center gap-2 mb-3">
               <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
                 <polygon points="0,0 13,10 0,20" fill="#ccff00" />
@@ -115,7 +115,7 @@ export async function Footer() {
 
           <div>
             <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-3 ">Навігація</p>
-            <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
               {navChunks.map((chunk, i) => (
                 <div key={i} className="flex flex-col gap-2">
                   {chunk.map((link) => (
@@ -134,7 +134,7 @@ export async function Footer() {
 
           <div>
             <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-3">Слідкуйте за нами</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
               {socialChunks.map((chunk, i) => (
                 <div key={i} className="flex flex-col gap-2">
                   {chunk.map((s) => (

@@ -16,6 +16,11 @@ export async function getPublicChampionshipStatus() {
     preseasonNews: {
       solo: settings?.preseasonNewsSolo ?? settings?.preseasonNews ?? "",
       teams: settings?.preseasonNewsTeams ?? "",
+      sprintPro:
+        settings?.preseasonNewsSprintPro ??
+        settings?.preseasonNewsSolo ??
+        settings?.preseasonNews ??
+        "",
     },
   };
 }

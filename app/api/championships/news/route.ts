@@ -12,6 +12,7 @@ export async function PUT(req: NextRequest) {
     preseasonNewsByType?: {
       solo?: string;
       teams?: string;
+      sprintPro?: string;
     };
   };
   const preseasonNews =
@@ -24,6 +25,10 @@ export async function PUT(req: NextRequest) {
     typeof body.preseasonNewsByType?.teams === "string"
       ? body.preseasonNewsByType.teams.trim()
       : "";
+  const preseasonNewsSprintPro =
+    typeof body.preseasonNewsByType?.sprintPro === "string"
+      ? body.preseasonNewsByType.sprintPro.trim()
+      : "";
 
   const saved = await LeagueSettings.findOneAndUpdate(
     { key: SETTINGS_KEY },
@@ -32,6 +37,7 @@ export async function PUT(req: NextRequest) {
       preseasonNews,
       preseasonNewsSolo,
       preseasonNewsTeams,
+      preseasonNewsSprintPro,
     },
     { upsert: true, new: true, setDefaultsOnInsert: true },
   ).lean();
@@ -41,6 +47,11 @@ export async function PUT(req: NextRequest) {
     preseasonNewsByType: {
       solo: saved?.preseasonNewsSolo ?? saved?.preseasonNews ?? "",
       teams: saved?.preseasonNewsTeams ?? "",
+      sprintPro:
+        saved?.preseasonNewsSprintPro ??
+        saved?.preseasonNewsSolo ??
+        saved?.preseasonNews ??
+        "",
     },
   });
 }

@@ -197,8 +197,12 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
               "name" in (result.pilotId as object)
               ? (result.pilotId as typeof result.pilot)
               : null);
+          const pilotIdStr = pilotObj && "_id" in (pilotObj as object)
+            ? String((pilotObj as { _id: unknown; })._id)
+            : String(result.pilotId ?? result._id ?? "");
+          const itemKey = result._id ? String(result._id) : `${pilotIdStr}-${result.position}`;
           return (
-            <div key={`${String(result.pilotId)}-${result.position}`} className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+            <div key={itemKey} className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-zinc-400 text-xs">{positionMedals[result.position] ?? result.position} місце</p>

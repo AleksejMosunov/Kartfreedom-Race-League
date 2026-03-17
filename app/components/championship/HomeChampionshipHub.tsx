@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { NoActiveChampionshipBlock } from "@/app/components/championship/NoActiveChampionshipBlock";
-import { formatPilotFullName } from "@/lib/utils/pilotName";
+// import { formatPilotFullName } from "@/lib/utils/pilotName";
 import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 import { useStages } from "@/app/hooks/useStages";
 import { useChampionship } from "@/app/hooks/useChampionship";
@@ -29,6 +29,9 @@ export function HomeChampionshipHub({
   const { stages, isLoading: stagesLoading } = useStages(selectedChampionshipId || undefined);
   const { standings, isLoading: standingsLoading } = useChampionship(selectedChampionshipId || undefined);
   const [switching, setSwitching] = useState(false);
+  // Show skeleton immediately on initial render until the first fetch completes
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
 
   // When user changes selected championship, show skeleton until both hooks finish loading
   useEffect(() => {
@@ -40,13 +43,31 @@ export function HomeChampionshipHub({
     if (!switching) return;
     if (!stagesLoading && !standingsLoading) setSwitching(false);
   }, [stagesLoading, standingsLoading, switching]);
+
+  // Consider loading when switching, when either hook is loading, or when
+  // we intentionally show the skeleton on initial mount until the first fetch starts and completes.
+  const loading = switching || stagesLoading || standingsLoading || showSkeleton;
+
+  useEffect(() => {
+    if (stagesLoading || standingsLoading) {
+      setHasFetched(true);
+      setShowSkeleton(true);
+      return;
+    }
+    if (hasFetched && !stagesLoading && !standingsLoading) {
+      setShowSkeleton(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stagesLoading, standingsLoading]);
   const selectedChampionship = active.find((c) => c._id === selectedChampionshipId);
   const selectedPreseasonNews =
     typeof preseasonNews === "string"
       ? preseasonNews
       : selectedChampionship?.championshipType === "teams"
         ? (preseasonNews.teams ?? "")
-        : (preseasonNews.solo ?? "");
+        : selectedChampionship?.championshipType === "sprint-pro"
+          ? (preseasonNews.sprintPro ?? preseasonNews.solo ?? "")
+          : (preseasonNews.solo ?? "");
 
   const nextStage = useMemo(
     () => stages.find((stage) => !stage.isCompleted) ?? null,
@@ -100,7 +121,7 @@ export function HomeChampionshipHub({
       )}
 
       <section className="mb-8 rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 p-6 sm:p-8">
-        {switching ? (
+        {loading ? (
           <div className={`grid grid-cols-1 ${hasPrizes ? "md:grid-cols-2 gap-6 md:gap-10" : "gap-0"}`}>
             <div className="animate-pulse space-y-3">
               <div className="h-6 w-40 bg-zinc-800 rounded" />
@@ -174,7 +195,7 @@ export function HomeChampionshipHub({
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
         <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-          {switching ? (
+          {loading ? (
             <div>
               <h3 className="text-xl font-bold text-white mb-4">Лідери чемпіонату</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -211,8 +232,8 @@ export function HomeChampionshipHub({
                               <div>
                                 <p className="text-zinc-400 text-xs">#{leader.position}</p>
                                 <div className="text-white font-semibold">
-                                  <div className="leading-tight">{leader.pilot.name}</div>
-                                  <div className="leading-tight">{leader.pilot.surname}</div>
+                                  <div className="leading-tight">{leader.pilot.name} {leader.pilot.surname}</div>
+                                  {/* <div className="leading-tight"></div> */}
                                 </div>
                               </div>
                               <p className="text-white font-black text-xl">{leader.totalPoints}</p>
@@ -239,8 +260,8 @@ export function HomeChampionshipHub({
                               <div>
                                 <p className="text-zinc-400 text-xs">#{leader.position}</p>
                                 <div className="text-white font-semibold">
-                                  <div className="leading-tight">{leader.pilot.name}</div>
-                                  <div className="leading-tight">{leader.pilot.surname}</div>
+                                  <div className="leading-tight">{leader.pilot.name} {leader.pilot.surname}</div>
+                                  {/* <div className="leading-tight"></div> */}
                                 </div>
                               </div>
                               <p className="text-white font-black text-xl">{leader.totalPoints}</p>
@@ -274,7 +295,7 @@ export function HomeChampionshipHub({
         </div>
 
         <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-          {switching ? (
+          {loading ? (
             <div>
               <h3 className="text-xl font-bold text-white mb-4">Останні новини</h3>
               <div className="space-y-3 animate-pulse">
@@ -287,12 +308,17 @@ export function HomeChampionshipHub({
               <h3 className="text-xl font-bold text-white mb-4">Останні новини</h3>
               <div className="space-y-3">
                 {latestCompleted ? (
-                  <div className="rounded-lg border border-zinc-800 px-4 py-3">
-                    <p className="text-zinc-400 text-xs uppercase tracking-wider">Завершено</p>
-                    <p className="text-white font-semibold mt-1">
-                      Етап {latestCompleted.number}: {latestCompleted.name}
-                    </p>
-                  </div>
+                  <Link
+                    href={`/stages/${latestCompleted._id}?championship=${encodeURIComponent(selectedChampionshipId ?? "")}`}
+                    className="block"
+                  >
+                    <div className="rounded-lg border border-zinc-800 px-4 py-3 hover:bg-zinc-900/50 transition-colors">
+                      <p className="text-zinc-400 text-xs uppercase tracking-wider">Завершено</p>
+                      <p className="text-white font-semibold mt-1">
+                        Етап {latestCompleted.number}: {latestCompleted.name}
+                      </p>
+                    </div>
+                  </Link>
                 ) : null}
                 {nextStage ? (
                   <div className="rounded-lg border border-zinc-800 px-4 py-3">
