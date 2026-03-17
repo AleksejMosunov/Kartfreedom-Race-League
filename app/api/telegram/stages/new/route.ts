@@ -29,7 +29,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const message = [
+  const swsLinksRaw = Array.isArray((stage as any).swsLinks)
+    ? (stage as any).swsLinks
+    : [];
+  const swsLinks = swsLinksRaw.filter(
+    (s: unknown) => typeof s === "string" && String(s).trim() !== "",
+  );
+
+  const base = [
     "📢 <b>Додано новий етап!</b>",
     `Чемпіонат: <b>${escapeHtml(championship.name)}</b>`,
     `Етап ${stage.number}: <b>${escapeHtml(stage.name)}</b>`,
@@ -38,7 +45,19 @@ export async function POST(req: NextRequest) {
     "Реєстрація триває. До зустрічі на трасі! 🏎️",
     "",
     registrationLinkLine(String(stage.championshipId)),
-  ].join("\n");
+  ];
+
+  const swsLines = swsLinks.length
+    ? [
+        "",
+        "🔗 Посилання SWS:",
+        ...swsLinks.map(
+          (l: string) => `🔗 <a href="${escapeHtml(l)}">${escapeHtml(l)}</a>`,
+        ),
+      ]
+    : [];
+
+  const message = [...base, ...swsLines].join("\n");
 
   await sendTelegramMessage(message);
 

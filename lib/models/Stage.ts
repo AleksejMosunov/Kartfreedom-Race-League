@@ -18,6 +18,7 @@ export interface IStage extends Document {
   date: Date;
   isCompleted: boolean;
   results: IStageResult[];
+  swsLinks: string[];
   createdAt: Date;
 }
 
@@ -48,6 +49,23 @@ const StageSchema = new Schema<IStage>(
     date: { type: Date, required: true },
     isCompleted: { type: Boolean, default: false },
     results: { type: [StageResultSchema], default: [] },
+    swsLinks: {
+      type: [String],
+      required: true,
+      default: [],
+      validate: {
+        validator: function (v: unknown) {
+          return (
+            Array.isArray(v) &&
+            v.length > 0 &&
+            (v as string[]).every(
+              (s) => typeof s === "string" && s.trim().length > 0,
+            )
+          );
+        },
+        message: "swsLinks must contain at least one non-empty URL",
+      },
+    },
   },
   { timestamps: true },
 );

@@ -18,7 +18,8 @@ export const metadata: Metadata = {
   title: "KartFreedom Race League",
   description: "Картинговий чемпіонат KartFreedom Race League",
   icons: {
-    icon: "/icon.svg",
+    // `public/` is not part of the served path — use `/logo.png`
+    icon: "/logo.png",
   },
 };
 

@@ -58,6 +58,7 @@ export default function AdminStagesPage() {
   const [stageName, setStageName] = useState("");
   const [stageNumber, setStageNumber] = useState("");
   const [stageDate, setStageDate] = useState("");
+  const [swsLinks, setSwsLinks] = useState<string[]>([""]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [resultsError, setResultsError] = useState("");
@@ -98,10 +99,12 @@ export default function AdminStagesPage() {
         stageName?: string;
         stageNumber?: string;
         stageDate?: string;
+        swsLinks?: string[];
       };
       if (typeof draft.stageName === "string") setStageName(draft.stageName);
       if (typeof draft.stageNumber === "string") setStageNumber(draft.stageNumber);
       if (typeof draft.stageDate === "string") setStageDate(draft.stageDate);
+      if (Array.isArray(draft.swsLinks) && draft.swsLinks.length > 0) setSwsLinks(draft.swsLinks);
     } catch {
       // ignore malformed draft
     }
@@ -110,10 +113,10 @@ export default function AdminStagesPage() {
   useEffect(() => {
     localStorage.setItem(
       FORM_DRAFT_KEY,
-      JSON.stringify({ stageName, stageNumber, stageDate }),
+      JSON.stringify({ stageName, stageNumber, stageDate, swsLinks }),
     );
-    setHasDraftChanges(Boolean(stageName.trim() || stageNumber || stageDate));
-  }, [stageName, stageNumber, stageDate]);
+    setHasDraftChanges(Boolean(stageName.trim() || stageNumber || stageDate || swsLinks.some((s) => s.trim() !== "")));
+  }, [stageName, stageNumber, stageDate, swsLinks]);
 
   const handleAddStage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,6 +128,14 @@ export default function AdminStagesPage() {
       setFormError(`Етап з номером ${stageNumber} вже існує`);
       return;
     }
+
+    // validate swsLinks
+    const validLinks = swsLinks.map((s) => (s ?? "")).map((s) => s.trim()).filter((s) => s !== "");
+    if (validLinks.length === 0) {
+      setFormError("Додайте хоча б одне посилання на SWS");
+      return;
+    }
+
     setSubmitting(true);
     setFormError("");
     try {
@@ -136,6 +147,7 @@ export default function AdminStagesPage() {
           name: stageName.trim(),
           number: Number(stageNumber),
           date: stageDate,
+          swsLinks: validLinks,
         }),
       });
       const created = (await res.json().catch(() => ({}))) as { error?: string; _id?: string; };
@@ -158,6 +170,7 @@ export default function AdminStagesPage() {
       setStageName("");
       setStageNumber("");
       setStageDate("");
+      setSwsLinks([""]);
       localStorage.removeItem(FORM_DRAFT_KEY);
       setHasDraftChanges(false);
       await refresh();
@@ -484,6 +497,41 @@ export default function AdminStagesPage() {
               className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
               required
             />
+            <div className="sm:col-span-2">
+              <label className="text-zinc-400 text-sm mb-2 block">Посилання на гонку на SWS (обов'язково)</label>
+              <div className="space-y-2">
+                {swsLinks.map((link, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      value={link}
+                      onChange={(e) => setSwsLinks((prev) => prev.map((p, i) => (i === idx ? e.target.value : p)))}
+                      placeholder="https://sws.example/event/..."
+                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                      required={idx === 0}
+                    />
+                    {swsLinks.length > 1 && (
+                      <button
+                        type="button"
+                        className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-sm text-zinc-300"
+                        onClick={() => setSwsLinks((prev) => prev.filter((_, i) => i !== idx))}
+                      >
+                        Видалити
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <div>
+                  <button
+                    type="button"
+                    className="px-3 py-2 rounded-md bg-zinc-900 border border-zinc-700 text-sm text-white"
+                    onClick={() => setSwsLinks((prev) => [...prev, ""])}
+                  >
+                    Додати посилання
+                  </button>
+                </div>
+              </div>
+            </div>
             <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
               <Button type="submit" disabled={submitting || !selectedChampionshipId}>
                 {submitting ? "Додавання..." : "Додати етап"}
