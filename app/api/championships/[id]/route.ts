@@ -92,19 +92,29 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const safeParticipants = isAdmin
     ? participants
     : (participants as Array<Record<string, unknown>>).map((participant) => {
-        const { phone: _phone, ...rest } = participant;
-        return rest;
+        const copy = { ...(participant as Record<string, unknown>) };
+        if (Object.prototype.hasOwnProperty.call(copy, "phone"))
+          delete copy.phone;
+        return copy;
       });
 
+  // normalize participants so `league` is always present (fallback to 'newbie')
+  const normalizedParticipants = (
+    safeParticipants as unknown as IPilotType[]
+  ).map((p) => ({
+    ...(p as IPilotType),
+    league: (p as IPilotType).league ?? "newbie",
+  }));
+
   const standings = calculateChampionshipStandings(
-    safeParticipants as unknown as IPilotType[],
+    normalizedParticipants,
     mappedStages as unknown as IStageType[],
     championship.championshipType === "teams" ? "teams" : "solo",
   );
 
   return NextResponse.json({
     championship,
-    pilots: safeParticipants,
+    pilots: normalizedParticipants,
     stages: mappedStages,
     standings,
   });

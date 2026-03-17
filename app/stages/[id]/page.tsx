@@ -3,8 +3,7 @@
 import { use } from "react";
 import { useStage } from "@/app/hooks/useStages";
 import { StageResultsTable } from "@/app/components/stages/StageResultsTable";
-import { Loader } from "@/app/components/ui/Loader";
-import { Badge } from "@/app/components/ui/Badge";
+import { Loader, Badge } from "@/app/components/ui";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -22,6 +21,13 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
   const [groups, setGroups] = useState<{ _id: string; groupNumber: number; pilots: { _id: string; number?: number; name?: string; surname?: string; }[]; }[] | null>(null);
   const [groupsLoading, setGroupsLoading] = useState(false);
 
+  const [participantsCount, setParticipantsCount] = useState<number>(0);
+
+  useEffect(() => {
+    // initialize participants count based on stage results until we fetch real participants
+    setParticipantsCount(stage?.results?.length ?? 0);
+  }, [stage, setParticipantsCount]);
+
   useEffect(() => {
     let cancelled = false;
     async function fetchGroups() {
@@ -35,15 +41,30 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
         }
         const data = await res.json();
         if (!cancelled) setGroups(data);
-      } catch (e) {
+      } catch {
         if (!cancelled) setGroups([]);
       } finally {
         if (!cancelled) setGroupsLoading(false);
       }
     }
     fetchGroups();
+    // fetch participants count for championship (fallback to stage.results)
+    (async () => {
+      let cancelled2 = false;
+      try {
+        if (!championshipId) return;
+        const url = `/api/pilots?championship=${encodeURIComponent(championshipId)}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled2 && Array.isArray(data)) setParticipantsCount(data.length);
+      } catch {
+        // ignore
+      }
+      return () => { cancelled2 = true; };
+    })();
     return () => { cancelled = true; };
-  }, [id, championshipId]);
+  }, [id, championshipId, setParticipantsCount]);
 
   if (isLoading) return <Loader />;
   if (error)
@@ -89,7 +110,7 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
           ? "Сьогодні"
           : "Очікуємо результати";
 
-  const participantsCount = stage.results.length;
+
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-8">

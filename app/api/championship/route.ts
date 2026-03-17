@@ -54,6 +54,14 @@ export async function GET(req: NextRequest) {
           .lean(),
   ]);
 
+  // normalize participants so `league` is always present (fallback to 'newbie')
+  const normalizedParticipants = (participants as unknown as IPilotType[]).map(
+    (p) => ({
+      ...(p as IPilotType),
+      league: (p as IPilotType).league ?? "newbie",
+    }),
+  );
+
   const mappedStages =
     current.championshipType === "teams"
       ? (() => {
@@ -97,7 +105,7 @@ export async function GET(req: NextRequest) {
   const champType = current.championshipType === "teams" ? "teams" : "solo";
 
   const standings = calculateChampionshipStandings(
-    participants as unknown as IPilotType[],
+    normalizedParticipants,
     mappedStages as unknown as IStageType[],
     champType,
   );
@@ -109,7 +117,7 @@ export async function GET(req: NextRequest) {
   if (completedStages.length > 1) {
     const previousStages = completedStages.slice(0, -1);
     const previousStandings = calculateChampionshipStandings(
-      participants as unknown as IPilotType[],
+      normalizedParticipants,
       previousStages,
       champType,
     );

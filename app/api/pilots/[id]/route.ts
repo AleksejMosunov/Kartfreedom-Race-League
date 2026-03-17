@@ -35,8 +35,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
   if (isAdmin) {
     return NextResponse.json(pilot);
   }
-  const { phone: _phone, ...publicPilot } = pilot as Record<string, unknown>;
-  return NextResponse.json(publicPilot);
+  const copy = { ...(pilot as Record<string, unknown>) };
+  if (Object.prototype.hasOwnProperty.call(copy, "phone")) delete copy.phone;
+  return NextResponse.json(copy);
 }
 
 export async function PUT(req: NextRequest, { params }: Params) {

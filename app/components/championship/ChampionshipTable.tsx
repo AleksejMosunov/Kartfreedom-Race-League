@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useChampionship } from "@/app/hooks/useChampionship";
 import { useStages } from "@/app/hooks/useStages";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
-import { Badge } from "@/app/components/ui/Badge";
-import { Loader } from "@/app/components/ui/Loader";
+import { Badge, Loader } from "@/app/components/ui";
 import { POINTS_TABLE } from "@/lib/utils/championship";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
@@ -26,7 +25,7 @@ export function ChampionshipTable({
 
   const [championshipTypeById, setChampionshipTypeById] = useState<ChampionshipType>("solo");
   const [stageFilter, setStageFilter] = useState<string>("all");
-  const [classFilter, setClassFilter] = useState<"all" | "top" | "mid" | "tail">("all");
+  const [classFilter, setClassFilter] = useState<"all" | "pro" | "newbie">("newbie");
   const [teamFilter, setTeamFilter] = useState("");
 
   const championshipType: ChampionshipType =
@@ -69,19 +68,17 @@ export function ChampionshipTable({
       ? completedStages
       : completedStages.filter((stage) => stage._id === normalizedStageFilter);
 
-  // exclude pro pilots from public championship table
-  const nonProStandings = standings.filter((row) => row.pilot.league !== "pro");
-
-  const filteredStandings = nonProStandings.filter((row) => {
+  // include all pilots in the public championship table (do not exclude 'pro')
+  const filteredStandings = standings.filter((row) => {
     const search = teamFilter.trim().toLowerCase();
     const name = formatPilotFullName(row.pilot.name, row.pilot.surname).toLowerCase();
     const numberText = String(row.pilot.number);
     const searchMatch = !search || name.includes(search) || numberText.includes(search);
 
     let classMatch = true;
-    if (classFilter === "top") classMatch = row.position <= 3;
-    if (classFilter === "mid") classMatch = row.position > 3 && row.position <= 8;
-    if (classFilter === "tail") classMatch = row.position > 8;
+    const pilotLeague = row.pilot.league ?? "newbie";
+    if (classFilter === "pro") classMatch = pilotLeague === "pro";
+    if (classFilter === "newbie") classMatch = pilotLeague === "newbie";
 
     return searchMatch && classMatch;
   });
@@ -121,16 +118,15 @@ export function ChampionshipTable({
         </label>
 
         <label className="text-sm text-zinc-300">
-          Клас
+          Залік
           <select
             value={classFilter}
-            onChange={(e) => setClassFilter(e.target.value as "all" | "top" | "mid" | "tail")}
+            onChange={(e) => setClassFilter(e.target.value as "all" | "pro" | "newbie")}
             className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
           >
+            <option value="newbie">Новачки</option>
+            <option value="pro">Про</option>
             <option value="all">Усі</option>
-            <option value="top">Top-3</option>
-            <option value="mid">Середина таблиці</option>
-            <option value="tail">Нижня група</option>
           </select>
         </label>
 
@@ -177,6 +173,14 @@ export function ChampionshipTable({
                     <div>
                       <span className="font-semibold text-white block">
                         {formatPilotFullName(row.pilot.name, row.pilot.surname)}
+                        {(() => {
+                          const league = row.pilot.league ?? "newbie";
+                          return (
+                            <Badge variant={league === "pro" ? "success" : "default"} className="ml-2">
+                              {league === "pro" ? "Про" : "Новачок"}
+                            </Badge>
+                          );
+                        })()}
                       </span>
                       {trendLabel(row.positionDelta)}
                     </div>
@@ -234,6 +238,14 @@ export function ChampionshipTable({
                 <p className="text-zinc-400 text-xs">Позиція {positionMedals[row.position] ?? row.position}</p>
                 <p className="text-white font-semibold">
                   #{row.pilot.number} {formatPilotFullName(row.pilot.name, row.pilot.surname)}
+                  {(() => {
+                    const league = row.pilot.league ?? "newbie";
+                    return (
+                      <Badge variant={league === "pro" ? "success" : "default"} className="ml-2">
+                        {league === "pro" ? "Про" : "Новачок"}
+                      </Badge>
+                    );
+                  })()}
                 </p>
                 {trendLabel(row.positionDelta)}
               </div>

@@ -2,7 +2,6 @@ import { ChampionshipTable } from "@/app/components/championship/ChampionshipTab
 import { NoActiveChampionshipBlock } from "@/app/components/championship/NoActiveChampionshipBlock";
 import { MultiChampionshipTabs } from "@/app/components/championship/MultiChampionshipTabs";
 import { getPublicChampionshipStatus } from "@/lib/championship/public";
-import { SPONSOR_CONTACT_URL } from "@/lib/config/sponsors";
 import SponsorsSection from "@/app/components/championship/SponsorsSection";
 
 export const revalidate = 0;

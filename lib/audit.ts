@@ -27,8 +27,12 @@ interface AuditOptions {
 export function sanitizeForAudit(
   obj: Record<string, unknown>,
 ): Record<string, unknown> {
-  const { phone: _p, passwordHash: _h, ...rest } = obj;
-  return rest;
+  // Create a shallow copy and remove common PII fields before storing.
+  const copy: Record<string, unknown> = { ...obj };
+  if (Object.prototype.hasOwnProperty.call(copy, "phone")) delete copy.phone;
+  if (Object.prototype.hasOwnProperty.call(copy, "passwordHash"))
+    delete copy.passwordHash;
+  return copy;
 }
 
 /** Extract approximate client IP from request headers. */

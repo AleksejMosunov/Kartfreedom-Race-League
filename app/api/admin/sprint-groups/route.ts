@@ -5,6 +5,8 @@ import { Stage } from "@/lib/models/Stage";
 import { Pilot } from "@/lib/models/Pilot";
 import { Championship } from "@/lib/models/Championship";
 import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
+import mongoose from "mongoose";
+import type { IStageResult } from "@/lib/models/Stage";
 
 type Body = {
   stageId: string;
@@ -93,7 +95,12 @@ export async function POST(req: NextRequest) {
   }
 
   // persist groups
-  const created: any[] = [];
+  const created: {
+    _id: mongoose.Types.ObjectId;
+    stageId: mongoose.Types.ObjectId;
+    groupNumber: number;
+    pilotIds: mongoose.Types.ObjectId[];
+  }[] = [];
   for (const g of groups) {
     const doc = await SprintGroup.create({
       championshipId: championship._id,
@@ -110,20 +117,21 @@ export async function POST(req: NextRequest) {
     if (stageDoc) {
       for (const pid of dnsPilotIds) {
         const exists = stageDoc.results.find(
-          (r: any) => String(r.pilotId) === pid,
+          (r: IStageResult) => String(r.pilotId) === pid,
         );
         if (exists) {
           exists.dns = true;
         } else {
+          // Add a new result record; cast to IStageResult after creating ObjectId
           stageDoc.results.push({
-            pilotId: pid,
+            pilotId: new mongoose.Types.ObjectId(pid),
             position: 0,
             points: 0,
             dnf: false,
             dns: true,
             penaltyPoints: 0,
             penaltyReason: "",
-          } as any);
+          } as IStageResult);
         }
       }
       await stageDoc.save();
@@ -166,8 +174,8 @@ export async function DELETE(req: NextRequest) {
     if (stageDoc) {
       let changed = false;
       for (const r of stageDoc.results) {
-        if ((r as any).dns) {
-          (r as any).dns = false;
+        if ((r as IStageResult).dns) {
+          (r as IStageResult).dns = false;
           changed = true;
         }
       }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Pilot } from "@/lib/models/Pilot";
+import { Pilot as IPilotType } from "@/types";
 import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
@@ -87,6 +88,8 @@ export async function GET(req: NextRequest) {
 
   const participants = pilots.map((pilot) => ({
     ...pilot,
+    // ensure `league` exists on returned pilot objects (fallback to 'newbie')
+    league: (pilot as IPilotType).league ?? "newbie",
     completedStagesCount: completedStagesMap.get(String(pilot._id)) ?? 0,
   }));
 

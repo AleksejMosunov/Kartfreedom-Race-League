@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button } from "@/app/components/ui/Button";
-import { Loader } from "@/app/components/ui/Loader";
+import { Button, Loader, Card } from "@/app/components/ui";
 import { apiFetch } from "@/app/services/api/request";
 import { defaultRegulationsForNewChampionship } from "@/lib/championship/regulations";
 import { Championship, RegulationSection, RegulationsContent } from "@/types";
@@ -645,7 +644,7 @@ export default function AdminChampionshipsPage() {
                   const isExpanded = expandedRegChampId === item._id;
                   const isPrizesExpanded = expandedPrizesChampId === item._id;
                   return (
-                    <div key={item._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
+                    <Card key={item._id} className="p-5 space-y-4">
                       {/* Header */}
                       <div className="flex items-start justify-between gap-4 flex-wrap">
                         <div>
@@ -868,7 +867,7 @@ export default function AdminChampionshipsPage() {
                           {submittingId === item._id ? "Завершення..." : "Завершити чемпіонат"}
                         </Button>
                       </div>
-                    </div>
+                    </Card>
                   );
                 })
               )}

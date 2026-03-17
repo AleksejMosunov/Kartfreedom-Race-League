@@ -5,7 +5,7 @@
 
 "use client";
 
-import { Trophy, Calendar as CalendarIcon, Flag, Award } from 'lucide-react';
+import { Trophy, Flag, Award } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useRef } from 'react';
 
@@ -186,6 +186,7 @@ export default function App() {
             <div className="flex flex-col items-center gap-3 mb-6">
               <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-white/20">Офіційний партнер</span>
               <div className="flex items-center gap-6 opacity-80 hover:opacity-100 transition-all duration-500">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://m.media-amazon.com/images/I/71fXj+RIrKL._AC_UF894,1000_QL80_.jpg"
                   alt="Red Bull Logo"

@@ -5,9 +5,7 @@ import { useStages } from "@/app/hooks/useStages";
 import { usePilots } from "@/app/hooks/usePilots";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { useStagesStore } from "@/store/stagesStore";
-import { Loader } from "@/app/components/ui/Loader";
-import { Button } from "@/app/components/ui/Button";
-import { Badge } from "@/app/components/ui/Badge";
+import { Loader, Button, Badge, Card } from "@/app/components/ui";
 import { apiFetch } from "@/app/services/api/request";
 import { getPointsByPosition } from "@/lib/utils/championship";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
@@ -51,8 +49,8 @@ export default function AdminStagesPage() {
     { enabled: Boolean(selectedChampionshipId) },
   );
   const { pilots } = usePilots(selectedChampionshipId || undefined);
-  // exclude pro pilots from editable result lists
-  const editablePilots = pilots.filter((p) => p.league !== "pro");
+  // include all pilots in editable result lists (do not exclude 'pro')
+  const editablePilots = pilots;
   const { saveStageResults } = useStagesStore();
 
   const [stageName, setStageName] = useState("");
@@ -498,7 +496,7 @@ export default function AdminStagesPage() {
               required
             />
             <div className="sm:col-span-2">
-              <label className="text-zinc-400 text-sm mb-2 block">Посилання на гонку на SWS (обов'язково)</label>
+              <label className="text-zinc-400 text-sm mb-2 block">Посилання на гонку на SWS (обов&apos;язково)</label>
               <div className="space-y-2">
                 {swsLinks.map((link, idx) => (
                   <div key={idx} className="flex items-center gap-2">
@@ -560,7 +558,7 @@ export default function AdminStagesPage() {
 
       <div className="space-y-4">
         {stages.map((stage) => (
-          <div key={stage._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+          <Card key={stage._id} className="p-5">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-3 flex-wrap">
@@ -594,9 +592,7 @@ export default function AdminStagesPage() {
                     onClick={() => void sendStageResultsToTelegram(stage._id)}
                     disabled={sendingResultsStageId === stage._id}
                   >
-                    {sendingResultsStageId === stage._id
-                      ? "Відправка..."
-                      : "Відправити результати етапу"}
+                    {sendingResultsStageId === stage._id ? "Відправка..." : "Відправити результати етапу"}
                   </Button>
                 )}
                 {pilots.length > 0 && canEditResults && (
@@ -630,6 +626,7 @@ export default function AdminStagesPage() {
                   </Button>
                 )}
               </div>
+
             </div>
 
             {editingStageId === stage._id && (
@@ -640,87 +637,33 @@ export default function AdminStagesPage() {
                     Увімкнено правило: <span className="text-zinc-200">Best lap = +1 очко</span>. Можна обрати тільки одного учасника.
                   </p>
                 ) : (
-                  <p className="text-zinc-500 text-xs mb-3">
-                    Правило Best lap у цьому чемпіонаті вимкнено.
-                  </p>
+                  <p className="text-zinc-500 text-xs mb-3">Правило Best lap у цьому чемпіонаті вимкнено.</p>
                 )}
 
                 <div className="mb-3 flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const sorted = [...pilots].sort((a, b) => a.number - b.number);
-                      setResultsRows((rows) =>
-                        rows.map((row) => ({
-                          ...row,
-                          position: sorted.findIndex((p) => p._id === row.pilotId) + 1,
-                          dnf: false,
-                          dns: false,
-                        })),
-                      );
-                    }}
-                  >
+                  <Button type="button" variant="ghost" size="sm" onClick={() => {
+                    const sorted = [...pilots].sort((a, b) => a.number - b.number);
+                    setResultsRows((rows) => rows.map((row) => ({ ...row, position: sorted.findIndex((p) => p._id === row.pilotId) + 1, dnf: false, dns: false })));
+                  }}>
                     Авто-розстановка за номером
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setResultsRows((rows) =>
-                        rows.map((row) => ({ ...row, penaltyPoints: 0, penaltyReason: "" })),
-                      );
-                    }}
-                  >
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setResultsRows((rows) => rows.map((row) => ({ ...row, penaltyPoints: 0, penaltyReason: "" })))}>
                     Очистити всі штрафи
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setResultsRows((rows) =>
-                        rows.map((row) => ({ ...row, dns: true, dnf: false, bestLap: false, position: 999 })),
-                      );
-                    }}
-                  >
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setResultsRows((rows) => rows.map((row) => ({ ...row, dns: true, dnf: false, bestLap: false, position: 999 })))}>
                     Позначити всіх як DNS
                   </Button>
-                  <Button type="button" variant="ghost" size="sm" onClick={selectAllRows}>
-                    Обрати всіх
-                  </Button>
-                  <Button type="button" variant="ghost" size="sm" onClick={clearSelection}>
-                    Очистити вибір
-                  </Button>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => applyBulkState("dnf")}>
-                    Масово DNF (обрані)
-                  </Button>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => applyBulkState("dns")}>
-                    Масово DNS (обрані)
-                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={selectAllRows}>Обрати всіх</Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={clearSelection}>Очистити вибір</Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => applyBulkState("dnf")}>Масово DNF (обрані)</Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => applyBulkState("dns")}>Масово DNS (обрані)</Button>
                 </div>
 
                 <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-zinc-800 p-3">
                   <span className="text-xs text-zinc-400">Масовий штраф для обраних:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    value={bulkPenaltyPoints}
-                    onChange={(e) => setBulkPenaltyPoints(Math.max(0, Number(e.target.value) || 0))}
-                    className="w-20 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center"
-                  />
-                  <input
-                    type="text"
-                    value={bulkPenaltyReason}
-                    onChange={(e) => setBulkPenaltyReason(e.target.value)}
-                    placeholder="Причина"
-                    className="min-w-56 flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm"
-                  />
-                  <Button type="button" variant="secondary" size="sm" onClick={applyBulkPenalty}>
-                    Застосувати
-                  </Button>
+                  <input type="number" min={1} value={bulkPenaltyPoints} onChange={(e) => setBulkPenaltyPoints(Math.max(0, Number(e.target.value) || 0))} className="w-20 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center" />
+                  <input type="text" value={bulkPenaltyReason} onChange={(e) => setBulkPenaltyReason(e.target.value)} placeholder="Причина" className="min-w-56 flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm" />
+                  <Button type="button" variant="secondary" size="sm" onClick={applyBulkPenalty}>Застосувати</Button>
                   <span className="text-xs text-zinc-500">Обрано: {selectedRows.length}</span>
                 </div>
 
@@ -732,80 +675,18 @@ export default function AdminStagesPage() {
                     return (
                       <div key={row.pilotId} className="flex items-center gap-3 flex-wrap">
                         <label className="flex items-center gap-1 text-xs text-zinc-400">
-                          <input
-                            type="checkbox"
-                            checked={selectedRows.includes(row.pilotId)}
-                            onChange={() => toggleSelectRow(row.pilotId)}
-                            className="accent-[#ccff00]"
-                          />
-                          Обрати
+                          <input type="checkbox" checked={selectedRows.includes(row.pilotId)} onChange={() => toggleSelectRow(row.pilotId)} className="accent-[#ccff00]" /> Обрати
                         </label>
-                        <span className="text-white w-40 shrink-0 text-sm">
-                          #{pilot?.number} {pilot ? formatPilotFullName(pilot.name, pilot.surname) : ""}
-                        </span>
+                        <span className="text-white w-40 shrink-0 text-sm">#{pilot?.number} {pilot ? formatPilotFullName(pilot.name, pilot.surname) : ""}</span>
                         <div className="flex items-center gap-1">
                           <span className="text-zinc-500 text-xs">Місце:</span>
-                          <input
-                            type="number"
-                            value={row.position}
-                            min={1}
-                            max={pilots.length}
-                            onChange={(e) => updateRow(row.pilotId, "position", Number(e.target.value))}
-                            className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center"
-                          />
+                          <input type="number" value={row.position} min={1} max={pilots.length} onChange={(e) => updateRow(row.pilotId, "position", Number(e.target.value))} className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center" />
                         </div>
-                        <label className="flex items-center gap-1 text-sm text-zinc-400">
-                          <input
-                            type="checkbox"
-                            checked={row.dnf}
-                            onChange={(e) => updateRow(row.pilotId, "dnf", e.target.checked)}
-                            className="accent-red-500"
-                          />
-                          DNF
-                        </label>
-                        <label className="flex items-center gap-1 text-sm text-zinc-400">
-                          <input
-                            type="checkbox"
-                            checked={row.dns}
-                            onChange={(e) => updateRow(row.pilotId, "dns", e.target.checked)}
-                            className="accent-red-500"
-                          />
-                          DNS
-                        </label>
-                        {fastestLapBonusEnabled && (
-                          <label className="flex items-center gap-1 text-sm text-zinc-300">
-                            <input
-                              type="checkbox"
-                              checked={row.bestLap}
-                              onChange={(e) => updateRow(row.pilotId, "bestLap", e.target.checked)}
-                              className="accent-red-500"
-                            />
-                            Best lap (+1)
-                          </label>
-                        )}
-                        <div className="flex items-center gap-1">
-                          <span className="text-zinc-500 text-xs">Штраф:</span>
-                          <input
-                            type="number"
-                            value={row.penaltyPoints}
-                            min={0}
-                            onChange={(e) =>
-                              updateRow(
-                                row.pilotId,
-                                "penaltyPoints",
-                                Math.max(0, Number(e.target.value) || 0),
-                              )
-                            }
-                            className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center"
-                          />
-                        </div>
-                        <input
-                          type="text"
-                          value={row.penaltyReason}
-                          onChange={(e) => updateRow(row.pilotId, "penaltyReason", e.target.value)}
-                          placeholder="Причина штрафу"
-                          className="min-w-44 flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm"
-                        />
+                        <label className="flex items-center gap-1 text-sm text-zinc-400"><input type="checkbox" checked={row.dnf} onChange={(e) => updateRow(row.pilotId, "dnf", e.target.checked)} className="accent-red-500" /> DNF</label>
+                        <label className="flex items-center gap-1 text-sm text-zinc-400"><input type="checkbox" checked={row.dns} onChange={(e) => updateRow(row.pilotId, "dns", e.target.checked)} className="accent-red-500" /> DNS</label>
+                        {fastestLapBonusEnabled && (<label className="flex items-center gap-1 text-sm text-zinc-300"><input type="checkbox" checked={row.bestLap} onChange={(e) => updateRow(row.pilotId, "bestLap", e.target.checked)} className="accent-red-500" /> Best lap (+1)</label>)}
+                        <div className="flex items-center gap-1"><span className="text-zinc-500 text-xs">Штраф:</span><input type="number" value={row.penaltyPoints} min={0} onChange={(e) => updateRow(row.pilotId, "penaltyPoints", Math.max(0, Number(e.target.value) || 0))} className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center" /></div>
+                        <input type="text" value={row.penaltyReason} onChange={(e) => updateRow(row.pilotId, "penaltyReason", e.target.value)} placeholder="Причина штрафу" className="min-w-44 flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm" />
                         <span className="text-zinc-500 text-xs ml-auto">{pts} очк.</span>
                       </div>
                     );
@@ -813,22 +694,13 @@ export default function AdminStagesPage() {
                 </div>
 
                 <div className="flex gap-3 mt-4">
-                  <Button onClick={handleSaveResults} disabled={submitting}>
-                    {submitting ? "Збереження..." : "Зберегти результати"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setEditingStageId(null);
-                      setResultsError("");
-                    }}
-                  >
-                    Скасувати
-                  </Button>
+                  <Button onClick={handleSaveResults} disabled={submitting}>{submitting ? "Збереження..." : "Зберегти результати"}</Button>
+                  <Button variant="ghost" onClick={() => { setEditingStageId(null); setResultsError(""); }}>Скасувати</Button>
                 </div>
               </div>
             )}
-          </div>
+
+          </Card>
         ))}
       </div>
     </main>

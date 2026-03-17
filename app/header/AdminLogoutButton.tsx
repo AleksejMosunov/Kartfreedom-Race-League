@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/app/components/ui/Button";
+import { Button } from "@/app/components/ui";
 import { apiFetch } from "@/app/services/api/request";
 
 export function AdminLogoutButton() {

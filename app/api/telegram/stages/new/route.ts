@@ -7,6 +7,7 @@ import {
   registrationLinkLine,
   sendTelegramMessage,
 } from "@/lib/telegram";
+import type { IStage } from "@/lib/models/Stage";
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
@@ -29,8 +30,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const swsLinksRaw = Array.isArray((stage as any).swsLinks)
-    ? (stage as any).swsLinks
+  const swsLinksRaw = Array.isArray((stage as IStage).swsLinks)
+    ? (stage as IStage).swsLinks
     : [];
   const swsLinks = swsLinksRaw.filter(
     (s: unknown) => typeof s === "string" && String(s).trim() !== "",

@@ -6,12 +6,11 @@ import { Suspense, useState, useEffect } from "react";
 import { usePilots } from "@/app/hooks/usePilots";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { useStages } from "@/app/hooks/useStages";
-import { Button } from "@/app/components/ui/Button";
-import { Loader } from "@/app/components/ui/Loader";
+import { Button, Loader, Card } from "@/app/components/ui";
 import { apiFetch } from "@/app/services/api/request";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
-type ChampionshipType = "solo" | "teams";
+// ChampionshipType type removed — not used in this module
 
 export default function AdminPilotsPage() {
   return (
@@ -39,8 +38,7 @@ function AdminPilotsPageContent() {
     : null;
 
   const championshipName = selectedChampionship?.name ?? "";
-  const championshipType: ChampionshipType =
-    selectedChampionship?.championshipType === "teams" ? "teams" : "solo";
+  // championshipType removed — not used in this view
   const [deleteError, setDeleteError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState("");
@@ -50,31 +48,22 @@ function AdminPilotsPageContent() {
   const [groupsCount, setGroupsCount] = useState<number>(2);
   const [dnsSet] = useState<Set<string>>(() => new Set());
   const [creatingGroups, setCreatingGroups] = useState(false);
-  const [hasGroups, setHasGroups] = useState(false);
+  // `hasGroups` state removed — not read anywhere. Keep network checks but don't store state.
   const [deletingGroups, setDeletingGroups] = useState(false);
 
   // check for existing sprint groups for the selected stage
   useEffect(() => {
-    let cancelled = false;
     async function checkGroups() {
-      if (!selectedStageId) {
-        setHasGroups(false);
-        return;
-      }
+      if (!selectedStageId) return;
       try {
         const res = await apiFetch(`/api/stages/${selectedStageId}/sprint-groups`, { cache: "no-store" });
-        if (!res.ok) {
-          setHasGroups(false);
-          return;
-        }
-        const data = await res.json();
-        if (!cancelled) setHasGroups(Array.isArray(data) && data.length > 0);
+        if (!res.ok) return;
+        await res.json();
       } catch {
-        if (!cancelled) setHasGroups(false);
+        // ignore errors for group check
       }
     }
     checkGroups();
-    return () => { cancelled = true; };
   }, [selectedStageId]);
 
   const handleDelete = async (pilotId: string) => {
@@ -117,7 +106,7 @@ function AdminPilotsPageContent() {
       {!isLoading && (
         <div className="space-y-2">
           {pilots.map((pilot) => (
-            <div key={pilot._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center justify-between gap-3">
+            <Card key={pilot._id} className="flex items-center justify-between gap-3">
               <Link href={`/pilots/${pilot._id}?championship=${encodeURIComponent(championshipId ?? "")}`} className="min-w-0 flex-1">
                 <div>
                   <span className="text-zinc-500 text-sm font-mono mr-2">#{pilot.number}</span>
@@ -162,7 +151,7 @@ function AdminPilotsPageContent() {
                   {deletingId === pilot._id ? "Видалення..." : "Видалити"}
                 </Button>
               </div>
-            </div>
+            </Card>
           ))}
 
           {/* Sprint grouping tool (admin) */}
@@ -268,7 +257,6 @@ function AdminPilotsPageContent() {
                       );
                       const body = await res.json().catch(() => ({}));
                       if (!res.ok) throw new Error(body.error ?? "Не вдалося видалити групи");
-                      setHasGroups(false);
                       alert("Групи видалено");
                     } catch (err) {
                       setUpdateError((err as Error).message);

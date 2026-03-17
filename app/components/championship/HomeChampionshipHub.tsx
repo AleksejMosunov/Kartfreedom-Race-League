@@ -7,7 +7,6 @@ import { formatPilotFullName } from "@/lib/utils/pilotName";
 import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 import { useStages } from "@/app/hooks/useStages";
 import { useChampionship } from "@/app/hooks/useChampionship";
-import { SPONSOR_CONTACT_URL } from "@/lib/config/sponsors";
 import SponsorsSection from "@/app/components/championship/SponsorsSection";
 
 type ActiveChampionship = {

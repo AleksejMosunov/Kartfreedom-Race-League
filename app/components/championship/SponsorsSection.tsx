@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { SPONSOR_CONTACT_URL } from "@/lib/config/sponsors";
+// Note: `Link` removed because this section uses external anchors
 
 export default function SponsorsSection() {
   return (

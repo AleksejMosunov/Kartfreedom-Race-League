@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   const result = groups.map((g) => ({
     _id: String(g._id),
     groupNumber: g.groupNumber,
-    pilots: g.pilotIds.map((pid: any) => {
+    pilots: g.pilotIds.map((pid: unknown) => {
       const p = pilotMap.get(String(pid));
       return p
         ? {
