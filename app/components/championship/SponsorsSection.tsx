@@ -15,14 +15,6 @@ export default function SponsorsSection() {
             <p className="text-xs uppercase tracking-[0.2em] text-[#ccff00] mb-2">Партнери та спонсори</p>
             <h2 className="text-2xl sm:text-3xl font-black text-white">Тут може бути ваш бренд</h2>
           </div>
-          <a
-            href={SPONSOR_CONTACT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center rounded-md bg-[#ccff00] hover:bg-lime-300 px-4 py-2 text-sm font-black text-black transition-colors"
-          >
-            Обговорити партнерство
-          </a>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
