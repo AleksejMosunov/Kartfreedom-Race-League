@@ -21,7 +21,7 @@ export function HomeChampionshipHub({
   preseasonNews,
 }: {
   active: ActiveChampionship[];
-  preseasonNews: string | { solo?: string; teams?: string; };
+  preseasonNews: string | { solo?: string; teams?: string; sprintPro?: string; };
 }) {
   const [selectedChampionshipId, setSelectedChampionshipId] = useState(
     getPreferredUiChampionshipId(active),

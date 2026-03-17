@@ -53,7 +53,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   await connectToDatabase();
   const { id } = await params;
   const stage = await Stage.findById(id)
-    .populate("results.pilotId", "name surname number team avatar")
+    .populate("results.pilotId", "name surname number team avatar league")
     .lean();
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
@@ -113,7 +113,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
             runValidators: true,
           },
         )
-          .populate("results.pilotId", "name surname number team avatar")
+          .populate("results.pilotId", "name surname number team avatar league")
           .lean();
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });

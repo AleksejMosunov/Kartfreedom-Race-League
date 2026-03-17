@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Stage } from "@/types";
 import { Badge } from "@/app/components/ui/Badge";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
@@ -13,6 +13,13 @@ const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉"
 type ChampionshipType = "solo" | "teams" | "sprint-pro";
 
 export function StageResultsTable({ stage }: StageResultsTableProps) {
+  // optional: if a championshipId is provided, we'll fetch its type to avoid
+  // relying on global catalog state (prevents wrong default when navigating).
+  // `stage` may include `championshipId` in some backfills; otherwise caller
+  // can pass `championshipId` via props in the future.
+  // For now, attempt to read `stage.championshipId` if present.
+  const championshipIdFromStage = (stage as any)?.championshipId as string | undefined;
+  const [championshipTypeLocal, setChampionshipTypeLocal] = useState<ChampionshipType | null>(null);
   const { current } = useChampionshipsCatalog();
   const championshipType: ChampionshipType =
     current?.championshipType === "teams"
@@ -20,8 +27,9 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
       : current?.championshipType === "sprint-pro"
         ? "sprint-pro"
         : "solo";
+  const effectiveChampionshipType = championshipTypeLocal ?? championshipType;
   const [leagueFilter, setLeagueFilter] = useState<"all" | "pro" | "newbie">(
-    championshipType === "sprint-pro" ? "pro" : "all",
+    championshipType === "sprint-pro" ? "pro" : "newbie",
   );
   const [statusFilter, setStatusFilter] = useState<"all" | "fin" | "dnf" | "dns">("all");
   const [teamFilter, setTeamFilter] = useState("");
@@ -58,6 +66,46 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
     return <p className="text-zinc-500 text-center py-8">Результати ще не додані.</p>;
   }
 
+  // If we have a championshipId, prefer fetching its actual type and apply
+  // default filters based on that; this avoids inheriting a previously
+  // selected global `current` championship when navigating client-side.
+  useEffect(() => {
+    const id = championshipIdFromStage;
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/championships/${encodeURIComponent(id)}`);
+        if (!res.ok) return;
+        const body = await res.json();
+        if (cancelled) return;
+        const t = (body?.championship as any)?.championshipType as ChampionshipType | undefined;
+        if (t) setChampionshipTypeLocal(t);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [championshipIdFromStage]);
+
+  // Apply default league filter when we learn the championship type
+  useEffect(() => {
+    if (championshipTypeLocal === null) return;
+    if (championshipTypeLocal === "sprint-pro") setLeagueFilter("pro");
+    else setLeagueFilter("newbie");
+  }, [championshipTypeLocal]);
+
+  // If we don't have a local override, keep the league filter in sync
+  // with the global/current championship type so the UI doesn't show
+  // an inconsistent value when navigating client-side.
+  useEffect(() => {
+    if (championshipTypeLocal !== null) return;
+    if (championshipType === "sprint-pro") setLeagueFilter("pro");
+    else setLeagueFilter("newbie");
+  }, [championshipType, championshipTypeLocal]);
+
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -75,7 +123,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
           </select>
         </label>
         <label className="text-sm text-zinc-300">
-          {championshipType === "teams" ? "Команда" : "Пілот"}
+          {effectiveChampionshipType === "teams" ? "Команда" : "Пілот"}
           <input
             value={teamFilter}
             onChange={(e) => setTeamFilter(e.target.value)}
@@ -83,14 +131,14 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
             className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
           />
         </label>
-        {championshipType !== "teams" && (
+        {effectiveChampionshipType !== "teams" && (
           <label className="text-sm text-zinc-300">
             Залік
             <select
               value={leagueFilter}
               onChange={(e) => setLeagueFilter(e.target.value as "all" | "pro" | "newbie")}
               className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-              disabled={championshipType === "sprint-pro"}
+              disabled={effectiveChampionshipType === "sprint-pro"}
             >
               <option value="all">Усі</option>
               <option value="pro">Про</option>
@@ -105,7 +153,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
           <thead>
             <tr className="bg-zinc-900 text-zinc-400 text-left">
               <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold w-16">Місце</th>
-              <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold">{championshipType === "teams" ? "Команда" : "Пілот"}</th>
+              <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold">{effectiveChampionshipType === "teams" ? "Команда" : "Пілот"}</th>
               <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold text-center">Статус</th>
               <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold text-center">Best lap</th>
               <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold text-center">Штраф</th>
@@ -137,12 +185,11 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
                   <td className="px-4 py-3">
                     {pilotObj ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-zinc-500 text-xs font-mono w-6">
-                          #{pilotObj.number}
-                        </span>
-                        <span className="font-semibold text-white">
-                          {formatPilotFullName(pilotObj.name, pilotObj.surname)}
-                        </span>
+                        <span className="text-zinc-500 text-xs font-mono w-6">#{pilotObj.number}</span>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-white truncate">{formatPilotFullName(pilotObj.name, pilotObj.surname)}</div>
+                          <div className="text-zinc-400 text-xs mt-1">{(pilotObj as any).league === "pro" ? "Про" : "Новачок"}</div>
+                        </div>
                       </div>
                     ) : (
                       <span className="text-zinc-500">{pilotIdStr}</span>
@@ -189,7 +236,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
       </div>
 
       <div className="md:hidden space-y-2">
-        {filtered.map((result) => {
+        {filtered.map((result, idx) => {
           const pilotObj =
             result.pilot ??
             (result.pilotId !== null &&
@@ -199,18 +246,19 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
               : null);
           const pilotIdStr = pilotObj && "_id" in (pilotObj as object)
             ? String((pilotObj as { _id: unknown; })._id)
-            : String(result.pilotId ?? result._id ?? "");
-          const itemKey = result._id ? String(result._id) : `${pilotIdStr}-${result.position}`;
+            : String(result.pilotId ?? "");
+          const itemKey = `${pilotIdStr}-${result.position}-${idx}`;
           return (
             <div key={itemKey} className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-zinc-400 text-xs">{positionMedals[result.position] ?? result.position} місце</p>
                   <p className="text-white font-semibold">
-                    {pilotObj
-                      ? `#${pilotObj.number} ${formatPilotFullName(pilotObj.name, pilotObj.surname)}`
-                      : String(result.pilotId)}
+                    {pilotObj ? `#${pilotObj.number} ${formatPilotFullName(pilotObj.name, pilotObj.surname)}` : String(result.pilotId)}
                   </p>
+                  {pilotObj ? (
+                    <div className="text-zinc-400 text-xs mt-1">{(pilotObj as any).league === "pro" ? "Про" : "Новачок"}</div>
+                  ) : null}
                 </div>
                 <p className="text-white font-black">{result.points}</p>
               </div>
