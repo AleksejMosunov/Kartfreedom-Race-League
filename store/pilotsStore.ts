@@ -32,7 +32,14 @@ export const usePilotsStore = create<PilotsState>((set) => ({
         const res = await apiFetch(url);
         if (!res.ok) throw new Error("Помилка завантаження пілотів");
         const data: Pilot[] = await res.json();
-        set({ pilots: data });
+        // ensure league exists for solo pilots; fallback to 'newbie' when missing
+        const normalized = data.map((p) => ({
+          ...p,
+          league: (p as Pilot).league
+            ? (p as Pilot).league
+            : ("newbie" as "pro" | "newbie"),
+        }));
+        set({ pilots: normalized });
       } catch (e) {
         set({ error: (e as Error).message });
       } finally {
@@ -55,7 +62,11 @@ export const usePilotsStore = create<PilotsState>((set) => ({
       throw new Error(body.error ?? "Помилка додавання пілота");
     }
     const created: Pilot = await res.json();
-    set((state) => ({ pilots: [...state.pilots, created] }));
+    const normalizedCreated = {
+      ...created,
+      league: created.league ?? ("newbie" as "pro" | "newbie"),
+    };
+    set((state) => ({ pilots: [...state.pilots, normalizedCreated] }));
   },
 
   updatePilot: async (id, data) => {
@@ -66,8 +77,12 @@ export const usePilotsStore = create<PilotsState>((set) => ({
     });
     if (!res.ok) throw new Error("Помилка оновлення пілота");
     const updated: Pilot = await res.json();
+    const normalizedUpdated = {
+      ...updated,
+      league: updated.league ?? ("newbie" as "pro" | "newbie"),
+    };
     set((state) => ({
-      pilots: state.pilots.map((p) => (p._id === id ? updated : p)),
+      pilots: state.pilots.map((p) => (p._id === id ? normalizedUpdated : p)),
     }));
   },
 

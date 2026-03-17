@@ -8,6 +8,7 @@ export interface IPilot extends Document {
   number: number;
   phone?: string;
   avatar?: string;
+  league: "pro" | "newbie";
   createdAt: Date;
 }
 
@@ -51,6 +52,12 @@ const PilotSchema = new Schema<IPilot>(
     },
     phone: { type: String, trim: true },
     avatar: { type: String },
+    league: {
+      type: String,
+      enum: ["pro", "newbie"],
+      required: true,
+      index: true,
+    },
   },
   { timestamps: true },
 );

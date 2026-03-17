@@ -101,7 +101,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
           { _id: id, championshipId: current._id },
           body,
           {
-            new: true,
+            returnDocument: "after",
             runValidators: true,
           },
         ).lean()
@@ -109,7 +109,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
           { _id: id, championshipId: current._id },
           body,
           {
-            new: true,
+            returnDocument: "after",
             runValidators: true,
           },
         )

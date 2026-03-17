@@ -51,6 +51,8 @@ export default function AdminStagesPage() {
     { enabled: Boolean(selectedChampionshipId) },
   );
   const { pilots } = usePilots(selectedChampionshipId || undefined);
+  // exclude pro pilots from editable result lists
+  const editablePilots = pilots.filter((p) => p.league !== "pro");
   const { saveStageResults } = useStagesStore();
 
   const [stageName, setStageName] = useState("");
@@ -196,7 +198,7 @@ export default function AdminStagesPage() {
     setResultsError("");
     setEditingStageId(stageId);
     setResultsRows(
-      pilots.map((p, i) => {
+      editablePilots.map((p, i) => {
         const existing = existingResults?.find((r) => extractPilotId(r) === p._id);
         if (existing) {
           return {
@@ -240,7 +242,7 @@ export default function AdminStagesPage() {
 
     setEditingStageId(stageId);
     setResultsRows(
-      pilots.map((pilot, index) => {
+      editablePilots.map((pilot, index) => {
         const prev = previous.results.find((r) => extractPilotId(r) === pilot._id);
         return {
           pilotId: pilot._id,
@@ -676,7 +678,7 @@ export default function AdminStagesPage() {
 
                 <div className="space-y-2">
                   {resultsRows.map((row) => {
-                    const pilot = pilots.find((p) => p._id === row.pilotId);
+                    const pilot = editablePilots.find((p) => p._id === row.pilotId) || pilots.find((p) => p._id === row.pilotId);
                     const basePoints = row.dnf || row.dns ? 0 : getPointsByPosition(row.position);
                     const pts = basePoints + (fastestLapBonusEnabled && row.bestLap ? 1 : 0) - row.penaltyPoints;
                     return (

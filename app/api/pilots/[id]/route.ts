@@ -84,6 +84,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
     body.surname = normalizedSurname;
   }
 
+  if (body.league !== undefined) {
+    if (body.league !== "pro" && body.league !== "newbie") {
+      return NextResponse.json(
+        { error: "Invalid league value" },
+        { status: 400 },
+      );
+    }
+  }
+
   if (body.number !== undefined) {
     const normalizedNumber = Number(body.number);
     if (
@@ -103,7 +112,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     { _id: id, championshipId: current._id },
     body,
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     },
   ).lean();

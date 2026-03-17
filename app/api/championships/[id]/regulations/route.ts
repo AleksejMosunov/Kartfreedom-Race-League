@@ -80,7 +80,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const updated = await Championship.findByIdAndUpdate(
     id,
     { regulations: normalized },
-    { new: true, runValidators: true },
+    { returnDocument: "after", runValidators: true },
   ).lean();
 
   if (!updated) {

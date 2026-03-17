@@ -15,7 +15,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
   const updated = await Championship.findOneAndUpdate(
     { _id: id, status: "active" },
     { status: "archived", endedAt: new Date() },
-    { new: true },
+    { returnDocument: "after" },
   ).lean();
 
   if (!updated) {

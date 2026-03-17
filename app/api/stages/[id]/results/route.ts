@@ -106,12 +106,12 @@ export async function POST(req: NextRequest, { params }: Params) {
       ? await Stage.findOneAndUpdate(
           { _id: id, championshipId: current._id },
           { results: enrichedResults, isCompleted: true },
-          { new: true, runValidators: true },
+          { returnDocument: "after", runValidators: true },
         ).lean()
       : await Stage.findOneAndUpdate(
           { _id: id, championshipId: current._id },
           { results: enrichedResults, isCompleted: true },
-          { new: true, runValidators: true },
+          { returnDocument: "after", runValidators: true },
         )
           .populate("results.pilotId", "name surname number team avatar")
           .lean();

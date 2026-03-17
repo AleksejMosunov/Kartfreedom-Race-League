@@ -37,6 +37,7 @@ function RegisterPageInner() {
     { name: "", surname: "" },
   ]);
   const [phone, setPhone] = useState("");
+  const [league, setLeague] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -76,6 +77,14 @@ function RegisterPageInner() {
     }
 
     try {
+      // client-side check: league required for solo registration
+      if (championshipMode === "solo") {
+        if (!league) {
+          setError("Виберіть лігу пілота");
+          setSubmitting(false);
+          return;
+        }
+      }
       const res = await fetch("/api/pilot-registration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -407,6 +416,19 @@ function RegisterPageInner() {
                       title="Тільки українські номери: +380XXXXXXXXX"
                       required
                     />
+                    <div className="sm:col-span-2">
+                      <label className="text-sm text-zinc-400 block mb-2">Ліга *</label>
+                      <select
+                        value={league}
+                        onChange={(e) => setLeague(e.target.value)}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                        required
+                      >
+                        <option value="">-- оберіть лігу --</option>
+                        <option value="pro">Про</option>
+                        <option value="newbie">Новачки</option>
+                      </select>
+                    </div>
                   </>
                 )}
 

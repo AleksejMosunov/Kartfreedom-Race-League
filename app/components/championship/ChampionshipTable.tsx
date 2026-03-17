@@ -69,7 +69,10 @@ export function ChampionshipTable({
       ? completedStages
       : completedStages.filter((stage) => stage._id === normalizedStageFilter);
 
-  const filteredStandings = standings.filter((row) => {
+  // exclude pro pilots from public championship table
+  const nonProStandings = standings.filter((row) => row.pilot.league !== "pro");
+
+  const filteredStandings = nonProStandings.filter((row) => {
     const search = teamFilter.trim().toLowerCase();
     const name = formatPilotFullName(row.pilot.name, row.pilot.surname).toLowerCase();
     const numberText = String(row.pilot.number);

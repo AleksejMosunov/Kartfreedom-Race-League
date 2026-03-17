@@ -7,6 +7,8 @@ import { Loader } from "@/app/components/ui/Loader";
 import { Badge } from "@/app/components/ui/Badge";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 export default function StageDetailPage({ params }: { params: Promise<{ id: string; }>; }) {
   const { id } = use(params);
@@ -16,6 +18,32 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
   const backHref = championshipId
     ? `/stages?championship=${encodeURIComponent(championshipId)}`
     : "/stages";
+
+  const [groups, setGroups] = useState<{ _id: string; groupNumber: number; pilots: { _id: string; number?: number; name?: string; surname?: string; }[]; }[] | null>(null);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchGroups() {
+      setGroupsLoading(true);
+      try {
+        const url = `/api/stages/${id}/sprint-groups` + (championshipId ? `?championship=${encodeURIComponent(championshipId)}` : "");
+        const res = await fetch(url);
+        if (!res.ok) {
+          setGroups([]);
+          return;
+        }
+        const data = await res.json();
+        if (!cancelled) setGroups(data);
+      } catch (e) {
+        if (!cancelled) setGroups([]);
+      } finally {
+        if (!cancelled) setGroupsLoading(false);
+      }
+    }
+    fetchGroups();
+    return () => { cancelled = true; };
+  }, [id, championshipId]);
 
   if (isLoading) return <Loader />;
   if (error)
@@ -130,6 +158,29 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </section>
       )}
+
+      {/* Sprint groups display */}
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/55 p-6 mt-8">
+        <h2 className="text-xl font-bold text-white mb-3">Розподіл по групах</h2>
+        {groupsLoading && <Loader />}
+        {!groupsLoading && groups && groups.length === 0 && (
+          <p className="text-zinc-400">Групи ще не сформовано для цього етапу.</p>
+        )}
+        {!groupsLoading && groups && groups.length > 0 && (
+          <div className="flex flex-wrap gap-4">
+            {groups.map((g) => (
+              <div key={g._id} className="w-full sm:w-auto min-w-[160px] rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
+                <h3 className="text-sm text-zinc-400 mb-2">Група {g.groupNumber}</h3>
+                <ul className="text-sm space-y-1">
+                  {g.pilots.map((p) => (
+                    <li key={p._id} className="text-zinc-200">#{p.number ?? "-"} — {p.name ? formatPilotFullName(p.name, p.surname ?? "") : p._id}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }

@@ -28,6 +28,16 @@ export async function POST(req: NextRequest) {
   await connectToDatabase();
   const body = await req.json().catch(() => ({}));
 
+  // validate league if provided; default to 'newbie' on create
+  if (body.league !== undefined) {
+    if (body.league !== "pro" && body.league !== "newbie") {
+      return NextResponse.json(
+        { error: "Invalid league value" },
+        { status: 400 },
+      );
+    }
+  }
+
   let current;
   try {
     const championshipId =
@@ -215,6 +225,20 @@ export async function POST(req: NextRequest) {
   const phone = normalizePhone(
     typeof body.phone === "string" ? body.phone : "",
   );
+  // league MUST be provided by the registrant (no default)
+  const league = typeof body.league === "string" ? body.league : "";
+  if (!league) {
+    return NextResponse.json(
+      { error: "Вкажіть лігу пілота (pro або newbie)" },
+      { status: 400 },
+    );
+  }
+  if (league !== "pro" && league !== "newbie") {
+    return NextResponse.json(
+      { error: "Невірне значення ліги" },
+      { status: 400 },
+    );
+  }
 
   if (!isValidUkrPhone(phone)) {
     return NextResponse.json(
@@ -262,6 +286,7 @@ export async function POST(req: NextRequest) {
       number,
       phone,
       avatar: typeof body.avatar === "string" ? body.avatar : undefined,
+      league,
     });
 
     return NextResponse.json(pilot, { status: 201 });

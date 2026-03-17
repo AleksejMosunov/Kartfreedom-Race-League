@@ -50,7 +50,7 @@ export async function PUT(req: NextRequest) {
   const updated = await Championship.findByIdAndUpdate(
     current._id,
     { regulations: normalized },
-    { new: true, runValidators: true },
+    { returnDocument: "after", runValidators: true },
   ).lean();
 
   return NextResponse.json(updated?.regulations ?? normalized);

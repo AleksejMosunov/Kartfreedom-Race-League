@@ -2,6 +2,7 @@ export interface Pilot {
   _id: string;
   name: string;
   surname: string;
+  league?: "pro" | "newbie";
   number: number;
   phone?: string;
   teamIsSolo?: boolean;

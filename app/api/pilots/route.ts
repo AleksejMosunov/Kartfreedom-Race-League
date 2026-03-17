@@ -127,6 +127,16 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
+  // validate league if provided
+  if (body.league !== undefined) {
+    if (body.league !== "pro" && body.league !== "newbie") {
+      return NextResponse.json(
+        { error: "Invalid league value" },
+        { status: 400 },
+      );
+    }
+  }
+
   const name =
     typeof body.name === "string" ? normalizeNamePart(body.name) : "";
   const surname =
@@ -186,6 +196,8 @@ export async function POST(req: NextRequest) {
       surname,
       number,
       phone: phone || undefined,
+      // if admin didn't provide league, set default to newbie to avoid breaking admin flows
+      league: typeof body.league === "string" ? body.league : "newbie",
     });
     return NextResponse.json(pilot, { status: 201 });
   } catch (err: unknown) {

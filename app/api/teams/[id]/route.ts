@@ -71,7 +71,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const updated = await Team.findOneAndUpdate(
       { _id: id, championshipId: current._id },
       update,
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     ).lean();
 
     if (!updated) {
