@@ -36,10 +36,10 @@ export function ChampionshipTable({
 
   useEffect(() => {
     // default class filter to 'pro' for sprint-pro championships
-    if (championshipType === "sprint-pro") {
+    if (championshipType === "sprint-pro" && classFilter !== "pro") {
       setClassFilter("pro");
     }
-  }, [championshipType]);
+  }, [championshipType, classFilter]);
 
   useEffect(() => {
     // prop fully defines the type
@@ -292,9 +292,9 @@ export function ChampionshipTable({
         <span>
           <Badge variant="danger">Штраф</Badge> — штрафні очки віднімаються із загального заліку навіть у drop round
         </span>
-        <span>
+        {/* <span>
           Система очок: {Object.entries(POINTS_TABLE).map(([pos, pts]) => `${pos}→${pts}`).join(", ")}
-        </span>
+        </span> */}
       </div>
     </div>
   );

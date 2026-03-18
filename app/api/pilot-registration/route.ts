@@ -220,12 +220,12 @@ export async function POST(req: NextRequest) {
 
     // Log registration to audit (strip phone automatically)
     try {
-      let stageInfo: { id: string; title?: string } | null = null;
+      let stageInfo: { id: string; name?: string } | null = null;
       if (providedStageId) {
         const s = await Stage.findById(providedStageId)
-          .select({ title: 1 })
+          .select({ name: 1 })
           .lean();
-        if (s) stageInfo = { id: providedStageId, title: (s as any).title };
+        if (s) stageInfo = { id: providedStageId, name: (s as any).name };
       }
 
       const after = sanitizeForAudit({
@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
         league: leagueToSave,
         championship: {
           id: String(current._id),
-          title: (current as any).title,
+          name: (current as any).name ?? (current as any).title ?? "",
         },
         stage: stageInfo,
       });

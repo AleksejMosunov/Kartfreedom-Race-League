@@ -215,14 +215,14 @@ export async function POST(req: NextRequest) {
       const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
       const session = await getAuthenticatedAdminSession(token);
 
-      let stageInfo: { id: string; title?: string } | null = null;
+      let stageInfo: { id: string; name?: string } | null = null;
       const providedStageId =
         typeof body.stageId === "string" ? body.stageId : undefined;
       if (providedStageId) {
         const s = await Stage.findById(providedStageId)
-          .select({ title: 1 })
+          .select({ name: 1 })
           .lean();
-        if (s) stageInfo = { id: providedStageId, title: (s as any).title };
+        if (s) stageInfo = { id: providedStageId, name: (s as any).name };
       }
 
       const after = sanitizeForAudit({
@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
         league: typeof body.league === "string" ? body.league : defaultLeague,
         championship: {
           id: String(current._id),
-          title: (current as any).title,
+          name: (current as any).name ?? (current as any).title ?? "",
         },
         stage: stageInfo,
       });

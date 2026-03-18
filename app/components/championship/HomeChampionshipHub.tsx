@@ -79,7 +79,7 @@ export function HomeChampionshipHub({
         .sort((a, b) => b.number - a.number)[0] ?? null,
     [stages],
   );
-
+  console.log(latestCompleted);
   const leaders = standings.slice(0, 3);
   const isSprint = selectedChampionship?.championshipType === "sprint";
   const newbieLeaders = isSprint
@@ -210,7 +210,7 @@ export function HomeChampionshipHub({
           ) : (
             <>
               <h3 className="text-xl font-bold text-white mb-4">Лідери чемпіонату</h3>
-              {standings.length === 0 ? (
+              {!latestCompleted ? (
                 <p className="text-zinc-500">Поки що немає результатів завершених етапів.</p>
               ) : isSprint ? (
                 <div className="grid grid-cols-2 gap-4">
