@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     "",
     "Реєстрація триває. До зустрічі на трасі! 🏎️",
     "",
-    registrationLinkLine(String(stage.championshipId)),
+    registrationLinkLine(String(stage.championshipId), String(stage._id)),
   ];
 
   // const swsLines = swsLinks.length

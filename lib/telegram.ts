@@ -36,10 +36,15 @@ function buildAppUrl(path: string) {
   return `${appBaseUrl()}${normalized}`;
 }
 
-export function registrationLinkLine(championshipId?: string) {
-  const query = championshipId
-    ? `?championship=${encodeURIComponent(championshipId)}`
-    : "";
+export function registrationLinkLine(
+  championshipId?: string,
+  stageId?: string,
+) {
+  const parts: string[] = [];
+  if (championshipId)
+    parts.push(`championship=${encodeURIComponent(championshipId)}`);
+  if (stageId) parts.push(`stage=${encodeURIComponent(stageId)}`);
+  const query = parts.length ? `?${parts.join("&")}` : "";
   return `🔗 <a href="${buildAppUrl(`/register${query}`)}">Реєстрація KartFreedom Race League</a>`;
 }
 

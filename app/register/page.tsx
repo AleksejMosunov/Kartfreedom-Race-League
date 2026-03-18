@@ -21,6 +21,7 @@ type ActiveChampionship = {
 function RegisterPageInner() {
   const searchParams = useSearchParams();
   const championshipFromUrl = searchParams.get("championship") ?? "";
+  const stageFromUrl = searchParams.get("stage") ?? "";
   const {
     active,
     isLoading: championshipsLoading,
@@ -63,6 +64,15 @@ function RegisterPageInner() {
         : getPreferredUiChampionshipId(activeChampionships);
     setSelectedChampionshipId((prev) => prev || preferred);
   }, [activeChampionships, championshipFromUrl]);
+
+  // If a stage id is provided in the URL, and stages are loaded for the selected championship,
+  // preselect the stage in the select control so the user sees it immediately.
+  useEffect(() => {
+    if (!stageFromUrl) return;
+    if (!stages || stages.length === 0) return;
+    const found = stages.find((s: any) => s._id === stageFromUrl);
+    if (found) setStageId(stageFromUrl);
+  }, [stageFromUrl, stages]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -279,6 +289,39 @@ function RegisterPageInner() {
                           ))}
                           <option value="all">Реєстрація на всі етапи</option>
                         </select>
+                      </div>
+                    )}
+                    {/* For regular sprint stages: explain that a stage is two classic sprints and allow choosing 1 or 2 races */}
+                    {championshipMode === "sprint" && (
+                      <div className="mt-4 bg-zinc-800 border border-zinc-700 rounded-md p-3">
+                        <p className="text-zinc-200 text-sm font-medium">Інформація про етап</p>
+                        <p className="text-zinc-400 text-sm mt-1">
+                          Етап складається з 2 класичних спринтів KartFreedom. Якщо ви берете участь в обох гонках етапу, діє спеціальна ціна.
+                        </p>
+
+                        <div className="mt-3 flex items-center gap-3">
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="radio"
+                              name="racesCount"
+                              checked={!bothRaces}
+                              onChange={() => setBothRaces(false)}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-zinc-300">Участь в 1 гонці</span>
+                          </label>
+
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="radio"
+                              name="racesCount"
+                              checked={bothRaces}
+                              onChange={() => setBothRaces(true)}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-zinc-300">Участь в 2 гонках (спеціальна ціна)</span>
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
