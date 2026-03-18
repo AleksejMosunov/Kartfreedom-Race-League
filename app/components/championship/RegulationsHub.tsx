@@ -8,7 +8,7 @@ import { Loader } from "@/app/components/ui/Loader";
 type ActiveChampionship = {
   _id: string;
   name: string;
-  championshipType: "solo" | "teams" | "sprint-pro";
+  championshipType: "sprint" | "sprint-pro";
 };
 
 export function RegulationsHub({
@@ -68,7 +68,7 @@ export function RegulationsHub({
             >
               {item.name}
               <span className="ml-2 text-xs opacity-70">
-                {item.championshipType === "teams" ? "Endurance" : "Sprint"}
+                {item.championshipType === "sprint-pro" ? "Sprint Pro" : "Sprint"}
               </span>
             </button>
           ))}

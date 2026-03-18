@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ChampionshipTable } from "@/app/components/championship/ChampionshipTable";
 import { DetailPageSkeleton } from "@/app/components/ui/PageSkeletons";
 
-type ChampionshipType = "solo" | "teams" | "sprint-pro";
+type ChampionshipType = "sprint" | "sprint-pro";
 
 type ChampionshipPayload = {
   championship?: {
@@ -25,7 +25,7 @@ export default function ChampionshipByIdPage({
   const { id } = use(params);
   const [name, setName] = useState("");
   const [championshipType, setChampionshipType] =
-    useState<ChampionshipType>("solo");
+    useState<ChampionshipType>("sprint");
   const [status, setStatus] = useState<"active" | "archived" | "unknown">(
     "unknown",
   );
@@ -55,9 +55,7 @@ export default function ChampionshipByIdPage({
 
         if (!cancelled) {
           setName(championship.name);
-          setChampionshipType(
-            championship.championshipType === "teams" ? "teams" : "solo",
-          );
+          setChampionshipType(championship.championshipType === "sprint-pro" ? "sprint-pro" : "sprint");
           setStatus(championship.status ?? "unknown");
         }
       } catch {
@@ -93,7 +91,7 @@ export default function ChampionshipByIdPage({
       <div className="mb-8">
         <h1 className="text-3xl font-black text-white">{name}</h1>
         <p className="text-zinc-400 mt-1">
-          {championshipType === "teams" ? "Endurance" : "Sprint"}
+          {championshipType === "sprint-pro" ? "Sprint PRO" : "Sprint"}
           {status !== "unknown" ? ` · ${status === "archived" ? "завершено" : "активний"}` : ""}
         </p>
       </div>

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ChampionshipType = "solo" | "teams" | "sprint-pro";
+export type ChampionshipType = "sprint" | "sprint-pro";
 
 export type ChampionshipCatalogItem = {
   _id: string;

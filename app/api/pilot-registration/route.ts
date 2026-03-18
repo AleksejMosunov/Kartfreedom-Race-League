@@ -63,160 +63,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (current.championshipType === "teams") {
-    const isSolo = body.isSolo !== false;
-    const teamNumber = Number(body.number);
-    const teamPhone = normalizePhone(
-      typeof body.phone === "string" ? body.phone : "",
-    );
-
-    if (!Number.isInteger(teamNumber) || teamNumber < 1 || teamNumber > 999) {
-      return NextResponse.json(
-        { error: "Вкажіть номер від 1 до 999" },
-        { status: 400 },
-      );
-    }
-
-    if (!isValidUkrPhone(teamPhone)) {
-      return NextResponse.json(
-        { error: "Вкажіть дійсний номер телефону у форматі +380XXXXXXXXX" },
-        { status: 400 },
-      );
-    }
-
-    const [duplicatePilot, duplicateTeam] = await Promise.all([
-      Pilot.findOne({ championshipId: current._id, phone: teamPhone })
-        .select({ _id: 1 })
-        .lean(),
-      Team.findOne({ championshipId: current._id, phone: teamPhone })
-        .select({ _id: 1 })
-        .lean(),
-    ]);
-    if (duplicatePilot || duplicateTeam) {
-      return NextResponse.json(
-        {
-          error:
-            "Учасник з таким телефоном вже зареєстрований у цьому чемпіонаті",
-        },
-        { status: 409 },
-      );
-    }
-
-    if (isSolo) {
-      const name =
-        typeof body.name === "string" ? normalizeNamePart(body.name) : "";
-      const surname =
-        typeof body.surname === "string" ? normalizeNamePart(body.surname) : "";
-
-      if (!isValidNamePart(name) || !isValidNamePart(surname)) {
-        return NextResponse.json(
-          { error: "Вкажіть ім'я та прізвище" },
-          { status: 400 },
-        );
-      }
-
-      const teamName = `${name} ${surname}`;
-
-      try {
-        const team = await Team.create({
-          championshipId: current._id,
-          name: teamName,
-          number: teamNumber,
-          phone: teamPhone,
-          isSolo: true,
-          drivers: [{ name, surname }],
-        });
-
-        return NextResponse.json(team, { status: 201 });
-      } catch (err: unknown) {
-        if (
-          typeof err === "object" &&
-          err !== null &&
-          "code" in err &&
-          (err as { code: number }).code === 11000
-        ) {
-          return NextResponse.json(
-            {
-              error: `Пілот \"${teamName}\" або номер ${teamNumber} вже зареєстровані`,
-            },
-            { status: 409 },
-          );
-        }
-
-        return NextResponse.json(
-          { error: "Не вдалося зареєструвати пілота" },
-          { status: 500 },
-        );
-      }
-    }
-
-    const teamName =
-      typeof body.teamName === "string" ? body.teamName.trim() : "";
-    const drivers = normalizeTeamDrivers(
-      (body as { drivers?: unknown }).drivers,
-    );
-
-    if (teamName.length < 2 || teamName.length > 60) {
-      return NextResponse.json(
-        { error: "Вкажіть назву команди" },
-        { status: 400 },
-      );
-    }
-
-    if (
-      drivers.some(
-        (driver) =>
-          !isValidNamePart(driver.name) || !isValidNamePart(driver.surname),
-      )
-    ) {
-      return NextResponse.json(
-        { error: "Ім'я та прізвище пілота мають містити лише літери" },
-        { status: 400 },
-      );
-    }
-
-    if (drivers.length < 2) {
-      return NextResponse.json(
-        {
-          error:
-            "Для команди з кількома пілотами потрібно вказати мінімум двох (ім'я та прізвище)",
-        },
-        { status: 400 },
-      );
-    }
-
-    try {
-      const team = await Team.create({
-        championshipId: current._id,
-        name: teamName,
-        number: teamNumber,
-        phone: teamPhone,
-        isSolo: false,
-        drivers,
-      });
-
-      return NextResponse.json(team, { status: 201 });
-    } catch (err: unknown) {
-      if (
-        typeof err === "object" &&
-        err !== null &&
-        "code" in err &&
-        (err as { code: number }).code === 11000
-      ) {
-        return NextResponse.json(
-          {
-            error: `Команда з назвою \"${teamName}\" або номером ${teamNumber} вже зареєстрована`,
-          },
-          { status: 409 },
-        );
-      }
-
-      return NextResponse.json(
-        { error: "Не вдалося зареєструвати команду" },
-        { status: 500 },
-      );
-    }
-  }
+  // Teams/endurance removed — always handle individual pilot registration below.
 
   const name =
     typeof body.name === "string" ? normalizeNamePart(body.name) : "";
@@ -342,6 +189,19 @@ export async function POST(req: NextRequest) {
       ? body.swsId.trim()
       : undefined;
 
+  // racesCount: 1 or 2 (1 by default). Accept string or number.
+  let providedRacesCount = 1;
+  if (body.racesCount !== undefined) {
+    const rc = Number(body.racesCount);
+    if (rc !== 1 && rc !== 2) {
+      return NextResponse.json(
+        { error: "Невірне значення участі у гонках" },
+        { status: 400 },
+      );
+    }
+    providedRacesCount = rc;
+  }
+
   try {
     const pilot = await Pilot.create({
       championshipId: current._id,
@@ -354,6 +214,7 @@ export async function POST(req: NextRequest) {
       swsId: providedSwsId,
       // if user opted into all stages, `providedStageId` is undefined and pilot is not bound to a single stage
       stageId: providedStageId,
+      racesCount: providedRacesCount,
     });
 
     return NextResponse.json(pilot, { status: 201 });

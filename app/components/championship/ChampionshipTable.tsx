@@ -10,20 +10,20 @@ import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
-type ChampionshipType = "solo" | "teams" | "sprint-pro";
+type ChampionshipType = "sprint" | "sprint-pro";
 
 export function ChampionshipTable({
   championshipId,
   championshipType: propChampionshipType,
 }: {
   championshipId?: string;
-  championshipType?: "solo" | "teams" | "sprint-pro";
+  championshipType?: "sprint" | "sprint-pro";
 }) {
   const { standings, isLoading, error } = useChampionship(championshipId);
   const { stages } = useStages(championshipId);
   const { current } = useChampionshipsCatalog({ enabled: !championshipId && !propChampionshipType });
 
-  const [championshipTypeById, setChampionshipTypeById] = useState<ChampionshipType>("solo");
+  const [championshipTypeById, setChampionshipTypeById] = useState<ChampionshipType>("sprint");
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [classFilter, setClassFilter] = useState<"all" | "pro" | "newbie">("newbie");
   const [teamFilter, setTeamFilter] = useState("");
@@ -32,11 +32,7 @@ export function ChampionshipTable({
     propChampionshipType ??
     (championshipId
       ? championshipTypeById
-      : current?.championshipType === "teams"
-        ? "teams"
-        : current?.championshipType === "sprint-pro"
-          ? "sprint-pro"
-          : "solo");
+      : current?.championshipType ?? "sprint");
 
   useEffect(() => {
     // default class filter to 'pro' for sprint-pro championships
@@ -57,11 +53,9 @@ export function ChampionshipTable({
         const data = (await res.json()) as {
           championship?: { championshipType?: ChampionshipType; };
         };
-        setChampionshipTypeById(
-          data.championship?.championshipType === "teams" ? "teams" : "solo",
-        );
+        setChampionshipTypeById(data.championship?.championshipType ?? "sprint");
       } catch {
-        setChampionshipTypeById("solo");
+        setChampionshipTypeById("sprint");
       }
     };
     void load();
@@ -140,7 +134,7 @@ export function ChampionshipTable({
         </label>
 
         <label className="text-sm text-zinc-300">
-          {championshipType === "teams" ? "Команда" : "Пілот"}
+          Пілот
           <input
             value={teamFilter}
             onChange={(e) => setTeamFilter(e.target.value)}
@@ -155,7 +149,7 @@ export function ChampionshipTable({
           <thead>
             <tr className="bg-zinc-900 text-zinc-400 text-left">
               <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold w-12">#</th>
-              <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold">{championshipType === "teams" ? "Команда" : "Пілот"}</th>
+              <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold">Пілот</th>
               {visibleStages.map((stage) => (
                 <th key={stage._id} className="sticky top-0 z-20 bg-zinc-900 px-3 py-3 font-semibold text-center whitespace-nowrap">
                   Ет.{stage.number}

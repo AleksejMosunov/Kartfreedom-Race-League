@@ -20,7 +20,7 @@ type StatsParticipant = {
 };
 
 type StatsPayload = {
-  championshipType: "solo" | "teams" | "sprint-pro";
+  championshipType: "sprint" | "sprint-pro";
   participants: StatsParticipant[];
   stageLabels: Array<{ id: string; number: number; name: string; }>;
 };

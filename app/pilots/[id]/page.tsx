@@ -10,7 +10,7 @@ import { DetailPageSkeleton } from "@/app/components/ui/PageSkeletons";
 import Link from "next/link";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
-type ChampionshipType = "solo" | "teams" | "sprint-pro";
+type ChampionshipType = "sprint" | "sprint-pro";
 
 export default function PilotDetailPage({ params }: { params: Promise<{ id: string; }>; }) {
   return (
@@ -53,17 +53,17 @@ function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; 
     ? active.find((item) => item._id === championshipId)
     : current;
   const championshipType: ChampionshipType =
-    selectedChampionship?.championshipType === "teams" ? "teams" : "solo";
-  const isTeams = championshipType === "teams";
+    selectedChampionship?.championshipType === "sprint-pro" ? "sprint-pro" : "sprint";
+  const isTeams = false;
   const loading = isLoading || standingsLoading || (catalogLoading && !catalogLoaded);
 
   if (loading) return <DetailPageSkeleton />;
   if (!pilot)
     return (
       <main className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <p className="text-zinc-400">{isTeams ? "Команду не знайдено." : "Пілота не знайдено."}</p>
+        <p className="text-zinc-400">Пілота не знайдено.</p>
         <Link href="/pilots" className="text-red-500 underline mt-4 block">
-          ← Назад до {isTeams ? "команд" : "пілотів"}
+          ← Назад до пілотів
         </Link>
       </main>
     );
@@ -122,25 +122,7 @@ function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; 
         </div>
       )}
 
-      {isTeams && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-300 mt-4">
-          <p className="text-sm text-zinc-500 mb-1">Склад команди</p>
-          <p className="mb-2">
-            Формат: {pilot.teamIsSolo === false ? "Кілька пілотів" : "Solo"}
-          </p>
-          {pilot.teamDrivers && pilot.teamDrivers.length > 0 ? (
-            <ul className="list-disc list-inside">
-              {pilot.teamDrivers.map((driver, index) => (
-                <li key={`${pilot._id}-driver-${index}`}>
-                  {driver.name} {driver.surname}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>Склад не вказано.</p>
-          )}
-        </div>
-      )}
+
     </main>
   );
 }

@@ -370,27 +370,19 @@ export default function AdminStagesPage() {
     if (!editingStageId) return;
 
     const activeRows = resultsRows.filter((r) => !r.dnf && !r.dns);
-    if (selectedChampionship?.championshipType === "teams") {
-      const positions = activeRows.map((r) => r.position);
-      if (positions.length !== new Set(positions).size) {
-        setResultsError("У двох або більше пілотів однакове місце. Виправте результати.");
+    // Validate uniqueness of positions per league (allow same position across leagues)
+    const rowsByLeague: Record<string, number[]> = {};
+    for (const r of activeRows) {
+      const pilot = editablePilots.find((p) => p._id === r.pilotId) || pilots.find((p) => p._id === r.pilotId);
+      const league = (pilot?.league as string) ?? "newbie";
+      rowsByLeague[league] = rowsByLeague[league] ?? [];
+      rowsByLeague[league].push(r.position);
+    }
+    for (const [league, posArr] of Object.entries(rowsByLeague)) {
+      if (posArr.length !== new Set(posArr).size) {
+        const leagueLabel = league === "pro" ? "Про" : "Новачки";
+        setResultsError(`У двох або більше пілотів однакове місце у ${leagueLabel}. Виправте результати.`);
         return;
-      }
-    } else {
-      // Validate uniqueness of positions per league (allow same position across leagues)
-      const rowsByLeague: Record<string, number[]> = {};
-      for (const r of activeRows) {
-        const pilot = editablePilots.find((p) => p._id === r.pilotId) || pilots.find((p) => p._id === r.pilotId);
-        const league = (pilot?.league as string) ?? "newbie";
-        rowsByLeague[league] = rowsByLeague[league] ?? [];
-        rowsByLeague[league].push(r.position);
-      }
-      for (const [league, posArr] of Object.entries(rowsByLeague)) {
-        if (posArr.length !== new Set(posArr).size) {
-          const leagueLabel = league === "pro" ? "Про" : "Новачки";
-          setResultsError(`У двох або більше пілотів однакове місце у ${leagueLabel}. Виправте результати.`);
-          return;
-        }
       }
     }
 
@@ -476,7 +468,7 @@ export default function AdminStagesPage() {
             >
               {item.name}
               <span className="ml-2 text-xs opacity-70">
-                {item.championshipType === "teams" ? "Endurance" : "Sprint"}
+                {item.championshipType === "sprint-pro" ? "Sprint PRO" : "Sprint"}
               </span>
             </button>
           ))}
@@ -698,36 +690,6 @@ export default function AdminStagesPage() {
                 <div className="space-y-6">
                   {(() => {
                     const sorted = [...resultsRows].sort((a, b) => a.position - b.position);
-                    if (selectedChampionship?.championshipType === "teams") {
-                      return (
-                        <div className="space-y-2">
-                          {sorted.map((row) => {
-                            const pilot = editablePilots.find((p) => p._id === row.pilotId) || pilots.find((p) => p._id === row.pilotId);
-                            const league = (pilot?.league as "pro" | "newbie") ?? "newbie";
-                            const basePoints = row.dnf || row.dns ? 0 : getPointsByPosition(row.position, league);
-                            const pts = basePoints + (fastestLapBonusEnabled && row.bestLap ? 1 : 0) - row.penaltyPoints;
-                            return (
-                              <div key={row.pilotId} className="flex items-center gap-3 flex-wrap">
-                                <label className="flex items-center gap-1 text-xs text-zinc-400">
-                                  <input type="checkbox" checked={selectedRows.includes(row.pilotId)} onChange={() => toggleSelectRow(row.pilotId)} className="accent-[#ccff00]" /> Обрати
-                                </label>
-                                <span className="text-white w-40 shrink-0 text-sm">#{pilot?.number} {pilot ? formatPilotFullName(pilot.name, pilot.surname) : ""}</span>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-zinc-500 text-xs">Місце:</span>
-                                  <input type="number" value={row.position} min={1} max={pilots.length} onChange={(e) => updateRow(row.pilotId, "position", Number(e.target.value))} className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center" />
-                                </div>
-                                <label className="flex items-center gap-1 text-sm text-zinc-400"><input type="checkbox" checked={row.dnf} onChange={(e) => updateRow(row.pilotId, "dnf", e.target.checked)} className="accent-red-500" /> DNF</label>
-                                <label className="flex items-center gap-1 text-sm text-zinc-400"><input type="checkbox" checked={row.dns} onChange={(e) => updateRow(row.pilotId, "dns", e.target.checked)} className="accent-red-500" /> DNS</label>
-                                {fastestLapBonusEnabled && (<label className="flex items-center gap-1 text-sm text-zinc-300"><input type="checkbox" checked={row.bestLap} onChange={(e) => updateRow(row.pilotId, "bestLap", e.target.checked)} className="accent-red-500" /> Best lap (+1)</label>)}
-                                <div className="flex items-center gap-1"><span className="text-zinc-500 text-xs">Штраф:</span><input type="number" value={row.penaltyPoints} min={0} onChange={(e) => updateRow(row.pilotId, "penaltyPoints", Math.max(0, Number(e.target.value) || 0))} className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center" /></div>
-                                <input type="text" value={row.penaltyReason} onChange={(e) => updateRow(row.pilotId, "penaltyReason", e.target.value)} placeholder="Причина штрафу" className="min-w-44 flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm" />
-                                <span className="text-zinc-500 text-xs ml-auto">{pts} очк.</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    }
 
                     const proRows = sorted.filter((r) => {
                       const pilot = editablePilots.find((p) => p._id === r.pilotId) || pilots.find((p) => p._id === r.pilotId);

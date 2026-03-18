@@ -5,7 +5,7 @@ import { Button } from "@/app/components/ui/Button";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { apiFetch } from "@/app/services/api/request";
 
-type ChampionshipType = "solo" | "teams" | "sprint-pro";
+type ChampionshipType = "sprint" | "sprint-pro";
 
 type ActiveChampionship = {
   _id: string;
@@ -188,7 +188,7 @@ export default function AdminImportPage() {
           return { ...row, status: "conflict", reason: "Телефон вже існує" };
         }
 
-        if (selected.championshipType === "solo" && !row.surname) {
+        if (selected.championshipType === "sprint" && !row.surname) {
           return { ...row, status: "conflict", reason: "Для Sprint потрібні ім'я та прізвище" };
         }
 
@@ -222,7 +222,7 @@ export default function AdminImportPage() {
       const failed: string[] = [];
 
       for (const row of valid) {
-        if (selected.championshipType === "solo") {
+        if (selected.championshipType === "sprint") {
           const res = await apiFetch(`/api/pilots?championship=${encodeURIComponent(selected._id)}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -321,7 +321,7 @@ export default function AdminImportPage() {
         >
           {activeChampionships.map((item) => (
             <option key={item._id} value={item._id}>
-              {item.name} ({item.championshipType === "teams" ? "Endurance" : "Sprint"})
+              {item.name} ({item.championshipType === "sprint-pro" ? "Sprint (Pro)" : "Sprint"})
             </option>
           ))}
         </select>

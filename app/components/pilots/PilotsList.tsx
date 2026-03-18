@@ -4,7 +4,7 @@ import { usePilots } from "@/app/hooks/usePilots";
 import { PilotCard } from "@/app/components/pilots/PilotCard";
 import { Loader } from "@/app/components/ui/Loader";
 
-type ChampionshipType = "solo" | "teams" | "sprint-pro";
+type ChampionshipType = "sprint" | "sprint-pro";
 
 export function PilotsList({
   championshipId,
@@ -14,14 +14,14 @@ export function PilotsList({
   championshipType?: ChampionshipType;
 }) {
   const { pilots, isLoading, error } = usePilots(championshipId);
-  const type = championshipType ?? "solo";
+  const type = championshipType ?? "sprint";
 
   if (isLoading) return <Loader />;
   if (error) return <p className="text-red-400 text-center py-8">{error}</p>;
   if (!pilots.length)
     return (
       <p className="text-zinc-500 text-center py-12">
-        {type === "teams" ? "Команди ще не додані." : "Пілоти ще не додані."}
+        Пілоти ще не додані.
       </p>
     );
 

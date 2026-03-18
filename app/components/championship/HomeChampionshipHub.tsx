@@ -12,7 +12,7 @@ import SponsorsSection from "@/app/components/championship/SponsorsSection";
 type ActiveChampionship = {
   _id: string;
   name: string;
-  championshipType: "solo" | "teams" | "sprint-pro";
+  championshipType: "sprint" | "sprint-pro";
   prizes?: { place: string; description: string; }[];
 };
 
@@ -21,7 +21,7 @@ export function HomeChampionshipHub({
   preseasonNews,
 }: {
   active: ActiveChampionship[];
-  preseasonNews: string | { solo?: string; teams?: string; sprintPro?: string; };
+  preseasonNews: string | { sprint?: string; sprintPro?: string; };
 }) {
   const [selectedChampionshipId, setSelectedChampionshipId] = useState(
     getPreferredUiChampionshipId(active),
@@ -63,11 +63,9 @@ export function HomeChampionshipHub({
   const selectedPreseasonNews =
     typeof preseasonNews === "string"
       ? preseasonNews
-      : selectedChampionship?.championshipType === "teams"
-        ? (preseasonNews.teams ?? "")
-        : selectedChampionship?.championshipType === "sprint-pro"
-          ? (preseasonNews.sprintPro ?? preseasonNews.solo ?? "")
-          : (preseasonNews.solo ?? "");
+      : selectedChampionship?.championshipType === "sprint-pro"
+        ? (preseasonNews.sprintPro ?? preseasonNews.sprint ?? "")
+        : (preseasonNews.sprint ?? "");
 
   const nextStage = useMemo(
     () => stages.find((stage) => !stage.isCompleted) ?? null,
@@ -83,13 +81,13 @@ export function HomeChampionshipHub({
   );
 
   const leaders = standings.slice(0, 3);
-  const isSolo = selectedChampionship?.championshipType === "solo";
-  const newbieLeaders = isSolo
+  const isSprint = selectedChampionship?.championshipType === "sprint";
+  const newbieLeaders = isSprint
     ? standings.filter((s) => (s.pilot.league ?? "newbie") !== "pro").slice(0, 3)
     : [];
-  const proLeaders = isSolo
+  const proLeaders = isSprint
     ? standings.filter((s) => (s.pilot.league ?? "newbie") === "pro").slice(0, 3)
-    : [];
+    : standings.slice(0, 3);
   const prizes = selectedChampionship?.prizes ?? [];
   const hasPrizes = prizes.length > 0;
 
@@ -113,7 +111,7 @@ export function HomeChampionshipHub({
             >
               {item.name}
               <span className="ml-2 text-xs opacity-70">
-                {item.championshipType === "teams" ? "Endurance" : "Sprint"}
+                {item.championshipType === "sprint-pro" ? "Sprint Pro" : "Sprint"}
               </span>
             </button>
           ))}
@@ -214,7 +212,7 @@ export function HomeChampionshipHub({
               <h3 className="text-xl font-bold text-white mb-4">Лідери чемпіонату</h3>
               {standings.length === 0 ? (
                 <p className="text-zinc-500">Поки що немає результатів завершених етапів.</p>
-              ) : isSolo ? (
+              ) : isSprint ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-zinc-400 text-xs mb-2">Новачки</p>

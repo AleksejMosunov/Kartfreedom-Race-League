@@ -20,7 +20,7 @@ interface IPrize {
 export interface IChampionship extends Document {
   name: string;
   status: "active" | "archived";
-  championshipType: "solo" | "teams" | "sprint-pro";
+  championshipType: "sprint" | "sprint-pro";
   fastestLapBonusEnabled: boolean;
   startedAt: Date;
   endedAt?: Date;
@@ -67,9 +67,9 @@ const ChampionshipSchema = new Schema<IChampionship>(
     },
     championshipType: {
       type: String,
-      enum: ["solo", "teams", "sprint-pro"],
+      enum: ["sprint", "sprint-pro"],
       required: true,
-      default: "solo",
+      default: "sprint",
       index: true,
     },
     fastestLapBonusEnabled: {

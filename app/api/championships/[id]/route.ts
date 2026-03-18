@@ -29,65 +29,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }
 
   const [participants, stages] = await Promise.all([
-    championship.championshipType === "teams"
-      ? Team.find({ championshipId: id })
-          .sort({ number: 1, name: 1 })
-          .lean()
-          .then((teams) =>
-            teams.map((team) => ({
-              _id: String(team._id),
-              name: team.name,
-              surname: "",
-              number: team.number,
-            })),
-          )
-      : Pilot.find({ championshipId: id }).sort({ number: 1 }).lean(),
-    championship.championshipType === "teams"
-      ? Stage.find({ championshipId: id }).sort({ number: 1 }).lean()
-      : Stage.find({ championshipId: id })
-          .populate("results.pilotId", "name surname number team avatar")
-          .sort({ number: 1 })
-          .lean(),
+    Pilot.find({ championshipId: id }).sort({ number: 1 }).lean(),
+    Stage.find({ championshipId: id })
+      .populate("results.pilotId", "name surname number team avatar")
+      .sort({ number: 1 })
+      .lean(),
   ]);
 
-  const mappedStages =
-    championship.championshipType === "teams"
-      ? (() => {
-          const teamById = new Map(
-            (
-              participants as Array<{
-                _id: string;
-                name: string;
-                number: number;
-              }>
-            ).map((team) => [String(team._id), team]),
-          );
-          return stages.map((stage) => ({
-            ...stage,
-            results: (stage.results ?? []).map(
-              (result: Record<string, unknown>) => {
-                const idStr =
-                  result.pilotId !== null &&
-                  typeof result.pilotId === "object" &&
-                  "_id" in (result.pilotId as object)
-                    ? String((result.pilotId as { _id: unknown })._id)
-                    : String(result.pilotId);
-                const team = teamById.get(idStr);
-                if (!team) return result;
-                return {
-                  ...result,
-                  pilot: {
-                    _id: team._id,
-                    name: team.name,
-                    surname: "",
-                    number: team.number,
-                  },
-                };
-              },
-            ),
-          }));
-        })()
-      : stages;
+  const mappedStages = stages;
 
   const safeParticipants = isAdmin
     ? participants
@@ -109,7 +58,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const standings = calculateChampionshipStandings(
     normalizedParticipants,
     mappedStages as unknown as IStageType[],
-    championship.championshipType === "teams" ? "teams" : "solo",
+    championship.championshipType === "sprint-pro" ? "sprint-pro" : "sprint",
   );
 
   return NextResponse.json({

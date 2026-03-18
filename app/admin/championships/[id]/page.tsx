@@ -88,7 +88,7 @@ export default function AdminChampionshipDetailsPage() {
 
   const { championship, pilots, stages, standings } = data;
   const completedStages = stages.filter((s) => s.isCompleted);
-  const participantLabel = championship.championshipType === "teams" ? "Команда" : "Пілот";
+  const participantLabel = "Пілот";
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
@@ -150,16 +150,14 @@ export default function AdminChampionshipDetailsPage() {
         <div>
           <h1 className="text-3xl font-black text-white">{championship.name}</h1>
           <p className="text-zinc-400 text-sm mt-1">
-            Формат: {championship.championshipType === "teams" ? "Endurance" : "Sprint"}
+            Формат: {championship.championshipType === "sprint-pro" ? "Sprint PRO" : "Sprint"}
           </p>
           <p className="text-zinc-500 text-sm mt-1">
             {championship.startedAt ? new Date(championship.startedAt).toLocaleDateString("uk-UA") : "—"}
             {" → "}
             {championship.endedAt ? new Date(championship.endedAt).toLocaleDateString("uk-UA") : "—"}
             {" · "}
-            <span className="text-zinc-600">
-              {pilots.length} {championship.championshipType === "teams" ? "команд" : "пілотів"} · {stages.length} етапів
-            </span>
+            <span className="text-zinc-600">{pilots.length} пілотів · {stages.length} етапів</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -361,13 +359,9 @@ export default function AdminChampionshipDetailsPage() {
 
       {/* Список пілотів */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <h2 className="text-lg font-bold text-white mb-4">
-          {championship.championshipType === "teams" ? "Команди" : "Пілоти"} ({pilots.length})
-        </h2>
+        <h2 className="text-lg font-bold text-white mb-4">Пілоти ({pilots.length})</h2>
         {pilots.length === 0 ? (
-          <p className="text-zinc-500">
-            {championship.championshipType === "teams" ? "Немає команд." : "Немає пілотів."}
-          </p>
+          <p className="text-zinc-500">Немає пілотів.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {pilots.map((pilot) => (

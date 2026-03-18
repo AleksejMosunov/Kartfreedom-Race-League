@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
 import { Pilot } from "@/lib/models/Pilot";
-import { Team } from "@/lib/models/Team";
 import { Stage } from "@/lib/models/Stage";
 import { calculateChampionshipStandings } from "@/lib/utils/championship";
 import { Pilot as IPilotType, Stage as IStageType } from "@/types";
@@ -34,21 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [participantsRaw, stagesRaw] = await Promise.all([
-    championship.championshipType === "teams"
-      ? Team.find({ championshipId: championship._id })
-          .sort({ number: 1, name: 1 })
-          .lean()
-          .then((teams) =>
-            teams.map((team) => ({
-              _id: String(team._id),
-              name: team.name,
-              surname: "",
-              number: team.number,
-            })),
-          )
-      : Pilot.find({ championshipId: championship._id })
-          .sort({ number: 1 })
-          .lean(),
+    Pilot.find({ championshipId: championship._id }).sort({ number: 1 }).lean(),
     Stage.find({ championshipId: championship._id }).sort({ number: 1 }).lean(),
   ]);
 
@@ -58,7 +43,7 @@ export async function POST(req: NextRequest) {
   const standings = calculateChampionshipStandings(
     participants,
     stages,
-    championship.championshipType === "teams" ? "teams" : "solo",
+    championship.championshipType === "sprint-pro" ? "sprint-pro" : "sprint",
   );
   const top3 = standings.slice(0, 3);
 
@@ -73,7 +58,7 @@ export async function POST(req: NextRequest) {
   const message = [
     "🏆 <b>Чемпіонат завершено!</b>",
     `Назва: <b>${escapeHtml(championship.name)}</b>`,
-    `Формат: <b>${championship.championshipType === "teams" ? "Endurance" : "Sprint"}</b>`,
+    `Формат: <b>${championship.championshipType === "sprint-pro" ? "Sprint PRO" : "Sprint"}</b>`,
     "",
     ...podium,
     "",

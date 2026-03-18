@@ -13,8 +13,7 @@ interface ChampionshipsResponse {
   archived: Championship[];
   preseasonNews?: string;
   preseasonNewsByType?: {
-    solo?: string;
-    teams?: string;
+    sprint?: string;
     sprintPro?: string;
   };
 }
@@ -29,7 +28,7 @@ export default function AdminChampionshipsPage() {
   const [active, setActive] = useState<Championship[]>([]);
   const [archived, setArchived] = useState<Championship[]>([]);
   const [newName, setNewName] = useState("");
-  const [newType, setNewType] = useState<"solo" | "teams" | "sprint-pro">("solo");
+  const [newType, setNewType] = useState<"sprint" | "sprint-pro">("sprint");
   const [newFastestLapBonusEnabled, setNewFastestLapBonusEnabled] = useState(false);
   const [newRegulations, setNewRegulations] = useState<RegulationsContent>(
     defaultRegulationsForNewChampionship(false),
@@ -37,9 +36,8 @@ export default function AdminChampionshipsPage() {
   const [activeFastestLap, setActiveFastestLap] = useState<Record<string, boolean>>({});
   const [activeRegulations, setActiveRegulations] = useState<Record<string, RegulationsContent>>({});
   const [expandedRegChampId, setExpandedRegChampId] = useState<string | null>(null);
-  const [preseasonNewsByType, setPreseasonNewsByType] = useState<{ solo: string; teams: string; sprintPro: string; }>({
-    solo: "",
-    teams: "",
+  const [preseasonNewsByType, setPreseasonNewsByType] = useState<{ sprint: string; sprintPro: string; }>({
+    sprint: "",
     sprintPro: "",
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -77,8 +75,7 @@ export default function AdminChampionshipsPage() {
       setActive(activeList);
       setArchived(payload.archived ?? []);
       setPreseasonNewsByType({
-        solo: payload.preseasonNewsByType?.solo ?? payload.preseasonNews ?? "",
-        teams: payload.preseasonNewsByType?.teams ?? "",
+        sprint: payload.preseasonNewsByType?.sprint ?? payload.preseasonNews ?? "",
         sprintPro: payload.preseasonNewsByType?.sprintPro ?? payload.preseasonNews ?? "",
       });
 
@@ -125,14 +122,15 @@ export default function AdminChampionshipsPage() {
       if (!raw) return;
       const draft = JSON.parse(raw) as {
         newName?: string;
-        newType?: "solo" | "teams" | "sprint-pro";
+        newType?: "sprint" | "sprint-pro" | "solo" | "teams";
         newFastestLapBonusEnabled?: boolean;
         newPrizes?: { place: string; description: string; }[];
-        preseasonNewsByType?: { solo: string; teams: string; sprintPro?: string; };
+        preseasonNewsByType?: { sprint?: string; sprintPro?: string; solo?: string; teams?: string };
       };
 
       if (typeof draft.newName === "string") setNewName(draft.newName);
-      if (draft.newType === "solo" || draft.newType === "teams" || draft.newType === "sprint-pro") setNewType(draft.newType);
+      if (draft.newType === "sprint" || draft.newType === "sprint-pro") setNewType(draft.newType);
+      if (draft.newType === "solo" || draft.newType === "teams") setNewType("sprint");
       if (typeof draft.newFastestLapBonusEnabled === "boolean") {
         setNewFastestLapBonusEnabled(draft.newFastestLapBonusEnabled);
       }
@@ -141,9 +139,8 @@ export default function AdminChampionshipsPage() {
       }
       if (draft.preseasonNewsByType) {
         setPreseasonNewsByType({
-          solo: draft.preseasonNewsByType.solo ?? "",
-          teams: draft.preseasonNewsByType.teams ?? "",
-          sprintPro: draft.preseasonNewsByType.sprintPro ?? "",
+          sprint: draft.preseasonNewsByType.sprint ?? draft.preseasonNewsByType.solo ?? "",
+          sprintPro: draft.preseasonNewsByType.sprintPro ?? draft.preseasonNewsByType.teams ?? "",
         });
       }
       setHasDraftChanges(true);
@@ -164,11 +161,10 @@ export default function AdminChampionshipsPage() {
 
     const isDirty =
       Boolean(newName.trim()) ||
-      newType !== "solo" ||
+      newType !== "sprint" ||
       newFastestLapBonusEnabled ||
       newPrizes.some((p) => p.place.trim() || p.description.trim()) ||
-      Boolean(preseasonNewsByType.solo.trim()) ||
-      Boolean(preseasonNewsByType.teams.trim()) ||
+      Boolean(preseasonNewsByType.sprint.trim()) ||
       Boolean(preseasonNewsByType.sprintPro.trim());
     setHasDraftChanges(isDirty);
   }, [newName, newType, newFastestLapBonusEnabled, newPrizes, preseasonNewsByType]);
@@ -230,7 +226,7 @@ export default function AdminChampionshipsPage() {
       }
 
       setNewName("");
-      setNewType("solo");
+      setNewType("sprint");
       setNewFastestLapBonusEnabled(false);
       setNewRegulations(defaultRegulationsForNewChampionship(false));
       setNewPrizes([{ place: "1", description: "" }]);
@@ -380,10 +376,9 @@ export default function AdminChampionshipsPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          preseasonNews: preseasonNewsByType.solo,
+          preseasonNews: preseasonNewsByType.sprint,
           preseasonNewsByType: {
-            solo: preseasonNewsByType.solo,
-            teams: preseasonNewsByType.teams,
+            sprint: preseasonNewsByType.sprint,
             sprintPro: preseasonNewsByType.sprintPro,
           },
         }),
@@ -657,7 +652,7 @@ export default function AdminChampionshipsPage() {
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-white">{item.name}</span>
                             <span className="text-xs text-zinc-500 border border-zinc-700 rounded px-1.5 py-0.5 shrink-0">
-                              {item.championshipType === "teams" ? "Endurance" : "Sprint"}
+                              {item.championshipType === "sprint-pro" ? "Sprint PRO" : "Sprint"}
                             </span>
                           </div>
                           <p className="text-zinc-500 text-xs mt-1">
@@ -881,14 +876,14 @@ export default function AdminChampionshipsPage() {
               {/* Preseason news */}
               <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-3">
                 <h2 className="font-bold text-white text-sm">Новини до старту</h2>
-                <p className="text-zinc-500 text-xs">Окремо для Sprint і Endurance, якщо немає активного чемпіонату</p>
+                <p className="text-zinc-500 text-xs">Окремо для Sprint і Sprint Pro, якщо немає активного чемпіонату</p>
 
                 <div className="space-y-2">
                   <label className="block text-zinc-400 text-xs">Sprint</label>
                   <textarea
-                    value={preseasonNewsByType.solo}
+                    value={preseasonNewsByType.sprint}
                     onChange={(e) =>
-                      setPreseasonNewsByType((prev) => ({ ...prev, solo: e.target.value }))
+                      setPreseasonNewsByType((prev) => ({ ...prev, sprint: e.target.value }))
                     }
                     placeholder="Новина для Sprint..."
                     className="w-full min-h-24 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
@@ -903,18 +898,6 @@ export default function AdminChampionshipsPage() {
                       setPreseasonNewsByType((prev) => ({ ...prev, sprintPro: e.target.value }))
                     }
                     placeholder="Новина для Sprint Pro..."
-                    className="w-full min-h-24 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-zinc-400 text-xs">Endurance</label>
-                  <textarea
-                    value={preseasonNewsByType.teams}
-                    onChange={(e) =>
-                      setPreseasonNewsByType((prev) => ({ ...prev, teams: e.target.value }))
-                    }
-                    placeholder="Новина для Endurance..."
                     className="w-full min-h-24 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
                   />
                 </div>
@@ -941,12 +924,11 @@ export default function AdminChampionshipsPage() {
                 <label className="block text-zinc-400 text-sm mb-2">Формат</label>
                 <select
                   value={newType}
-                  onChange={(e) => setNewType(e.target.value as "solo" | "teams" | "sprint-pro")}
+                  onChange={(e) => setNewType(e.target.value as "sprint" | "sprint-pro")}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
                 >
-                  <option value="solo">Sprint</option>
+                  <option value="sprint">Sprint</option>
                   <option value="sprint-pro">Sprint (Pro)</option>
-                  <option value="teams">Endurance</option>
                 </select>
               </div>
               <div>
@@ -1116,7 +1098,7 @@ export default function AdminChampionshipsPage() {
                     <div>
                       <span className="text-white font-medium">{item.name}</span>
                       <span className="ml-2 text-xs text-zinc-600 border border-zinc-800 rounded px-1.5 py-0.5">
-                        {item.championshipType === "teams" ? "Endurance" : item.championshipType === "sprint-pro" ? "Sprint (Pro)" : "Sprint"}
+                        {item.championshipType === "sprint-pro" ? "Sprint (Pro)" : "Sprint"}
                       </span>
                       <p className="text-zinc-500 text-xs mt-0.5">
                         {item.startedAt ? new Date(item.startedAt).toLocaleDateString("uk-UA") : "—"}

@@ -10,7 +10,7 @@ interface StageResultsTableProps {
 
 const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
-type ChampionshipType = "solo" | "teams" | "sprint-pro";
+type ChampionshipType = "sprint" | "sprint-pro";
 
 export function StageResultsTable({ stage }: StageResultsTableProps) {
   // optional: if a championshipId is provided, we'll fetch its type to avoid
@@ -22,11 +22,9 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
   const [championshipTypeLocal, setChampionshipTypeLocal] = useState<ChampionshipType | null>(null);
   const { current } = useChampionshipsCatalog();
   const championshipType: ChampionshipType =
-    current?.championshipType === "teams"
-      ? "teams"
-      : current?.championshipType === "sprint-pro"
-        ? "sprint-pro"
-        : "solo";
+    current?.championshipType === "sprint-pro"
+      ? "sprint-pro"
+      : "sprint";
   const effectiveChampionshipType = championshipTypeLocal ?? championshipType;
   const [leagueFilter, setLeagueFilter] = useState<"all" | "pro" | "newbie">(
     championshipType === "sprint-pro" ? "pro" : "newbie",
@@ -51,13 +49,11 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
     const search = teamFilter.trim().toLowerCase();
     const searchMatch = !search || title.includes(search) || number.includes(search);
 
-    // league filtering (only for solo-like championships)
+    // league filtering (applies to sprint / sprint-pro championships)
     let leagueMatch = true;
-    if (championshipType !== "teams") {
-      const pilotLeague = (pilotObj as any)?.league ?? "newbie";
-      if (leagueFilter === "pro") leagueMatch = pilotLeague === "pro";
-      if (leagueFilter === "newbie") leagueMatch = pilotLeague === "newbie";
-    }
+    const pilotLeague = (pilotObj as any)?.league ?? "newbie";
+    if (leagueFilter === "pro") leagueMatch = pilotLeague === "pro";
+    if (leagueFilter === "newbie") leagueMatch = pilotLeague === "newbie";
 
     return statusMatch && searchMatch && leagueMatch;
   });
@@ -122,8 +118,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
             <option value="dns">DNS</option>
           </select>
         </label>
-        <label className="text-sm text-zinc-300">
-          {effectiveChampionshipType === "teams" ? "Команда" : "Пілот"}
+        <label className="text-sm text-zinc-300">Пілот
           <input
             value={teamFilter}
             onChange={(e) => setTeamFilter(e.target.value)}
@@ -131,14 +126,14 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
             className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
           />
         </label>
-        {effectiveChampionshipType !== "teams" && (
+        {String(effectiveChampionshipType) !== "sprint-pro" && (
           <label className="text-sm text-zinc-300">
             Залік
             <select
               value={leagueFilter}
               onChange={(e) => setLeagueFilter(e.target.value as "all" | "pro" | "newbie")}
               className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-              disabled={effectiveChampionshipType === "sprint-pro"}
+              disabled={String(effectiveChampionshipType) === "sprint-pro"}
             >
               <option value="all">Усі</option>
               <option value="pro">Про</option>
@@ -153,7 +148,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
           <thead>
             <tr className="bg-zinc-900 text-zinc-400 text-left">
               <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold w-16">Місце</th>
-              <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold">{effectiveChampionshipType === "teams" ? "Команда" : "Пілот"}</th>
+              <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold">Пілот</th>
               <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold text-center">Статус</th>
               <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold text-center">Best lap</th>
               <th className="sticky top-0 z-20 bg-zinc-900 px-4 py-3 font-semibold text-center">Штраф</th>

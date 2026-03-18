@@ -9,7 +9,7 @@ import { Loader } from "@/app/components/ui/Loader";
 import { apiFetch } from "@/app/services/api/request";
 import { Team } from "@/types";
 
-type ChampionshipType = "solo" | "teams" | "sprint-pro";
+type ChampionshipType = "sprint" | "sprint-pro";
 
 export default function AdminTeamsPage() {
   return (
@@ -41,8 +41,7 @@ function AdminTeamsPageContent() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const championshipName = selectedChampionship?.name ?? "";
-  const championshipType: ChampionshipType =
-    selectedChampionship?.championshipType === "solo" ? "solo" : "teams";
+  const championshipType: ChampionshipType = selectedChampionship?.championshipType ?? "sprint";
 
   useEffect(() => {
     const loadTeams = async () => {
@@ -108,7 +107,7 @@ function AdminTeamsPageContent() {
     );
   }
 
-  if (championshipType === "solo") {
+  if (championshipType === "sprint") {
     return (
       <main className="max-w-3xl mx-auto px-4 py-8">
         <p className="text-zinc-400">Для solo-чемпіонату використовуйте керування пілотами.</p>

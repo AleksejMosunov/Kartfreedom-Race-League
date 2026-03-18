@@ -82,7 +82,7 @@ export interface Championship {
   _id: string;
   name: string;
   status: "active" | "archived";
-  championshipType: "solo" | "teams" | "sprint-pro";
+  championshipType: "sprint" | "sprint-pro";
   // 'sprint-pro' — sprint championship where pilots register without choosing a league (treated as pro)
   // 'solo' remains the existing sprint with both leagues selectable
   fastestLapBonusEnabled?: boolean;

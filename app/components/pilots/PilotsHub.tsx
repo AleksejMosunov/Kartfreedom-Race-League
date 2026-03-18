@@ -7,7 +7,7 @@ import { getPreferredUiChampionshipId } from "@/lib/utils/uiChampionship";
 type ActiveChampionship = {
   _id: string;
   name: string;
-  championshipType: "solo" | "teams" | "sprint-pro";
+  championshipType: "sprint" | "sprint-pro";
 };
 
 export function PilotsHub({
@@ -21,9 +21,9 @@ export function PilotsHub({
 
   const selected =
     active.find((item) => item._id === selectedChampionshipId) ??
-    active.find((item) => item.championshipType === "solo") ??
+    active.find((item) => item.championshipType === "sprint") ??
     active[0];
-  const type = selected?.championshipType ?? "solo";
+  const type = selected?.championshipType ?? "sprint";
 
   return (
     <>
@@ -41,7 +41,7 @@ export function PilotsHub({
             >
               {item.name}
               <span className="ml-2 text-xs opacity-70">
-                {item.championshipType === "teams" ? "Endurance" : "Sprint"}
+                {item.championshipType === "sprint-pro" ? "Sprint Pro" : "Sprint"}
               </span>
             </button>
           ))}
@@ -49,10 +49,8 @@ export function PilotsHub({
       )}
 
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white">{type === "teams" ? "Команди" : "Пілоти"}</h1>
-        <p className="text-zinc-400 mt-1">
-          {type === "teams" ? "Усі команди-учасники чемпіонату" : "Усі учасники чемпіонату"}
-        </p>
+        <h1 className="text-3xl font-black text-white">Пілоти</h1>
+        <p className="text-zinc-400 mt-1">Усі учасники чемпіонату</p>
       </div>
 
       <PilotsList

@@ -1,4 +1,4 @@
-type ChampionshipType = "solo" | "teams" | "sprint-pro";
+type ChampionshipType = "sprint" | "sprint-pro";
 
 type ChampionshipOption = {
   _id: string;
@@ -9,13 +9,9 @@ export function sortSprintFirst<T extends ChampionshipOption>(
   championships: T[],
 ): T[] {
   return [...championships].sort((a, b) => {
-    // order: solo first, then sprint-pro, then teams
+    // order: sprint first, then sprint-pro
     const rank = (c: ChampionshipOption) =>
-      c.championshipType === "solo"
-        ? 0
-        : c.championshipType === "sprint-pro"
-          ? 1
-          : 2;
+      c.championshipType === "sprint" ? 0 : 1;
     const ra = rank(a);
     const rb = rank(b);
     if (ra === rb) return 0;
@@ -26,9 +22,11 @@ export function sortSprintFirst<T extends ChampionshipOption>(
 export function getPreferredUiChampionshipId<T extends ChampionshipOption>(
   championships: T[],
 ): string {
-  // prefer an explicit 'solo' entry first; if none, fall back to 'sprint-pro', then first available
-  const solo = championships.find((item) => item.championshipType === "solo");
-  if (solo) return solo._id;
+  // prefer an explicit 'sprint' entry first; if none, fall back to 'sprint-pro', then first available
+  const sprint = championships.find(
+    (item) => item.championshipType === "sprint",
+  );
+  if (sprint) return sprint._id;
   const sprintPro = championships.find(
     (item) => item.championshipType === "sprint-pro",
   );

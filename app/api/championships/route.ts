@@ -30,8 +30,8 @@ export async function GET() {
       settings?.socialLinks as Partial<SocialLinks> | undefined,
     ),
     preseasonNewsByType: {
-      solo: settings?.preseasonNewsSolo ?? settings?.preseasonNews ?? "",
-      teams: settings?.preseasonNewsTeams ?? "",
+      sprint: settings?.preseasonNewsSprint ?? settings?.preseasonNews ?? "",
+      sprintPro: settings?.preseasonNewsSprintPro ?? "",
     },
   });
 }
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json().catch(() => ({}))) as {
     name?: string;
-    championshipType?: "solo" | "teams" | "sprint-pro";
+    championshipType?: "sprint" | "sprint-pro";
     fastestLapBonusEnabled?: boolean;
     prizes?: { place?: string; description?: string }[];
     regulations?: {
@@ -55,14 +55,11 @@ export async function POST(req: NextRequest) {
       ? body.name.trim()
       : `Чемпіонат ${new Date().toLocaleDateString("uk-UA")}`;
   if (
-    body.championshipType !== "solo" &&
-    body.championshipType !== "teams" &&
+    body.championshipType !== "sprint" &&
     body.championshipType !== "sprint-pro"
   ) {
     return NextResponse.json(
-      {
-        error: "Оберіть формат чемпіонату: Sprint, Sprint (Pro) або Endurance",
-      },
+      { error: "Оберіть формат чемпіонату: Sprint або Sprint (Pro)" },
       { status: 400 },
     );
   }

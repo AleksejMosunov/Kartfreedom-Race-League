@@ -10,7 +10,7 @@ import {
 interface ChampionshipMeta {
   _id: string;
   name: string;
-  championshipType: "solo" | "teams" | "sprint-pro";
+  championshipType: "sprint" | "sprint-pro";
 }
 
 export function MultiChampionshipTabs({
@@ -38,7 +38,7 @@ export function MultiChampionshipTabs({
           >
             {c.name}
             <span className="ml-2 text-xs opacity-70">
-              {c.championshipType === "teams" ? "Endurance" : "Sprint"}
+              {c.championshipType === "sprint-pro" ? "Sprint Pro" : "Sprint"}
             </span>
           </button>
         ))}

@@ -4,6 +4,7 @@ import { Stage } from "@/lib/models/Stage";
 import { Championship } from "@/lib/models/Championship";
 import {
   escapeHtml,
+  registrationLinkLine,
   // registrationLinkLine,
   sendTelegramMessage,
 } from "@/lib/telegram";
@@ -30,12 +31,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const swsLinksRaw = Array.isArray((stage as IStage).swsLinks)
-    ? (stage as IStage).swsLinks
-    : [];
-  const swsLinks = swsLinksRaw.filter(
-    (s: unknown) => typeof s === "string" && String(s).trim() !== "",
-  );
+  // const swsLinksRaw = Array.isArray((stage as IStage).swsLinks)
+  //   ? (stage as IStage).swsLinks
+  //   : [];
+  // const swsLinks = swsLinksRaw.filter(
+  //   (s: unknown) => typeof s === "string" && String(s).trim() !== "",
+  // );
 
   const base = [
     "📢 <b>Додано новий етап!</b>",
@@ -45,20 +46,21 @@ export async function POST(req: NextRequest) {
     "",
     "Реєстрація триває. До зустрічі на трасі! 🏎️",
     "",
-    // registrationLinkLine(String(stage.championshipId)),
+    registrationLinkLine(String(stage.championshipId)),
   ];
 
-  const swsLines = swsLinks.length
-    ? [
-        "",
-        "🔗 Посилання SWS:",
-        ...swsLinks.map(
-          (l: string) => `🔗 <a href="${escapeHtml(l)}">${escapeHtml(l)}</a>`,
-        ),
-      ]
-    : [];
+  // const swsLines = swsLinks.length
+  //   ? [
+  //       "",
+  //       "🔗 Посилання SWS:",
+  //       ...swsLinks.map(
+  //         (l: string) => `🔗 <a href="${escapeHtml(l)}">${escapeHtml(l)}</a>`,
+  //       ),
+  //     ]
+  //   : [];
 
-  const message = [...base, ...swsLines].join("\n");
+  // const message = [...base, ...swsLines].join("\n");
+  const message = [...base].join("\n");
 
   await sendTelegramMessage(message);
 
