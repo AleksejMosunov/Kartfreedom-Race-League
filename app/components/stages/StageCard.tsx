@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Stage } from "@/types";
 import { Badge } from "@/app/components/ui/Badge";
+import { useEffect, useState } from "react";
 
 interface StageCardProps {
   stage: Stage;
@@ -30,8 +31,38 @@ export function StageCard({ stage, championshipId }: StageCardProps) {
     (stageDay.getTime() - todayDay.getTime()) / (1000 * 60 * 60 * 24),
   );
 
-  const participantsCount = stage.results.length;
+  const [participantsCount, setParticipantsCount] = useState<number | null>(stage.results.length ?? null);
   const dnfCount = stage.results.filter((result) => result.dnf).length;
+
+  useEffect(() => {
+    let cancelled = false;
+    // For upcoming stages fetch championship pilots and count those registered for this stage
+    const fetchCount = async () => {
+      if (!championshipId) return;
+      try {
+        const res = await fetch(`/api/pilots?championship=${encodeURIComponent(championshipId)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        if (!Array.isArray(data)) return;
+        const count = data.filter((p: any) => {
+          return (!p.stageId && p.championshipId === championshipId) || String(p.stageId) === String(stage._id);
+        }).length;
+        setParticipantsCount(count);
+      } catch {
+        // ignore
+      }
+    };
+
+    // Only fetch for non-completed stages (registrations matter before start)
+    if (!stage.isCompleted) {
+      void fetchCount();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [stage._id, stage.isCompleted, championshipId]);
 
   const countdownLabel =
     daysToStage > 1
@@ -65,24 +96,21 @@ export function StageCard({ stage, championshipId }: StageCardProps) {
         </h3>
         <p className="relative mt-2 text-sm text-zinc-400">{date}</p>
 
-        <div className="relative mt-4 grid grid-cols-2 gap-2 border-t border-zinc-800/80 pt-3">
-          {stage.isCompleted ? (
-            <>
-              <div className="rounded-lg bg-zinc-900/70 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">Учасників</p>
-                <p className="mt-1 text-sm font-semibold text-white">{participantsCount}</p>
-              </div>
-              <div className="rounded-lg bg-zinc-900/70 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">DNF</p>
-                <p className="mt-1 text-sm font-semibold text-white">{dnfCount}</p>
-              </div>
-            </>
-          ) : (
-            <div className="col-span-2 rounded-lg bg-zinc-900/70 px-3 py-2">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">До старту</p>
-              <p className="mt-1 text-sm font-semibold text-white">{countdownLabel}</p>
-            </div>
-          )}
+        <div className="relative mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 border-t border-zinc-800/80 pt-3">
+          <div className="rounded-lg bg-zinc-900/70 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">До старту</p>
+            <p className="mt-1 text-sm font-semibold text-white">{countdownLabel}</p>
+          </div>
+
+          <div className="rounded-lg bg-zinc-900/70 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">Учасників</p>
+            <p className="mt-1 text-sm font-semibold text-white">{participantsCount && participantsCount > 0 ? participantsCount : "0х"}</p>
+          </div>
+
+          <div className="rounded-lg bg-zinc-900/70 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">Результати</p>
+            <p className="mt-1 text-sm font-semibold text-white">{stage.isCompleted ? "Доступні" : "Очікуються"}</p>
+          </div>
         </div>
       </article>
     </Link>

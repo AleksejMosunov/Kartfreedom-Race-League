@@ -50,6 +50,18 @@ function AdminPilotsPageContent() {
   const [creatingGroups, setCreatingGroups] = useState(false);
   // `hasGroups` state removed — not read anywhere. Keep network checks but don't store state.
   const [deletingGroups, setDeletingGroups] = useState(false);
+  const [copiedMap, setCopiedMap] = useState<Record<string, boolean>>({});
+
+  const copyToClipboard = async (key: string, text?: string) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(String(text));
+      setCopiedMap((s) => ({ ...s, [key]: true }));
+      setTimeout(() => setCopiedMap((s) => ({ ...s, [key]: false })), 1200);
+    } catch {
+      // ignore
+    }
+  };
 
   // check for existing sprint groups for the selected stage
   useEffect(() => {
@@ -107,13 +119,54 @@ function AdminPilotsPageContent() {
         <div className="space-y-2">
           {pilots.map((pilot) => (
             <Card key={pilot._id} className="flex items-center justify-between gap-3">
-              <Link href={`/pilots/${pilot._id}?championship=${encodeURIComponent(championshipId ?? "")}`} className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1">
                 <div>
                   <span className="text-zinc-500 text-sm font-mono mr-2">#{pilot.number}</span>
                   <span className="text-white font-semibold">{formatPilotFullName(pilot.name, pilot.surname)}</span>
-                  <p className="text-zinc-400 text-xs mt-1">Переглянути інформацію</p>
                 </div>
-              </Link>
+
+                <div className="mt-1 flex flex-wrap gap-4 text-sm text-zinc-300 items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-zinc-400 text-xs">SWS:</span>
+                    <span className="text-white font-medium">{pilot.swsId ?? "—"}</span>
+                    <button
+                      type="button"
+                      aria-label="Копіювати SWS"
+                      onClick={() => copyToClipboard(`${pilot._id}:sws`, pilot.swsId)}
+                      className="ml-2 text-zinc-400 hover:text-white"
+                    >
+                      {copiedMap[`${pilot._id}:sws`] ? (
+                        <span className="text-green-400 text-xs">Скопійовано</span>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-zinc-400 text-xs">Телефон:</span>
+                    <span className="text-white font-medium">{pilot.phone ?? "не вказано"}</span>
+                    <button
+                      type="button"
+                      aria-label="Копіювати телефон"
+                      onClick={() => copyToClipboard(`${pilot._id}:phone`, pilot.phone)}
+                      className="ml-2 text-zinc-400 hover:text-white"
+                    >
+                      {copiedMap[`${pilot._id}:phone`] ? (
+                        <span className="text-green-400 text-xs">Скопійовано</span>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <div className="flex items-center gap-2">
                 <select

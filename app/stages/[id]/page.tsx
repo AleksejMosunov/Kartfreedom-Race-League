@@ -57,7 +57,14 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
         const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled2 && Array.isArray(data)) setParticipantsCount(data.length);
+        if (!cancelled2 && Array.isArray(data)) {
+          const count = data.filter((p: any) => {
+            // include pilots explicitly registered to this stage
+            // and pilots registered to "all" stages (stageId absent/null)
+            return (!p.stageId && p.championshipId === championshipId) || String(p.stageId) === String(id);
+          }).length;
+          setParticipantsCount(count);
+        }
       } catch {
         // ignore
       }
