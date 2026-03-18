@@ -52,6 +52,7 @@ function AdminPilotsPageContent() {
   const [deletingGroups, setDeletingGroups] = useState(false);
   const [copiedMap, setCopiedMap] = useState<Record<string, boolean>>({});
   const [fieldsMap, setFieldsMap] = useState<Record<string, { swsId: string; phone: string; }>>({});
+  const [savedMap, setSavedMap] = useState<Record<string, boolean>>({});
 
   const copyToClipboard = async (key: string, text?: string) => {
     if (!text) return;
@@ -220,40 +221,56 @@ function AdminPilotsPageContent() {
                   <option value="newbie">Новачки</option>
                 </select>
 
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={async () => {
-                    if (!championshipId) return;
-                    setUpdateError("");
-                    setUpdatingId(pilot._id);
-                    try {
-                      const body = {
-                        swsId: fieldsMap[pilot._id]?.swsId ?? null,
-                        phone: fieldsMap[pilot._id]?.phone ?? null,
-                      };
-                      const res = await apiFetch(`/api/pilots/${pilot._id}?championship=${encodeURIComponent(championshipId ?? "")}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(body),
-                      });
-                      const resBody = (await res.json().catch(() => ({}))) as { error?: string; };
-                      if (!res.ok) throw new Error(resBody.error ?? "Не вдалося оновити");
-                      await refresh();
-                    } catch (err) {
-                      setUpdateError((err as Error).message);
-                    } finally {
-                      setUpdatingId(null);
-                    }
-                  }}
-                  disabled={updatingId === pilot._id}
-                >
-                  {updatingId === pilot._id ? "Збереження..." : "Зберегти"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={async () => {
+                      if (!championshipId) return;
+                      setUpdateError("");
+                      setUpdatingId(pilot._id);
+                      try {
+                        const body = {
+                          swsId: fieldsMap[pilot._id]?.swsId ?? null,
+                          phone: fieldsMap[pilot._id]?.phone ?? null,
+                        };
+                        const res = await apiFetch(`/api/pilots/${pilot._id}?championship=${encodeURIComponent(championshipId ?? "")}`, {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(body),
+                        });
+                        const resBody = (await res.json().catch(() => ({}))) as { error?: string; };
+                        if (!res.ok) throw new Error(resBody.error ?? "Не вдалося оновити");
+                        await refresh();
+                        setSavedMap((s) => ({ ...s, [pilot._id]: true }));
+                        setTimeout(() => setSavedMap((s) => ({ ...s, [pilot._id]: false })), 1600);
+                      } catch (err) {
+                        setUpdateError((err as Error).message);
+                      } finally {
+                        setUpdatingId(null);
+                      }
+                    }}
+                    disabled={updatingId === pilot._id}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      {updatingId === pilot._id && (
+                        <svg className="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                          <circle cx="12" cy="12" r="10" strokeWidth="3" strokeOpacity="0.15"></circle>
+                          <path d="M22 12a10 10 0 0 1-10 10" strokeWidth="3"></path>
+                        </svg>
+                      )}
+                      <span>{updatingId === pilot._id ? "Збереження..." : "Зберегти"}</span>
+                    </span>
+                  </Button>
 
-                <Button size="sm" variant="danger" onClick={() => void handleDelete(pilot._id)} disabled={deletingId === pilot._id}>
-                  {deletingId === pilot._id ? "Видалення..." : "Видалити"}
-                </Button>
+                  {savedMap[pilot._id] && (
+                    <span className="text-green-400 text-sm ml-2">✓ Збережено</span>
+                  )}
+
+                  <Button size="sm" variant="danger" onClick={() => void handleDelete(pilot._id)} disabled={deletingId === pilot._id}>
+                    {deletingId === pilot._id ? "Видалення..." : "Видалити"}
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}
