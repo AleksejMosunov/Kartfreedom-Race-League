@@ -183,11 +183,31 @@ export default function AdminAuditPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-white">Аудит-лог</h1>
-        <p className="text-zinc-500 text-sm mt-1">
-          Записи зберігаються 100 днів. Мутації даних: створення, зміна, видалення.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-white">Аудит-лог</h1>
+          <p className="text-zinc-500 text-sm mt-1">
+            Записи зберігаються 100 днів. Мутації даних: створення, зміна, видалення.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setFilterAction("create");
+              setFilterEntity("pilot");
+              setFilterUser("");
+              setFilterFrom("");
+              setFilterTo("");
+              setPage(1);
+              // ensure state updates before loading
+              setTimeout(() => void load(1), 0);
+            }}
+            className="text-sm text-zinc-400 hover:text-white border border-zinc-700 rounded-lg px-3 py-1.5 transition-colors"
+          >
+            Реєстрації пілотів
+          </button>
+        </div>
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">

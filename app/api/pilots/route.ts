@@ -8,7 +8,8 @@ import { Championship } from "@/lib/models/Championship";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { isValidUkrPhone, normalizePhone } from "@/lib/utils/phone";
-import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
+import { AUTH_COOKIE_NAME, isValidAdminSession, getAuthenticatedAdminSession } from "@/lib/auth";
+import { logAudit, sanitizeForAudit, getAuditIp } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   await connectToDatabase();
@@ -204,6 +205,41 @@ export async function POST(req: NextRequest) {
       // if admin didn't provide league, choose sensible default depending on championship type
       league: typeof body.league === "string" ? body.league : defaultLeague,
     });
+
+    try {
+      // Resolve admin session for audit
+      const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+      const session = await getAuthenticatedAdminSession(token);
+
+      let stageInfo: { id: string; title?: string } | null = null;
+      const providedStageId = typeof body.stageId === "string" ? body.stageId : undefined;
+      if (providedStageId) {
+        const s = await Stage.findById(providedStageId).select({ title: 1 }).lean();
+        if (s) stageInfo = { id: providedStageId, title: (s as any).title };
+      }
+
+      const after = sanitizeForAudit({
+        name,
+        surname,
+        league: typeof body.league === "string" ? body.league : defaultLeague,
+        championship: { id: String(current._id), title: (current as any).title },
+        stage: stageInfo,
+      });
+
+      await logAudit({
+        session: session ?? null,
+        action: "create",
+        entityType: "pilot",
+        entityId: String((pilot as any)._id),
+        entityLabel: `${name} ${surname}`,
+        before: null,
+        after,
+        ip: getAuditIp(req),
+      });
+    } catch (err) {
+      console.error("Failed to write audit for admin pilot create:", err);
+    }
+
     return NextResponse.json(pilot, { status: 201 });
   } catch (err: unknown) {
     if (

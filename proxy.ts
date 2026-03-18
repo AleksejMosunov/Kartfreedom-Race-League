@@ -230,8 +230,29 @@ export async function proxy(request: NextRequest) {
     );
   }
 
+  // For non-protected requests, add conservative Cache-Control headers
+  // for public GET pages to reduce backend load. Skip caching for admin/api/_next.
   if (!isProtectedRequest(request)) {
-    return applyResponseHeaders(request, NextResponse.next());
+    const res = NextResponse.next();
+    try {
+      const path = request.nextUrl.pathname;
+      if (
+        request.method === "GET" &&
+        !path.startsWith("/_next") &&
+        !path.startsWith("/api/") &&
+        !path.startsWith("/admin") &&
+        !path.startsWith("/login") &&
+        !path.startsWith("/auth")
+      ) {
+        res.headers.set(
+          "Cache-Control",
+          "public, max-age=10, s-maxage=60, stale-while-revalidate=300",
+        );
+      }
+    } catch {
+      // ignore header set errors
+    }
+    return applyResponseHeaders(request, res);
   }
 
   const sessionToken = request.cookies.get(AUTH_COOKIE_NAME)?.value;
@@ -312,5 +333,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/:path*"],
+  matcher: "/:path*",
 };

@@ -118,9 +118,9 @@ export default function AdminMetricsPage() {
             sub={`${data.championships.active} активних · ${data.championships.archived} архівних`}
           />
           <StatCard
-            label="Пілоти / Команди"
-            value={data.participants.pilots + data.participants.teams}
-            sub={`${data.participants.pilots} пілотів · ${data.participants.teams} команд`}
+            label="Пілоти"
+            value={data.participants.pilots}
+            sub={`${data.participants.pilots} пілотів`}
           />
           <StatCard
             label="Етапи"

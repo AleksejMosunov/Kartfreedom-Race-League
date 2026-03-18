@@ -7,6 +7,7 @@ import { Stage } from "@/lib/models/Stage";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { isValidUkrPhone, normalizePhone } from "@/lib/utils/phone";
+import { logAudit, sanitizeForAudit, getAuditIp } from "@/lib/audit";
 
 function normalizeTeamDrivers(raw: unknown) {
   if (!Array.isArray(raw)) return [];
@@ -216,6 +217,41 @@ export async function POST(req: NextRequest) {
       stageId: providedStageId,
       racesCount: providedRacesCount,
     });
+
+    // Log registration to audit (strip phone automatically)
+    try {
+      let stageInfo: { id: string; title?: string } | null = null;
+      if (providedStageId) {
+        const s = await Stage.findById(providedStageId)
+          .select({ title: 1 })
+          .lean();
+        if (s) stageInfo = { id: providedStageId, title: (s as any).title };
+      }
+
+      const after = sanitizeForAudit({
+        name,
+        surname,
+        league: leagueToSave,
+        championship: {
+          id: String(current._id),
+          title: (current as any).title,
+        },
+        stage: stageInfo,
+      });
+
+      await logAudit({
+        session: null,
+        action: "create",
+        entityType: "pilot",
+        entityId: String((pilot as any)._id),
+        entityLabel: `${name} ${surname}`,
+        before: null,
+        after,
+        ip: getAuditIp(req),
+      });
+    } catch (err) {
+      console.error("Failed to write pilot registration audit:", err);
+    }
 
     return NextResponse.json(pilot, { status: 201 });
   } catch (err: unknown) {

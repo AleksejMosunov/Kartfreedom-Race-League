@@ -21,11 +21,14 @@ export async function GET(req: NextRequest) {
   const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+  // Compute core metrics. For pilots we deduplicate by phone number
+  // (unique non-empty phone values) and include pilots without phone
+  // as individual entries.
   const [
     activeChampionships,
     archivedChampionships,
-    totalPilots,
-    totalTeams,
+    uniquePhoneCountRes,
+    pilotsWithoutPhoneCount,
     totalStages,
     completedStages,
     totalAdminUsers,
@@ -37,8 +40,14 @@ export async function GET(req: NextRequest) {
   ] = await Promise.all([
     Championship.countDocuments({ status: "active" }),
     Championship.countDocuments({ status: "archived" }),
-    Pilot.countDocuments({}),
-    Team.countDocuments({}),
+    Pilot.aggregate([
+      { $match: { phone: { $exists: true, $ne: "" } } },
+      { $group: { _id: "$phone" } },
+      { $count: "count" },
+    ]) as Promise<Array<{ count: number }>>,
+    Pilot.countDocuments({
+      $or: [{ phone: { $exists: false } }, { phone: "" }],
+    }),
     Stage.countDocuments({}),
     Stage.countDocuments({ isCompleted: true }),
     AdminUser.countDocuments({}),
@@ -54,6 +63,11 @@ export async function GET(req: NextRequest) {
       { $sort: { count: -1 } },
     ]) as Promise<Array<{ _id: string; count: number }>>,
   ]);
+
+  const uniquePhoneCount = uniquePhoneCountRes[0]?.count ?? 0;
+  const totalPilots = uniquePhoneCount + pilotsWithoutPhoneCount;
+  // Teams are no longer shown in metrics; keep zero for compatibility.
+  const totalTeams = 0;
 
   // Recent 5 audit entries
   const recentAudit = await AuditLog.find()
