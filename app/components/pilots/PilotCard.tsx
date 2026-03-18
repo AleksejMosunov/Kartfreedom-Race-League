@@ -56,7 +56,7 @@ export function PilotCard({ pilot, championshipId }: PilotCardProps) {
               {fullName}
             </p>
             <p className="mt-1 text-xs uppercase tracking-[0.18em] text-zinc-500">
-              {pilot.league === "pro" ? "Про" : "Новачок"}
+              {pilot.league === "pro" ? "PRO" : "ROOKIE"}
             </p>
             <p className="mt-2 text-xs text-zinc-400 transition-colors group-hover:text-zinc-300">
               {participantStat}

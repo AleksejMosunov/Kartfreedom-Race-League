@@ -154,7 +154,7 @@ export default function StatsPage() {
                 <p className="text-zinc-400 text-xs">#{participant.participantNumber}</p>
                 <h3 className="flex items-center gap-2 text-lg font-bold text-white">
                   <span>{participant.participantName}</span>
-                  <span className="ml-1 text-xs uppercase text-zinc-400 tracking-wide">{participant.league === "pro" ? "Про" : "Новачок"}</span>
+                  <span className="ml-1 text-xs uppercase text-zinc-400 tracking-wide">{participant.league === "pro" ? "PRO" : "ROOKIE"}</span>
                 </h3>
               </div>
               <p className="text-2xl font-black text-white">{participant.totalPoints}</p>

@@ -604,7 +604,7 @@ export default function AdminStagesPage() {
                     {sendingResultsStageId === stage._id ? "Відправка..." : "Відправити результати етапу"}
                   </Button>
                 )}
-                {pilots.length > 0 && canEditResults && (
+                {/* {pilots.length > 0 && canEditResults && (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -613,7 +613,7 @@ export default function AdminStagesPage() {
                   >
                     Копіювати попередній етап
                   </Button>
-                )}
+                )} */}
                 {!stage.isCompleted && canManageStages && (
                   <Button
                     variant="secondary"

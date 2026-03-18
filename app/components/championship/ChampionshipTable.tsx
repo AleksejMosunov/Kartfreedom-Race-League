@@ -36,7 +36,7 @@ export function ChampionshipTable({
 
   useEffect(() => {
     // default class filter to 'pro' for sprint-pro championships
-    if (championshipType === "sprint-pro" && classFilter === "newbie") {
+    if (championshipType === "sprint-pro") {
       setClassFilter("pro");
     }
   }, [championshipType]);
@@ -122,15 +122,25 @@ export function ChampionshipTable({
 
         <label className="text-sm text-zinc-300">
           Залік
-          <select
-            value={classFilter}
-            onChange={(e) => setClassFilter(e.target.value as "all" | "pro" | "newbie")}
-            className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-          >
-            <option value="newbie">Новачки</option>
-            <option value="pro">Про</option>
-            <option value="all">Усі</option>
-          </select>
+          {championshipType === "sprint-pro" ? (
+            <select
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value as "all" | "pro" | "newbie")}
+              className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+            >
+              <option value="pro">Про</option>
+            </select>
+          ) : (
+            <select
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value as "all" | "pro" | "newbie")}
+              className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+            >
+              <option value="newbie">Новачки</option>
+              <option value="pro">Про</option>
+              <option value="all">Усі</option>
+            </select>
+          )}
         </label>
 
         <label className="text-sm text-zinc-300">
@@ -180,7 +190,7 @@ export function ChampionshipTable({
                           const league = row.pilot.league ?? "newbie";
                           return (
                             <Badge variant={league === "pro" ? "success" : "default"} className="ml-2">
-                              {league === "pro" ? "Про" : "Новачок"}
+                              {league === "pro" ? "PRO" : "ROOKIE"}
                             </Badge>
                           );
                         })()}
@@ -245,7 +255,7 @@ export function ChampionshipTable({
                     const league = row.pilot.league ?? "newbie";
                     return (
                       <Badge variant={league === "pro" ? "success" : "default"} className="ml-2">
-                        {league === "pro" ? "Про" : "Новачок"}
+                        {league === "pro" ? "PRO" : "ROOKIE"}
                       </Badge>
                     );
                   })()}

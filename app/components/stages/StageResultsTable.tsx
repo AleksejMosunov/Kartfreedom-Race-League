@@ -183,7 +183,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
                         <span className="text-zinc-500 text-xs font-mono w-6">#{pilotObj.number}</span>
                         <div className="min-w-0">
                           <div className="font-semibold text-white truncate">{formatPilotFullName(pilotObj.name, pilotObj.surname)}</div>
-                          <div className="text-zinc-400 text-xs mt-1">{(pilotObj as any).league === "pro" ? "Про" : "Новачок"}</div>
+                          <div className="text-zinc-400 text-xs mt-1">{(pilotObj as any).league === "pro" ? "PRO" : "ROOKIE"}</div>
                         </div>
                       </div>
                     ) : (
@@ -252,7 +252,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
                     {pilotObj ? `#${pilotObj.number} ${formatPilotFullName(pilotObj.name, pilotObj.surname)}` : String(result.pilotId)}
                   </p>
                   {pilotObj ? (
-                    <div className="text-zinc-400 text-xs mt-1">{(pilotObj as any).league === "pro" ? "Про" : "Новачок"}</div>
+                    <div className="text-zinc-400 text-xs mt-1">{(pilotObj as any).league === "pro" ? "PRO" : "ROOKIE"}</div>
                   ) : null}
                 </div>
                 <p className="text-white font-black">{result.points}</p>
