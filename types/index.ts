@@ -5,6 +5,10 @@ export interface Pilot {
   league?: "pro" | "newbie";
   number: number;
   phone?: string;
+  swsId?: string;
+  stageId?: string;
+  racesCount?: number;
+  championshipId?: string;
   teamIsSolo?: boolean;
   teamDrivers?: TeamDriver[];
   completedStagesCount?: number;

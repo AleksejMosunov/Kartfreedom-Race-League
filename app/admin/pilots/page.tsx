@@ -51,6 +51,7 @@ function AdminPilotsPageContent() {
   // `hasGroups` state removed — not read anywhere. Keep network checks but don't store state.
   const [deletingGroups, setDeletingGroups] = useState(false);
   const [copiedMap, setCopiedMap] = useState<Record<string, boolean>>({});
+  const [fieldsMap, setFieldsMap] = useState<Record<string, { swsId: string; phone: string; }>>({});
 
   const copyToClipboard = async (key: string, text?: string) => {
     if (!text) return;
@@ -77,6 +78,14 @@ function AdminPilotsPageContent() {
     }
     checkGroups();
   }, [selectedStageId]);
+
+  useEffect(() => {
+    const map: Record<string, { swsId: string; phone: string; }> = {};
+    for (const p of pilots) {
+      map[p._id] = { swsId: p.swsId ?? "", phone: p.phone ?? "" };
+    }
+    setFieldsMap(map);
+  }, [pilots]);
 
   const handleDelete = async (pilotId: string) => {
     if (!championshipId) return;
@@ -112,6 +121,7 @@ function AdminPilotsPageContent() {
       </div>
 
       {deleteError && <p className="text-red-400 text-sm mb-4">{deleteError}</p>}
+      {updateError && <p className="text-red-400 text-sm mb-4">{updateError}</p>}
       {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
       {isLoading && <Loader />}
 
@@ -128,11 +138,16 @@ function AdminPilotsPageContent() {
                 <div className="mt-1 flex flex-wrap gap-4 text-sm text-zinc-300 items-center">
                   <div className="flex items-center gap-2">
                     <span className="text-zinc-400 text-xs">SWS:</span>
-                    <span className="text-white font-medium">{pilot.swsId ?? "—"}</span>
+                    <input
+                      value={fieldsMap[pilot._id]?.swsId ?? ""}
+                      onChange={(e) => setFieldsMap((m) => ({ ...m, [pilot._id]: { ...(m[pilot._id] ?? { swsId: "", phone: "" }), swsId: e.target.value } }))}
+                      placeholder="—"
+                      className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm"
+                    />
                     <button
                       type="button"
                       aria-label="Копіювати SWS"
-                      onClick={() => copyToClipboard(`${pilot._id}:sws`, pilot.swsId)}
+                      onClick={() => copyToClipboard(`${pilot._id}:sws`, fieldsMap[pilot._id]?.swsId ?? pilot.swsId)}
                       className="ml-2 text-zinc-400 hover:text-white"
                     >
                       {copiedMap[`${pilot._id}:sws`] ? (
@@ -148,11 +163,16 @@ function AdminPilotsPageContent() {
 
                   <div className="flex items-center gap-2">
                     <span className="text-zinc-400 text-xs">Телефон:</span>
-                    <span className="text-white font-medium">{pilot.phone ?? "не вказано"}</span>
+                    <input
+                      value={fieldsMap[pilot._id]?.phone ?? ""}
+                      onChange={(e) => setFieldsMap((m) => ({ ...m, [pilot._id]: { ...(m[pilot._id] ?? { swsId: "", phone: "" }), phone: e.target.value } }))}
+                      placeholder="не вказано"
+                      className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm"
+                    />
                     <button
                       type="button"
                       aria-label="Копіювати телефон"
-                      onClick={() => copyToClipboard(`${pilot._id}:phone`, pilot.phone)}
+                      onClick={() => copyToClipboard(`${pilot._id}:phone`, fieldsMap[pilot._id]?.phone ?? pilot.phone)}
                       className="ml-2 text-zinc-400 hover:text-white"
                     >
                       {copiedMap[`${pilot._id}:phone`] ? (
@@ -199,6 +219,37 @@ function AdminPilotsPageContent() {
                   <option value="pro">Про</option>
                   <option value="newbie">Новачки</option>
                 </select>
+
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={async () => {
+                    if (!championshipId) return;
+                    setUpdateError("");
+                    setUpdatingId(pilot._id);
+                    try {
+                      const body = {
+                        swsId: fieldsMap[pilot._id]?.swsId ?? null,
+                        phone: fieldsMap[pilot._id]?.phone ?? null,
+                      };
+                      const res = await apiFetch(`/api/pilots/${pilot._id}?championship=${encodeURIComponent(championshipId ?? "")}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body),
+                      });
+                      const resBody = (await res.json().catch(() => ({}))) as { error?: string; };
+                      if (!res.ok) throw new Error(resBody.error ?? "Не вдалося оновити");
+                      await refresh();
+                    } catch (err) {
+                      setUpdateError((err as Error).message);
+                    } finally {
+                      setUpdatingId(null);
+                    }
+                  }}
+                  disabled={updatingId === pilot._id}
+                >
+                  {updatingId === pilot._id ? "Збереження..." : "Зберегти"}
+                </Button>
 
                 <Button size="sm" variant="danger" onClick={() => void handleDelete(pilot._id)} disabled={deletingId === pilot._id}>
                   {deletingId === pilot._id ? "Видалення..." : "Видалити"}
@@ -279,8 +330,6 @@ function AdminPilotsPageContent() {
                       if (!res.ok) throw new Error(body.error ?? "Не вдалося створити групи");
                       await refresh();
                       setUpdateError("");
-                      // optionally show result
-
                       alert("Групи створено успішно");
                     } catch (err) {
                       setUpdateError((err as Error).message);

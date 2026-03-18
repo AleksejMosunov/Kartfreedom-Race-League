@@ -70,8 +70,40 @@ export default function AdminStagesPage() {
   const [bulkPenaltyReason, setBulkPenaltyReason] = useState("");
   const [hasDraftChanges, setHasDraftChanges] = useState(false);
   const [role, setRole] = useState<"organizer" | "marshal" | "editor" | null>(null);
+  const [participantsMap, setParticipantsMap] = useState<Record<string, { total: number; byRacesCount: { 1: number; 2: number; }; }>>({});
 
   const FORM_DRAFT_KEY = "admin:stages:form-draft:v1";
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedChampionshipId) return;
+    const fetchAll = async () => {
+      try {
+        const map: Record<string, any> = {};
+        await Promise.all(
+          stages.map(async (s) => {
+            try {
+              const res = await apiFetch(`/api/admin/stages/${s._id}/participants`, { cache: "no-store" });
+              if (!res.ok) return;
+              const data = await res.json();
+              if (cancelled) return;
+              map[s._id] = data;
+            } catch {
+              // ignore per-stage errors
+            }
+          }),
+        );
+        if (!cancelled) setParticipantsMap(map);
+      } catch {
+        // ignore
+      }
+    };
+
+    void fetchAll();
+    return () => {
+      cancelled = true;
+    };
+  }, [stages, selectedChampionshipId]);
 
   useEffect(() => {
     void (async () => {
@@ -583,6 +615,23 @@ export default function AdminStagesPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                {participantsMap[stage._id] ? (
+                  <div className="text-sm text-zinc-300 mr-2 text-right">
+                    <div className="text-zinc-400 text-xs">Учасників {participantsMap[stage._id].total}</div>
+                    <div className="text-zinc-400 text-xs">1 гонка: {participantsMap[stage._id].byRacesCount[1]} </div>
+                    <div className="text-zinc-400 text-xs">2 гонки: {participantsMap[stage._id].byRacesCount[2]}</div>
+                    {participantsMap[stage._id].total > 0 && (
+                      <Link href={`/admin/stages/${stage._id}`} className="text-sm text-zinc-400 hover:text-white">Список пілотів</Link>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-zinc-300 mr-2 text-right">
+                    <div className="text-zinc-400 text-xs">Учасників</div>
+                    <div className="text-white font-semibold">{stage.results?.length ?? 0}</div>
+                    <Link href={`/admin/stages/${stage._id}`} className="text-sm text-zinc-400 hover:text-white">Список пілотів</Link>
+                  </div>
+                )}
+
                 {pilots.length > 0 && canEditResults && (
                   <Button
                     variant="secondary"
