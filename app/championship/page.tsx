@@ -2,7 +2,7 @@ import { ChampionshipTable } from "@/app/components/championship/ChampionshipTab
 import { NoActiveChampionshipBlock } from "@/app/components/championship/NoActiveChampionshipBlock";
 import { MultiChampionshipTabs } from "@/app/components/championship/MultiChampionshipTabs";
 import { getPublicChampionshipStatus } from "@/lib/championship/public";
-import SponsorsSection from "@/app/components/championship/SponsorsSection";
+// import SponsorsSection from "@/app/components/championship/SponsorsSection";
 
 export const revalidate = 0;
 
@@ -25,7 +25,7 @@ export default async function ChampionshipPage() {
             Загальний залік
           </p>
         </div>
-        <SponsorsSection />
+        {/* <SponsorsSection /> */}
         <NoActiveChampionshipBlock news={preseasonNews} />
       </main>
     );
@@ -40,7 +40,7 @@ export default async function ChampionshipPage() {
             Загальний залік
           </p>
         </div>
-        <SponsorsSection />
+        {/* <SponsorsSection /> */}
         <ChampionshipTable />
       </main>
     );
@@ -61,7 +61,7 @@ export default async function ChampionshipPage() {
           Загальний залік
         </p>
       </div>
-      <SponsorsSection />
+      {/* <SponsorsSection /> */}
       <MultiChampionshipTabs championships={championships} />
     </main>
   );

@@ -60,8 +60,8 @@ export default function AdminStagesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [resultsError, setResultsError] = useState("");
-  const [notifyNewStageInTelegram, setNotifyNewStageInTelegram] = useState(true);
   const [sendingResultsStageId, setSendingResultsStageId] = useState<string | null>(null);
+  const [sendingNewsStageId, setSendingNewsStageId] = useState<string | null>(null);
 
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [resultsRows, setResultsRows] = useState<ResultInputRow[]>([]);
@@ -151,19 +151,8 @@ export default function AdminStagesPage() {
       const created = (await res.json().catch(() => ({}))) as { error?: string; _id?: string; };
       if (!res.ok) throw new Error(created.error ?? "Помилка додавання етапу");
 
-      if (notifyNewStageInTelegram && created._id) {
-        const tgRes = await apiFetch("/api/telegram/stages/new", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stageId: created._id }),
-        });
-        const tgBody = (await tgRes.json().catch(() => ({}))) as { error?: string; };
-        if (!tgRes.ok) {
-          setFormError(
-            `Етап додано, але Telegram-новину не відправлено: ${tgBody.error ?? "невідома помилка"}`,
-          );
-        }
-      }
+      // Do not send Telegram news automatically when a stage is created.
+      // Sending should be done manually via the per-stage "Send news" button in the list.
 
       setStageName("");
       setStageNumber("");
@@ -193,6 +182,24 @@ export default function AdminStagesPage() {
       setResultsError((err as Error).message);
     } finally {
       setSendingResultsStageId(null);
+    }
+  };
+
+  const sendNewStageToTelegram = async (stageId: string) => {
+    setFormError("");
+    setSendingNewsStageId(stageId);
+    try {
+      const res = await apiFetch(`/api/telegram/stages/new`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stageId }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; };
+      if (!res.ok) throw new Error(body.error ?? "Не вдалося відправити новину в Telegram");
+    } catch (err) {
+      setFormError((err as Error).message);
+    } finally {
+      setSendingNewsStageId(null);
     }
   };
 
@@ -552,15 +559,7 @@ export default function AdminStagesPage() {
               <Button type="submit" disabled={submitting || !selectedChampionshipId}>
                 {submitting ? "Додавання..." : "Додати етап"}
               </Button>
-              <label className="flex items-center gap-2 text-sm text-zinc-300">
-                <input
-                  type="checkbox"
-                  checked={notifyNewStageInTelegram}
-                  onChange={(e) => setNotifyNewStageInTelegram(e.target.checked)}
-                  className="accent-red-500"
-                />
-                Надіслати новину в Telegram про новий етап
-              </label>
+              {/* Manual sending only: auto-send option removed */}
               {formError && <p className="text-red-400 text-sm">{formError}</p>}
             </div>
           </form>
@@ -641,6 +640,17 @@ export default function AdminStagesPage() {
                     onClick={() => deleteStage(stage._id)}
                   >
                     Видалити
+                  </Button>
+                )}
+                {canManageStages && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="whitespace-nowrap"
+                    onClick={() => void sendNewStageToTelegram(stage._id)}
+                    disabled={sendingNewsStageId === stage._id}
+                  >
+                    {sendingNewsStageId === stage._id ? "Відправка..." : "Відправити новину про етап"}
                   </Button>
                 )}
               </div>

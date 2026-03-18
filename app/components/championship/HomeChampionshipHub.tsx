@@ -334,7 +334,8 @@ export function HomeChampionshipHub({
                     <p className="text-zinc-200 mt-1 whitespace-pre-line">{selectedPreseasonNews}</p>
                   </div>
                 ) : (
-                  <p className="text-zinc-500 text-sm">Публічних оголошень наразі немає.</p>
+                  // <p className="text-zinc-500 text-sm">Публічних оголошень наразі немає.</p>
+                  ''
                 )}
               </div>
             </>

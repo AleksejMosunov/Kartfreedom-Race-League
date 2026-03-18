@@ -9,6 +9,8 @@ export interface IPilot extends Document {
   phone?: string;
   avatar?: string;
   league: "pro" | "newbie";
+  swsId?: string;
+  stageId?: mongoose.Types.ObjectId;
   createdAt: Date;
 }
 
@@ -52,6 +54,8 @@ const PilotSchema = new Schema<IPilot>(
     },
     phone: { type: String, trim: true },
     avatar: { type: String },
+    swsId: { type: String, trim: true },
+    stageId: { type: Schema.Types.ObjectId, ref: "Stage" },
     league: {
       type: String,
       enum: ["pro", "newbie"],

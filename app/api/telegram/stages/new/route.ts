@@ -4,7 +4,7 @@ import { Stage } from "@/lib/models/Stage";
 import { Championship } from "@/lib/models/Championship";
 import {
   escapeHtml,
-  registrationLinkLine,
+  // registrationLinkLine,
   sendTelegramMessage,
 } from "@/lib/telegram";
 import type { IStage } from "@/lib/models/Stage";
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     "",
     "Реєстрація триває. До зустрічі на трасі! 🏎️",
     "",
-    registrationLinkLine(String(stage.championshipId)),
+    // registrationLinkLine(String(stage.championshipId)),
   ];
 
   const swsLines = swsLinks.length

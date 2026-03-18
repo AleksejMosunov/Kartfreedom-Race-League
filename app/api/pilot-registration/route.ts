@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
 import { Pilot } from "@/lib/models/Pilot";
 import { Team } from "@/lib/models/Team";
+import { Stage } from "@/lib/models/Stage";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { isValidUkrPhone, normalizePhone } from "@/lib/utils/phone";
@@ -299,6 +300,48 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // If championship has stages, require a valid stageId
+  const rawStageId =
+    typeof body.stageId === "string" ? body.stageId : undefined;
+  const optingAllStages = rawStageId === "all";
+  let providedStageId: string | undefined = undefined;
+
+  if (optingAllStages) {
+    // user chose to register to all stages — treat as no specific stage selected
+    providedStageId = undefined;
+  } else if (rawStageId) {
+    // validate provided stage belongs to championship
+    const stageExists = await Stage.findOne({
+      _id: rawStageId,
+      championshipId: current._id,
+    })
+      .select({ _id: 1 })
+      .lean();
+    if (!stageExists) {
+      return NextResponse.json(
+        { error: "Обраний етап недійсний для цього чемпіонату" },
+        { status: 400 },
+      );
+    }
+    providedStageId = rawStageId;
+  } else {
+    // no stage provided — require a stage only if the championship actually has stages
+    const anyStage = await Stage.findOne({ championshipId: current._id })
+      .select({ _id: 1 })
+      .lean();
+    if (anyStage) {
+      return NextResponse.json(
+        { error: "Оберіть етап для реєстрації" },
+        { status: 400 },
+      );
+    }
+  }
+
+  const providedSwsId =
+    typeof body.swsId === "string" && body.swsId.trim()
+      ? body.swsId.trim()
+      : undefined;
+
   try {
     const pilot = await Pilot.create({
       championshipId: current._id,
@@ -308,6 +351,9 @@ export async function POST(req: NextRequest) {
       phone,
       avatar: typeof body.avatar === "string" ? body.avatar : undefined,
       league: leagueToSave,
+      swsId: providedSwsId,
+      // if user opted into all stages, `providedStageId` is undefined and pilot is not bound to a single stage
+      stageId: providedStageId,
     });
 
     return NextResponse.json(pilot, { status: 201 });

@@ -7,7 +7,9 @@ import { Button } from "@/app/components/ui/Button";
 import { NoActiveClientGate } from "@/app/components/championship/NoActiveClientGate";
 import { Loader } from "@/app/components/ui/Loader";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
+import { useStages } from "@/app/hooks/useStages";
 import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiChampionship";
+import { SOCIAL_LINK_DEFAULTS } from "@/lib/socialLinks";
 
 type ChampionshipMode = "solo" | "teams" | "sprint-pro";
 type ActiveChampionship = {
@@ -37,6 +39,8 @@ function RegisterPageInner() {
     { name: "", surname: "" },
   ]);
   const [phone, setPhone] = useState("");
+  const [swsId, setSwsId] = useState("");
+  const [stageId, setStageId] = useState("");
   const [league, setLeague] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -50,6 +54,12 @@ function RegisterPageInner() {
   const championshipMode = selectedChampionship?.championshipType ?? "solo";
   const modeLoading = (championshipsLoading && !hasLoaded) || (activeChampionships.length > 0 && !selectedChampionshipId);
 
+  const { stages } = useStages(selectedChampionshipId, { enabled: Boolean(selectedChampionshipId) });
+
+  useEffect(() => {
+    if (championshipMode === "sprint-pro") setLeague("pro");
+    if (championshipMode === "solo") setLeague("");
+  }, [championshipMode]);
   useEffect(() => {
     if (!activeChampionships.length) return;
     const preferred =
@@ -85,50 +95,57 @@ function RegisterPageInner() {
           return;
         }
       }
+      // Require selecting a stage when stages are available
+      if (stages && stages.length > 0 && !stageId) {
+        setError("Оберіть етап для реєстрації");
+        setSubmitting(false);
+        return;
+      }
+      let payload: Record<string, any>;
+      if (championshipMode === "teams") {
+        if (teamIsSolo) {
+          payload = {
+            championshipId: selectedChampionshipId,
+            isSolo: true,
+            name: teamDrivers[0].name.trim(),
+            surname: teamDrivers[0].surname.trim(),
+            number: Number(teamNumber),
+            phone: phone.trim(),
+          };
+        } else {
+          payload = {
+            championshipId: selectedChampionshipId,
+            isSolo: false,
+            teamName: teamName.trim(),
+            number: Number(teamNumber),
+            phone: phone.trim(),
+            drivers: teamDrivers
+              .map((driver) => ({
+                name: driver.name.trim(),
+                surname: driver.surname.trim(),
+              }))
+              .filter((driver) => driver.name && driver.surname),
+          };
+        }
+      } else {
+        payload = {
+          championshipId: selectedChampionshipId,
+          name: name.trim(),
+          surname: surname.trim(),
+          number: Number(number),
+          phone: phone.trim(),
+        };
+        if (championshipMode === "solo") payload.league = league;
+        if (championshipMode === "sprint-pro") payload.league = "pro";
+      }
+
+      if (swsId && swsId.trim()) payload.swsId = swsId.trim();
+      if (stageId) payload.stageId = stageId;
+
       const res = await fetch("/api/pilot-registration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          championshipMode === "teams"
-            ? teamIsSolo
-              ? {
-                championshipId: selectedChampionshipId,
-                isSolo: true,
-                name: teamDrivers[0].name.trim(),
-                surname: teamDrivers[0].surname.trim(),
-                number: Number(teamNumber),
-                phone: phone.trim(),
-              }
-              : {
-                championshipId: selectedChampionshipId,
-                isSolo: false,
-                teamName: teamName.trim(),
-                number: Number(teamNumber),
-                phone: phone.trim(),
-                drivers: teamDrivers
-                  .map((driver) => ({
-                    name: driver.name.trim(),
-                    surname: driver.surname.trim(),
-                  }))
-                  .filter((driver) => driver.name && driver.surname),
-              }
-            : (() => {
-              const base: Record<string, unknown> = {
-                championshipId: selectedChampionshipId,
-                name: name.trim(),
-                surname: surname.trim(),
-                number: Number(number),
-                phone: phone.trim(),
-              };
-              if (championshipMode === "solo") {
-                base.league = league;
-              }
-              if (championshipMode === "sprint-pro") {
-                base.league = "pro";
-              }
-              return base;
-            })(),
-        ),
+        body: JSON.stringify(payload),
       });
 
       const body = await res.json().catch(() => ({}));
@@ -303,6 +320,42 @@ function RegisterPageInner() {
                       required
                     />
 
+                    <div className="sm:col-span-2">
+                      <label className="text-sm text-zinc-400 block mb-2">SWS ID (необов'язково)</label>
+                      <input
+                        type="text"
+                        placeholder="SWS ID або псевдонім"
+                        value={swsId}
+                        onChange={(e) => setSwsId(e.target.value)}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                      />
+                      <p className="text-zinc-500 text-xs mt-2">
+                        Якщо ви ще не SWS пілот — зареєструйтесь на сайті SWS.{' '}
+                        <a href="https://www.sodiwseries.com/en-gb/become-sws-driver.html" target="_blank" rel="noreferrer" className="text-red-500">
+                          Інструкція SWS
+                        </a>
+                        . Для деталей звертайтесь до організатора: <a href={SOCIAL_LINK_DEFAULTS.telegram} className="text-red-500">Telegram</a>.
+                      </p>
+                    </div>
+
+                    {stages && stages.length > 0 && (
+                      <div className="sm:col-span-2">
+                        <label className="text-sm text-zinc-400 block mb-2">Реєстрація на етап (обов'язково)</label>
+                        <select
+                          required
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                          value={stageId}
+                          onChange={(e) => setStageId(e.target.value)}
+                        >
+                          <option value="">-- оберіть етап --</option>
+                          {stages.map((s: any) => (
+                            <option key={s._id} value={s._id}>{`${s.number} — ${s.name} (${new Date(s.date).toLocaleDateString()})`}</option>
+                          ))}
+                          <option value="all">Реєстрація на всі етапи</option>
+                        </select>
+                      </div>
+                    )}
+
                     {!teamIsSolo && (
                       <div className="sm:col-span-2 rounded-lg border border-zinc-800 p-3 space-y-3">
                         <p className="text-zinc-300 text-sm font-semibold">Склад команди (мінімум 2 пілоти)</p>
@@ -425,19 +478,59 @@ function RegisterPageInner() {
                       title="Тільки українські номери: +380XXXXXXXXX"
                       required
                     />
-                    {championshipMode === "solo" && (
+                    {(championshipMode === "solo" || championshipMode === "sprint-pro") && (
                       <div className="sm:col-span-2">
-                        <label className="text-sm text-zinc-400 block mb-2">Ліга *</label>
-                        <select
-                          value={league}
-                          onChange={(e) => setLeague(e.target.value)}
-                          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-                          required
-                        >
-                          <option value="">-- оберіть лігу --</option>
-                          <option value="pro">Про</option>
-                          <option value="newbie">Новачки</option>
-                        </select>
+                        {championshipMode === "solo" && (
+                          <>
+                            <label className="text-sm text-zinc-400 block mb-2">Ліга *</label>
+                            <select
+                              value={league}
+                              onChange={(e) => setLeague(e.target.value)}
+                              className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                              required
+                            >
+                              <option value="">-- оберіть лігу --</option>
+                              <option value="pro">Про</option>
+                              <option value="newbie">Новачки</option>
+                            </select>
+                          </>
+                        )}
+
+                        <div className="mt-3">
+                          <label className="text-sm text-zinc-400 block mb-2">SWS ID (необов'язково)</label>
+                          <input
+                            type="text"
+                            placeholder="SWS ID або псевдонім"
+                            value={swsId}
+                            onChange={(e) => setSwsId(e.target.value)}
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                          />
+                          <p className="text-zinc-500 text-xs mt-2">
+                            Якщо ви ще не SWS пілот — зареєструйтесь на сайті SWS.{' '}
+                            <a href="https://www.sodiwseries.com/en-gb/become-sws-driver.html" target="_blank" rel="noreferrer" className="text-red-500">
+                              Інструкція SWS
+                            </a>
+                            . Для деталей звертайтесь до організатора: <a href={SOCIAL_LINK_DEFAULTS.telegram} className="text-red-500">Telegram</a>.
+                          </p>
+                        </div>
+
+                        {stages && stages.length > 0 && (
+                          <div className="mt-3">
+                            <label className="text-sm text-zinc-400 block mb-2">Реєстрація на етап (обов'язково)</label>
+                            <select
+                              required
+                              className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                              value={stageId}
+                              onChange={(e) => setStageId(e.target.value)}
+                            >
+                              <option value="">-- оберіть етап --</option>
+                              {stages.map((s: any) => (
+                                <option key={s._id} value={s._id}>{`${s.number} — ${s.name} (${new Date(s.date).toLocaleDateString()})`}</option>
+                              ))}
+                              <option value="all">Реєстрація на всі етапи</option>
+                            </select>
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
