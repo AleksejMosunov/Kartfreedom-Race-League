@@ -8,7 +8,11 @@ import { Championship } from "@/lib/models/Championship";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { isValidUkrPhone, normalizePhone } from "@/lib/utils/phone";
-import { AUTH_COOKIE_NAME, isValidAdminSession, getAuthenticatedAdminSession } from "@/lib/auth";
+import {
+  AUTH_COOKIE_NAME,
+  isValidAdminSession,
+  getAuthenticatedAdminSession,
+} from "@/lib/auth";
 import { logAudit, sanitizeForAudit, getAuditIp } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
@@ -212,9 +216,12 @@ export async function POST(req: NextRequest) {
       const session = await getAuthenticatedAdminSession(token);
 
       let stageInfo: { id: string; title?: string } | null = null;
-      const providedStageId = typeof body.stageId === "string" ? body.stageId : undefined;
+      const providedStageId =
+        typeof body.stageId === "string" ? body.stageId : undefined;
       if (providedStageId) {
-        const s = await Stage.findById(providedStageId).select({ title: 1 }).lean();
+        const s = await Stage.findById(providedStageId)
+          .select({ title: 1 })
+          .lean();
         if (s) stageInfo = { id: providedStageId, title: (s as any).title };
       }
 
@@ -222,7 +229,10 @@ export async function POST(req: NextRequest) {
         name,
         surname,
         league: typeof body.league === "string" ? body.league : defaultLeague,
-        championship: { id: String(current._id), title: (current as any).title },
+        championship: {
+          id: String(current._id),
+          title: (current as any).title,
+        },
         stage: stageInfo,
       });
 
