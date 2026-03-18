@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Loader, Card, Button } from "@/app/components/ui";
+import { Loader, Card } from "@/app/components/ui";
+import { Pilot } from "@/types";
 import { apiFetch } from "@/app/services/api/request";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
@@ -12,7 +13,7 @@ export default function AdminStageDetailPage() {
   const stageId = params?.id as string;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<{ total: number; byRacesCount: { 1: number; 2: number; }; pilots: Pilot[]; } | null>(null);
   const [copiedMap, setCopiedMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function AdminStageDetailPage() {
 
       {!loading && data && (
         <div className="space-y-2">
-          {data.pilots.map((pilot: any) => (
+          {data.pilots.map((pilot: Pilot) => (
             <Card key={pilot._id} className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div>

@@ -79,7 +79,7 @@ export default function AdminStagesPage() {
     if (!selectedChampionshipId) return;
     const fetchAll = async () => {
       try {
-        const map: Record<string, any> = {};
+        const map: Record<string, { total: number; byRacesCount: { 1: number; 2: number; }; pilots?: import("@/types").Pilot[]; }> = {};
         await Promise.all(
           stages.map(async (s) => {
             try {
@@ -87,7 +87,7 @@ export default function AdminStagesPage() {
               if (!res.ok) return;
               const data = await res.json();
               if (cancelled) return;
-              map[s._id] = data;
+              map[s._id] = data as { total: number; byRacesCount: { 1: number; 2: number; }; pilots?: import("@/types").Pilot[]; };
             } catch {
               // ignore per-stage errors
             }
@@ -277,38 +277,7 @@ export default function AdminStagesPage() {
     setBulkPenaltyReason("");
   };
 
-  const applyPreviousStageTemplate = (stageId: string) => {
-    const stage = stages.find((s) => s._id === stageId);
-    if (!stage) return;
-
-    const previous = [...stages]
-      .filter((s) => s.number < stage.number && s.isCompleted && s.results.length > 0)
-      .sort((a, b) => b.number - a.number)[0];
-
-    if (!previous) {
-      setResultsError("Немає попереднього завершеного етапу з результатами для шаблону.");
-      return;
-    }
-
-    setEditingStageId(stageId);
-    setResultsRows(
-      editablePilots.map((pilot, index) => {
-        const prev = previous.results.find((r) => extractPilotId(r) === pilot._id);
-        return {
-          pilotId: pilot._id,
-          position: prev?.position ?? index + 1,
-          dnf: prev?.dnf ?? false,
-          dns: prev?.dns ?? false,
-          bestLap: Boolean(prev?.bestLap),
-          penaltyPoints: 0,
-          penaltyReason: "",
-        };
-      }),
-    );
-    setSelectedRows([]);
-    setBulkPenaltyPoints(0);
-    setBulkPenaltyReason("");
-  };
+  // applyPreviousStageTemplate removed — not currently used
 
   const toggleSelectRow = (pilotId: string) => {
     setSelectedRows((prev) =>
@@ -749,7 +718,7 @@ export default function AdminStagesPage() {
                       return (pilot?.league ?? "newbie") === "newbie";
                     });
 
-                    const renderRow = (row: any) => {
+                    const renderRow = (row: ResultInputRow) => {
                       const pilot = editablePilots.find((p) => p._id === row.pilotId) || pilots.find((p) => p._id === row.pilotId);
                       const league = (pilot?.league as "pro" | "newbie") ?? "newbie";
                       const basePoints = row.dnf || row.dns ? 0 : getPointsByPosition(row.position, league);

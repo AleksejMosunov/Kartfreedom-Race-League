@@ -9,6 +9,7 @@ import { Loader } from "@/app/components/ui/Loader";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { useStages } from "@/app/hooks/useStages";
 import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiChampionship";
+import { Stage } from "@/types";
 import { SOCIAL_LINK_DEFAULTS } from "@/lib/socialLinks";
 
 type ChampionshipMode = "sprint" | "sprint-pro";
@@ -70,7 +71,7 @@ function RegisterPageInner() {
   useEffect(() => {
     if (!stageFromUrl) return;
     if (!stages || stages.length === 0) return;
-    const found = stages.find((s: any) => s._id === stageFromUrl);
+    const found = stages.find((s: Stage) => s._id === stageFromUrl);
     if (found) setStageId(stageFromUrl);
   }, [stageFromUrl, stages]);
 
@@ -97,23 +98,22 @@ function RegisterPageInner() {
         setSubmitting(false);
         return;
       }
-      let payload: Record<string, any>;
-      // Teams registration removed — always use individual payload
-      payload = {
+      const payload: Record<string, unknown> = {
+        // Teams registration removed — always use individual payload
         championshipId: selectedChampionshipId,
         name: name.trim(),
         surname: surname.trim(),
         number: Number(number),
         phone: phone.trim(),
       };
-      if (championshipMode === "sprint") payload.league = league;
-      if (championshipMode === "sprint-pro") payload.league = "pro";
+      if (championshipMode === "sprint") (payload as Record<string, unknown>).league = league;
+      if (championshipMode === "sprint-pro") (payload as Record<string, unknown>).league = "pro";
 
-      if (swsId && swsId.trim()) payload.swsId = swsId.trim();
-      if (stageId) payload.stageId = stageId;
+      if (swsId && swsId.trim()) (payload as Record<string, unknown>).swsId = swsId.trim();
+      if (stageId) (payload as Record<string, unknown>).stageId = stageId;
       // For regular sprint (non-pro) allow participation in both races of the stage
       if (championshipMode === "sprint") {
-        payload.racesCount = bothRaces ? 2 : 1;
+        (payload as Record<string, unknown>).racesCount = bothRaces ? 2 : 1;
       }
 
       const res = await fetch("/api/pilot-registration", {
@@ -257,7 +257,7 @@ function RegisterPageInner() {
                     )}
 
                     <div className="mt-3">
-                      <label className="text-sm text-zinc-400 block mb-2">SWS ID (необов'язково)</label>
+                      <label className="text-sm text-zinc-400 block mb-2">SWS ID (необ&apos;язково)</label>
                       <input
                         type="text"
                         placeholder="SWS ID або псевдонім"
@@ -276,7 +276,7 @@ function RegisterPageInner() {
 
                     {stages && stages.length > 0 && (
                       <div className="mt-3">
-                        <label className="text-sm text-zinc-400 block mb-2">Реєстрація на етап (обов'язково)</label>
+                        <label className="text-sm text-zinc-400 block mb-2">Реєстрація на етап (обов&apos;язково)</label>
                         <select
                           required
                           className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
@@ -284,7 +284,7 @@ function RegisterPageInner() {
                           onChange={(e) => setStageId(e.target.value)}
                         >
                           <option value="">-- оберіть етап --</option>
-                          {stages.map((s: any) => (
+                          {stages.map((s: Stage) => (
                             <option key={s._id} value={s._id}>{`${s.number} — ${s.name} (${new Date(s.date).toLocaleDateString()})`}</option>
                           ))}
                           <option value="all">Реєстрація на всі етапи</option>

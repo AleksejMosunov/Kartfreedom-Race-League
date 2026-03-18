@@ -3,7 +3,6 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
 import { Pilot } from "@/lib/models/Pilot";
 import { Stage } from "@/lib/models/Stage";
-import { Team } from "@/lib/models/Team";
 import { calculateChampionshipStandings } from "@/lib/utils/championship";
 import { Pilot as IPilotType, Stage as IStageType } from "@/types";
 import {

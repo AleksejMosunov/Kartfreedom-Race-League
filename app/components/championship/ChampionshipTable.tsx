@@ -5,7 +5,7 @@ import { useChampionship } from "@/app/hooks/useChampionship";
 import { useStages } from "@/app/hooks/useStages";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { Badge, Loader } from "@/app/components/ui";
-import { POINTS_TABLE } from "@/lib/utils/championship";
+// POINTS_TABLE not used in this component
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
@@ -34,12 +34,10 @@ export function ChampionshipTable({
       ? championshipTypeById
       : current?.championshipType ?? "sprint");
 
-  useEffect(() => {
-    // default class filter to 'pro' for sprint-pro championships
-    if (championshipType === "sprint-pro" && classFilter !== "pro") {
-      setClassFilter("pro");
-    }
-  }, [championshipType, classFilter]);
+  // derive effective filter: for sprint-pro championships the class filter
+  // should always act as 'pro' without mutating user-controlled state
+  const effectiveClassFilter: "all" | "pro" | "newbie" =
+    championshipType === "sprint-pro" ? "pro" : classFilter;
 
   useEffect(() => {
     // prop fully defines the type
@@ -80,8 +78,8 @@ export function ChampionshipTable({
 
     let classMatch = true;
     const pilotLeague = row.pilot.league ?? "newbie";
-    if (classFilter === "pro") classMatch = pilotLeague === "pro";
-    if (classFilter === "newbie") classMatch = pilotLeague === "newbie";
+    if (effectiveClassFilter === "pro") classMatch = pilotLeague === "pro";
+    if (effectiveClassFilter === "newbie") classMatch = pilotLeague === "newbie";
 
     return searchMatch && classMatch;
   });
@@ -124,7 +122,7 @@ export function ChampionshipTable({
           Залік
           {championshipType === "sprint-pro" ? (
             <select
-              value={classFilter}
+              value={effectiveClassFilter}
               onChange={(e) => setClassFilter(e.target.value as "all" | "pro" | "newbie")}
               className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
             >
@@ -132,7 +130,7 @@ export function ChampionshipTable({
             </select>
           ) : (
             <select
-              value={classFilter}
+              value={effectiveClassFilter}
               onChange={(e) => setClassFilter(e.target.value as "all" | "pro" | "newbie")}
               className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
             >

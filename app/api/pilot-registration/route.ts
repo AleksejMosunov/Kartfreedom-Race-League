@@ -4,27 +4,16 @@ import { Championship } from "@/lib/models/Championship";
 import { Pilot } from "@/lib/models/Pilot";
 import { Team } from "@/lib/models/Team";
 import { Stage } from "@/lib/models/Stage";
+import {
+  Stage as IStageType,
+  Championship as IChampionshipType,
+} from "@/types";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { isValidUkrPhone, normalizePhone } from "@/lib/utils/phone";
 import { logAudit, sanitizeForAudit, getAuditIp } from "@/lib/audit";
 
-function normalizeTeamDrivers(raw: unknown) {
-  if (!Array.isArray(raw)) return [];
-
-  return raw
-    .map((entry) => {
-      if (!entry || typeof entry !== "object") return null;
-      const obj = entry as { name?: unknown; surname?: unknown };
-      const name =
-        typeof obj.name === "string" ? normalizeNamePart(obj.name) : "";
-      const surname =
-        typeof obj.surname === "string" ? normalizeNamePart(obj.surname) : "";
-      if (!name && !surname) return null;
-      return { name, surname };
-    })
-    .filter((row): row is { name: string; surname: string } => row !== null);
-}
+// Teams/endurance removed from registration flow; helper removed.
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
@@ -225,7 +214,11 @@ export async function POST(req: NextRequest) {
         const s = await Stage.findById(providedStageId)
           .select({ name: 1 })
           .lean();
-        if (s) stageInfo = { id: providedStageId, name: (s as any).name };
+        if (s)
+          stageInfo = {
+            id: providedStageId,
+            name: (s as Partial<IStageType>).name,
+          };
       }
 
       const after = sanitizeForAudit({
@@ -234,7 +227,7 @@ export async function POST(req: NextRequest) {
         league: leagueToSave,
         championship: {
           id: String(current._id),
-          name: (current as any).name ?? (current as any).title ?? "",
+          name: (current as Partial<IChampionshipType>).name ?? "",
         },
         stage: stageInfo,
       });
@@ -243,7 +236,7 @@ export async function POST(req: NextRequest) {
         session: null,
         action: "create",
         entityType: "pilot",
-        entityId: String((pilot as any)._id),
+        entityId: String((pilot as unknown as { _id: unknown })._id),
         entityLabel: `${name} ${surname}`,
         before: null,
         after,

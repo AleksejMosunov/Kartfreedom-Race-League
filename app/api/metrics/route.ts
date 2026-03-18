@@ -3,7 +3,6 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
 import { Pilot } from "@/lib/models/Pilot";
 import { Stage } from "@/lib/models/Stage";
-import { Team } from "@/lib/models/Team";
 import { AdminUser } from "@/lib/models/AdminUser";
 import { AuditLog } from "@/lib/models/AuditLog";
 import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";

@@ -8,7 +8,7 @@ import {
   // registrationLinkLine,
   sendTelegramMessage,
 } from "@/lib/telegram";
-import type { IStage } from "@/lib/models/Stage";
+// IStage type not needed; keep code simpler
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();

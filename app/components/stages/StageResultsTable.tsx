@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Stage } from "@/types";
+import { Stage, Pilot } from "@/types";
 import { Badge } from "@/app/components/ui/Badge";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
@@ -25,7 +25,6 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
     current?.championshipType === "sprint-pro"
       ? "sprint-pro"
       : "sprint";
-  const effectiveChampionshipType = championshipTypeLocal ?? championshipType;
   const [leagueFilter, setLeagueFilter] = useState<"all" | "pro" | "newbie">(
     championshipType === "sprint-pro" ? "pro" : "newbie",
   );
@@ -51,16 +50,13 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
 
     // league filtering (applies to sprint / sprint-pro championships)
     let leagueMatch = true;
-    const pilotLeague = (pilotObj as any)?.league ?? "newbie";
-    if (leagueFilter === "pro") leagueMatch = pilotLeague === "pro";
-    if (leagueFilter === "newbie") leagueMatch = pilotLeague === "newbie";
+    const pilotLeague = (pilotObj as Pilot | null)?.league ?? "newbie";
+    if (effectiveLeagueFilter === "pro") leagueMatch = pilotLeague === "pro";
+    if (effectiveLeagueFilter === "newbie") leagueMatch = pilotLeague === "newbie";
 
     return statusMatch && searchMatch && leagueMatch;
   });
 
-  if (!sorted.length) {
-    return <p className="text-zinc-500 text-center py-8">Результати ще не додані.</p>;
-  }
 
   // If we have a championshipId, prefer fetching its actual type and apply
   // default filters based on that; this avoids inheriting a previously
@@ -75,7 +71,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
         if (!res.ok) return;
         const body = await res.json();
         if (cancelled) return;
-        const t = (body?.championship as any)?.championshipType as ChampionshipType | undefined;
+        const t = (body?.championship as Partial<{ championshipType?: ChampionshipType; }>)?.championshipType as ChampionshipType | undefined;
         if (t) setChampionshipTypeLocal(t);
       } catch {
         // ignore
@@ -86,21 +82,15 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
     };
   }, [championshipIdFromStage]);
 
-  // Apply default league filter when we learn the championship type
-  useEffect(() => {
-    if (championshipTypeLocal === null) return;
-    if (championshipTypeLocal === "sprint-pro") setLeagueFilter("pro");
-    else setLeagueFilter("newbie");
-  }, [championshipTypeLocal]);
+  // derive the effective championship type and league filter without
+  // forcing setState inside effects (prevents cascading renders)
+  const effectiveChampionshipType = championshipTypeLocal ?? championshipType;
+  const effectiveLeagueFilter: "all" | "pro" | "newbie" =
+    effectiveChampionshipType === "sprint-pro" ? "pro" : leagueFilter;
 
-  // If we don't have a local override, keep the league filter in sync
-  // with the global/current championship type so the UI doesn't show
-  // an inconsistent value when navigating client-side.
-  useEffect(() => {
-    if (championshipTypeLocal !== null) return;
-    if (championshipType === "sprint-pro") setLeagueFilter("pro");
-    else setLeagueFilter("newbie");
-  }, [championshipType, championshipTypeLocal]);
+  if (!sorted.length) {
+    return <p className="text-zinc-500 text-center py-8">Результати ще не додані.</p>;
+  }
 
   return (
     <div className="space-y-4">
@@ -130,7 +120,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
           <label className="text-sm text-zinc-300">
             Залік
             <select
-              value={leagueFilter}
+              value={effectiveLeagueFilter}
               onChange={(e) => setLeagueFilter(e.target.value as "all" | "pro" | "newbie")}
               className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
               disabled={String(effectiveChampionshipType) === "sprint-pro"}
@@ -183,7 +173,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
                         <span className="text-zinc-500 text-xs font-mono w-6">#{pilotObj.number}</span>
                         <div className="min-w-0">
                           <div className="font-semibold text-white truncate">{formatPilotFullName(pilotObj.name, pilotObj.surname)}</div>
-                          <div className="text-zinc-400 text-xs mt-1">{(pilotObj as any).league === "pro" ? "PRO" : "ROOKIE"}</div>
+                          <div className="text-zinc-400 text-xs mt-1">{(pilotObj as Pilot).league === "pro" ? "PRO" : "ROOKIE"}</div>
                         </div>
                       </div>
                     ) : (
@@ -252,7 +242,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
                     {pilotObj ? `#${pilotObj.number} ${formatPilotFullName(pilotObj.name, pilotObj.surname)}` : String(result.pilotId)}
                   </p>
                   {pilotObj ? (
-                    <div className="text-zinc-400 text-xs mt-1">{(pilotObj as any).league === "pro" ? "PRO" : "ROOKIE"}</div>
+                    <div className="text-zinc-400 text-xs mt-1">{(pilotObj as Pilot).league === "pro" ? "PRO" : "ROOKIE"}</div>
                   ) : null}
                 </div>
                 <p className="text-white font-black">{result.points}</p>

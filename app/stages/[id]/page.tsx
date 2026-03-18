@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
+import { Pilot } from "@/types";
 
 export default function StageDetailPage({ params }: { params: Promise<{ id: string; }>; }) {
   const { id } = use(params);
@@ -58,7 +59,7 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled2 && Array.isArray(data)) {
-          const count = data.filter((p: any) => {
+          const count = data.filter((p: Pilot) => {
             // include pilots explicitly registered to this stage
             // and pilots registered to "all" stages (stageId absent/null)
             return (!p.stageId && p.championshipId === championshipId) || String(p.stageId) === String(id);

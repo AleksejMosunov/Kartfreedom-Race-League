@@ -4,17 +4,15 @@ import { usePilots } from "@/app/hooks/usePilots";
 import { PilotCard } from "@/app/components/pilots/PilotCard";
 import { Loader } from "@/app/components/ui/Loader";
 
-type ChampionshipType = "sprint" | "sprint-pro";
-
 export function PilotsList({
   championshipId,
   championshipType,
 }: {
   championshipId?: string;
-  championshipType?: ChampionshipType;
+  championshipType?: "sprint" | "sprint-pro";
 }) {
   const { pilots, isLoading, error } = usePilots(championshipId);
-  const type = championshipType ?? "sprint";
+  // `championshipType` not used directly here
 
   if (isLoading) return <Loader />;
   if (error) return <p className="text-red-400 text-center py-8">{error}</p>;

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Stage } from "@/types";
 import { Badge } from "@/app/components/ui/Badge";
+import { Pilot } from "@/types";
 import { useEffect, useState } from "react";
 
 interface StageCardProps {
@@ -32,7 +33,6 @@ export function StageCard({ stage, championshipId }: StageCardProps) {
   );
 
   const [participantsCount, setParticipantsCount] = useState<number | null>(stage.results.length ?? null);
-  const dnfCount = stage.results.filter((result) => result.dnf).length;
 
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +45,7 @@ export function StageCard({ stage, championshipId }: StageCardProps) {
         const data = await res.json();
         if (cancelled) return;
         if (!Array.isArray(data)) return;
-        const count = data.filter((p: any) => {
+        const count = data.filter((p: Pilot) => {
           return (!p.stageId && p.championshipId === championshipId) || String(p.stageId) === String(stage._id);
         }).length;
         setParticipantsCount(count);

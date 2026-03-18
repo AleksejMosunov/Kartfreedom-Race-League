@@ -3,6 +3,10 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Pilot } from "@/lib/models/Pilot";
 import { Pilot as IPilotType } from "@/types";
 import { Stage } from "@/lib/models/Stage";
+import {
+  Stage as IStageType,
+  Championship as IChampionshipType,
+} from "@/types";
 import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
@@ -222,7 +226,11 @@ export async function POST(req: NextRequest) {
         const s = await Stage.findById(providedStageId)
           .select({ name: 1 })
           .lean();
-        if (s) stageInfo = { id: providedStageId, name: (s as any).name };
+        if (s)
+          stageInfo = {
+            id: providedStageId,
+            name: (s as Partial<IStageType>).name,
+          };
       }
 
       const after = sanitizeForAudit({
@@ -231,7 +239,7 @@ export async function POST(req: NextRequest) {
         league: typeof body.league === "string" ? body.league : defaultLeague,
         championship: {
           id: String(current._id),
-          name: (current as any).name ?? (current as any).title ?? "",
+          name: (current as Partial<IChampionshipType>).name ?? "",
         },
         stage: stageInfo,
       });
@@ -240,7 +248,7 @@ export async function POST(req: NextRequest) {
         session: session ?? null,
         action: "create",
         entityType: "pilot",
-        entityId: String((pilot as any)._id),
+        entityId: String((pilot as unknown as { _id: unknown })._id),
         entityLabel: `${name} ${surname}`,
         before: null,
         after,

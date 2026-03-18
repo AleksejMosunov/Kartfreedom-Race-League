@@ -35,7 +35,7 @@ export function calculateChampionshipStandings(
   championshipType: "sprint" | "sprint-pro" = "sprint",
 ): ChampionshipStanding[] {
   const completedStages = stages.filter((s) => s.isCompleted);
-  const dropsCount = 2;
+  const dropsCount = championshipType === "sprint" ? 2 : 1;
 
   const standings: ChampionshipStanding[] = pilots.map((pilot) => {
     const pilotStandings: PilotStanding[] = completedStages.map((stage) => {

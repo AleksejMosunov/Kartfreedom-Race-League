@@ -10,7 +10,6 @@ import { DetailPageSkeleton } from "@/app/components/ui/PageSkeletons";
 import Link from "next/link";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
-type ChampionshipType = "sprint" | "sprint-pro";
 
 export default function PilotDetailPage({ params }: { params: Promise<{ id: string; }>; }) {
   return (
@@ -34,8 +33,6 @@ function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; 
     isLoading: standingsLoading,
   } = useChampionshipStore();
   const {
-    active,
-    current,
     isLoading: catalogLoading,
     hasLoaded: catalogLoaded,
   } = useChampionshipsCatalog();
@@ -49,11 +46,8 @@ function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; 
   const pilot = pilots.find((p) => p._id === id);
   const standing = standings.find((s) => s.pilot._id === id);
   const pilotFullName = pilot ? formatPilotFullName(pilot.name, pilot.surname) : "";
-  const selectedChampionship = championshipId
-    ? active.find((item) => item._id === championshipId)
-    : current;
-  const championshipType: ChampionshipType =
-    selectedChampionship?.championshipType === "sprint-pro" ? "sprint-pro" : "sprint";
+  // selected championship not used in this view
+  // `championshipType` not used in this view
   const isTeams = false;
   const loading = isLoading || standingsLoading || (catalogLoading && !catalogLoaded);
 
