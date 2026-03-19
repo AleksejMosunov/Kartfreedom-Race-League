@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/app/header/Header";
 import { Footer } from "@/app/footer/Footer";
+import { Analytics } from '@vercel/analytics/react';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,8 +35,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen flex flex-col`}
       >
         <Header />
-        <div className="flex-1">{children}</div>
+        <div className="flex-1">
+          {children}
+        </div>
         <Footer />
+        <Analytics />
       </body>
     </html>
   );
