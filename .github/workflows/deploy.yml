@@ -20,6 +20,15 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-add ~/.ssh/deploy_key
 
+      - name: Test SSH connection (debug)
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          set -x
+          echo "Testing SSH to: $SSH_USER@$SSH_HOST"
+          ssh -vvv -o StrictHostKeyChecking=no -o BatchMode=yes -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" "echo SSH_CONNECTION_OK" || true
+
       - name: Sync repository to server (rsync)
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
