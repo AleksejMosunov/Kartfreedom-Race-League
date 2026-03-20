@@ -1,7 +1,8 @@
+"use client";
+
 interface CupCardProps {
   cup: Cup;
 }
-"use client";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Trophy, Zap, Award, } from 'lucide-react';

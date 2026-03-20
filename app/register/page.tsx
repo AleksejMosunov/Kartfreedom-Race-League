@@ -317,7 +317,9 @@ function RegisterPageInner() {
                       <div className="mt-4 bg-zinc-800 border border-zinc-700 rounded-md p-3">
                         <p className="text-zinc-200 text-sm font-medium">Інформація про етап</p>
                         <p className="text-zinc-400 text-sm mt-1">
-                          Етап складається з 2 класичних спринтів KartFreedom. Якщо ви берете участь в обох гонках етапу, діє спеціальна ціна.
+                          Кожен етап складається з 2 гонок на треку KartFreedom.
+                          <br />
+                          Якщо ви берете участь в обох гонках етапу, діє спеціальна ціна.
                         </p>
 
                         <div className="mt-3 flex items-center gap-4">
@@ -333,7 +335,7 @@ function RegisterPageInner() {
                               }}
                               className="w-4 h-4"
                             />
-                            <span className="text-zinc-300">Перша гонка</span>
+                            <span className="text-zinc-300">Перша гонка (2000 грн)</span>
                           </label>
 
                           <label className="flex items-center gap-2 text-sm">
@@ -348,7 +350,7 @@ function RegisterPageInner() {
                               }}
                               className="w-4 h-4"
                             />
-                            <span className="text-zinc-300">Друга гонка</span>
+                            <span className="text-zinc-300">Друга гонка (2000 грн)</span>
                           </label>
 
                           <label className="flex items-center gap-2 text-sm">
@@ -368,7 +370,7 @@ function RegisterPageInner() {
                               }}
                               className="w-4 h-4"
                             />
-                            <span className="text-zinc-300">Обидві гонки (спеціальна ціна)</span>
+                            <span className="text-zinc-300">Обидві гонки (спеціальна ціна 3000 грн)</span>
                           </label>
                         </div>
                       </div>

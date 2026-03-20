@@ -1,9 +1,4 @@
-export type SocialLinkKey =
-  | "telegram"
-  | "instagram"
-  | "facebook"
-  | "youtube"
-  | "raceDirector";
+export type SocialLinkKey = "telegram" | "instagram" | "facebook" | "youtube";
 
 export type SocialLinks = Record<SocialLinkKey, string>;
 
