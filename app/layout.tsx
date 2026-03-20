@@ -5,6 +5,8 @@ import { Header } from "@/app/header/Header";
 import { Footer } from "@/app/footer/Footer";
 import { Analytics } from '@vercel/analytics/react';
 
+export const dynamic = 'force-dynamic';
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
