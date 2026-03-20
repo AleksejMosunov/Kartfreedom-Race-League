@@ -1,25 +1,11 @@
-version: "3.8"
+version: "3.9"
+
 services:
-  app:
-    build:
-      context: .
-      args:
-        MONGODB_URI: ${MONGODB_URI}
-    image: kartfreedom-app:latest
-    restart: always
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-    env_file:
-      - .env.local
+  backend:
+    image: ghcr.io/aleksejmosunov/kartfreedom-app:latest
+    container_name: kartfreedom-аpp
+    restart: unless-stopped
     ports:
-      - "127.0.0.1:3001:3001"
-    networks:
-      - webnet
-
-# NOTE: nginx service removed — use the system Nginx on the host to reverse-proxy to
-# the app at 127.0.0.1:3001. Keeping the nginx config in ./nginx for convenience.
-
-networks:
-  webnet:
-    driver: bridge
+      - "5000:5000"
+    env_file:
+      - /root/Kartfreedom-Race-League/.env

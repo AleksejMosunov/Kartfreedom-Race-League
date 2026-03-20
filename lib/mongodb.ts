@@ -7,13 +7,7 @@ import { Team } from "@/lib/models/Team";
 import { AdminUser } from "@/lib/models/AdminUser";
 import { AuditLog } from "@/lib/models/AuditLog";
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
-
-if (!MONGODB_URI) {
-  throw new Error(
-    "Please define the MONGODB_URI environment variable in .env.local",
-  );
-}
+const MONGODB_URI = process.env.MONGODB_URI as string | undefined;
 
 type MongooseCache = {
   conn: typeof mongoose | null;
@@ -33,6 +27,11 @@ const cached: MongooseCache = global.mongoose ?? {
 global.mongoose = cached;
 
 export async function connectToDatabase(): Promise<typeof mongoose> {
+  if (!MONGODB_URI) {
+    throw new Error(
+      "Please define the MONGODB_URI environment variable before calling connectToDatabase()",
+    );
+  }
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {

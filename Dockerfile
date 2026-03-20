@@ -7,6 +7,13 @@ ENV NODE_ENV=production
 ARG MONGODB_URI
 ENV MONGODB_URI=${MONGODB_URI}
 
+# Fail early during build if MONGODB_URI isn't supplied so the error is explicit
+# Provide a helpful message and stop the build to avoid confusing runtime errors.
+RUN if [ -z "$MONGODB_URI" ]; then \
+	echo "ERROR: build ARG MONGODB_URI is not set. Provide it with --build-arg MONGODB_URI=..."; \
+	exit 1; \
+fi
+
 # Install deps
 COPY package*.json ./
 RUN npm ci --production=false
