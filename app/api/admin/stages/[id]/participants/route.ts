@@ -21,15 +21,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
 
-  // Find pilots for the same championship who are either assigned to this stage
-  // or who did not specify a stage (registered to all stages)
+  // Find pilots explicitly registered for this stage via `registrations[]`
   const pilots = await Pilot.find({
-    championshipId: stage.championshipId,
-    $or: [
-      { stageId: stage._id },
-      { stageId: { $exists: false } },
-      { stageId: null },
-    ],
+    registrations: {
+      $elemMatch: {
+        stageId: stage._id,
+        championshipId: stage.championshipId,
+      },
+    },
   })
     .select({
       name: 1,
@@ -37,28 +36,69 @@ export async function GET(_req: NextRequest, { params }: Params) {
       number: 1,
       swsId: 1,
       phone: 1,
-      racesCount: 1,
+      registrations: 1,
     })
     .sort({ number: 1 })
     .lean();
 
-  const total = pilots.length;
-  const byRacesCount = {
-    1: pilots.filter((p) => (p.racesCount ?? 1) === 1).length,
-    2: pilots.filter((p) => p.racesCount === 2).length,
-  };
+  let total = 0;
+  let firstCount = 0;
+  let secondCount = 0;
+
+  for (const p of pilots) {
+    // Prefer registrations[] entries for this championship
+    const regsForChamp = Array.isArray(p.registrations)
+      ? p.registrations.filter(
+          (r: any) =>
+            String(r.championshipId ?? p.championshipId) ===
+            String(stage.championshipId),
+        )
+      : [];
+
+    // Only registrations[] entries matching this stage count (query ensures this)
+    const regForStage = Array.isArray(p.registrations)
+      ? p.registrations.find(
+          (r: any) =>
+            String(r.championshipId ?? p.championshipId) ===
+              String(stage.championshipId) &&
+            String(r.stageId) === String(stage._id),
+        )
+      : undefined;
+    if (!regForStage) continue;
+    const fr = Boolean(regForStage.firstRace);
+    const sr = Boolean(regForStage.secondRace);
+    if (fr) firstCount += 1;
+    if (sr) secondCount += 1;
+    if (fr || sr) total += 1;
+  }
+
+  const byRacesCount = { 1: firstCount, 2: secondCount };
 
   return NextResponse.json({
     total,
     byRacesCount,
-    pilots: pilots.map((p) => ({
-      _id: String(p._id),
-      number: p.number,
-      name: p.name,
-      surname: p.surname,
-      swsId: p.swsId || null,
-      phone: p.phone || null,
-      racesCount: p.racesCount ?? 1,
-    })),
+    pilots: pilots.map((p) => {
+      // derive first/second race flags for this stage from registrations[]
+      const regForStage = Array.isArray(p.registrations)
+        ? p.registrations.find(
+            (r: any) =>
+              String(r.championshipId ?? p.championshipId) ===
+                String(stage.championshipId) &&
+              String(r.stageId) === String(stage._id),
+          )
+        : undefined;
+
+      return {
+        _id: String(p._id),
+        number: p.number,
+        name: p.name,
+        surname: p.surname,
+        swsId: p.swsId || null,
+        phone: p.phone || null,
+        racesCount: (regForStage ? regForStage.racesCount : undefined) ?? 1,
+        firstRace: regForStage ? Boolean(regForStage.firstRace) : undefined,
+        secondRace: regForStage ? Boolean(regForStage.secondRace) : undefined,
+      };
+    }),
   });
 }

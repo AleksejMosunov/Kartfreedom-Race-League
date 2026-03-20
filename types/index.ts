@@ -8,6 +8,16 @@ export interface Pilot {
   swsId?: string;
   stageId?: string;
   racesCount?: number;
+  firstRace?: boolean;
+  secondRace?: boolean;
+  registeredStageIds?: string[];
+  registrations?: {
+    championshipId?: string;
+    stageId: string;
+    firstRace: boolean;
+    secondRace: boolean;
+    racesCount: number;
+  }[];
   championshipId?: string;
   teamIsSolo?: boolean;
   teamDrivers?: TeamDriver[];

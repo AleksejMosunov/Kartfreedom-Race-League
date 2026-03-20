@@ -114,7 +114,9 @@ export async function POST(req: NextRequest) {
       .select({ _id: 1 })
       .lean(),
   ]);
-  if (duplicatePilot || duplicateTeam) {
+
+  // If a team with same phone exists, keep existing behavior
+  if (duplicateTeam) {
     return NextResponse.json(
       {
         error:
@@ -179,9 +181,13 @@ export async function POST(req: NextRequest) {
       ? body.swsId.trim()
       : undefined;
 
-  // racesCount: 1 or 2 (1 by default). Accept string or number.
-  let providedRacesCount = 1;
-  if (body.racesCount !== undefined) {
+  // Accept new boolean fields `firstRace` and `secondRace`. Backwards compatible with `racesCount`.
+  let firstRace = true;
+  let secondRace = false;
+  if (body.firstRace !== undefined || body.secondRace !== undefined) {
+    firstRace = Boolean(body.firstRace);
+    secondRace = Boolean(body.secondRace);
+  } else if (body.racesCount !== undefined) {
     const rc = Number(body.racesCount);
     if (rc !== 1 && rc !== 2) {
       return NextResponse.json(
@@ -189,12 +195,217 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    providedRacesCount = rc;
+    if (rc === 2) {
+      firstRace = true;
+      secondRace = true;
+    } else {
+      firstRace = true;
+      secondRace = false;
+    }
+  }
+
+  // Support client sending authoritative `registrations[]` instead of legacy top-level per-stage fields.
+  let providedRegistrations:
+    | Array<{
+        championshipId?: string;
+        stageId: string;
+        firstRace?: boolean;
+        secondRace?: boolean;
+        racesCount?: number;
+      }>
+    | undefined = undefined;
+  if (Array.isArray(body.registrations)) {
+    // minimal validation; detailed validation happens later when merging
+    providedRegistrations = body.registrations.map((r: any) => ({
+      championshipId:
+        typeof r.championshipId === "string" ? r.championshipId : undefined,
+      stageId: String(r.stageId),
+      firstRace: r.firstRace === undefined ? undefined : Boolean(r.firstRace),
+      secondRace:
+        r.secondRace === undefined ? undefined : Boolean(r.secondRace),
+      racesCount: r.racesCount === undefined ? undefined : Number(r.racesCount),
+    }));
   }
 
   try {
-    const pilot = await Pilot.create({
-      championshipId: current._id,
+    // If a pilot with same phone exists anywhere, update it instead of creating duplicate
+    const existingPilot = await Pilot.findOne({ phone });
+    if (existingPilot) {
+      // Build registrations map starting from existing registrations
+      const regMap = new Map();
+      if (Array.isArray(existingPilot.registrations)) {
+        for (const r of existingPilot.registrations) {
+          if (!r || !r.stageId) continue;
+          const regChamp = r.championshipId ?? existingPilot.championshipId;
+          const key = `${String(regChamp)}:${String(r.stageId)}`;
+          regMap.set(key, {
+            championshipId: regChamp,
+            stageId: r.stageId,
+            firstRace: Boolean(r.firstRace),
+            secondRace: Boolean(r.secondRace),
+            racesCount: r.racesCount ?? (r.firstRace && r.secondRace ? 2 : 1),
+          });
+        }
+      }
+
+      // Migrate legacy registeredStageIds into registrations if present
+      if (Array.isArray(existingPilot.registeredStageIds)) {
+        for (const sid of existingPilot.registeredStageIds) {
+          const champId = existingPilot.championshipId;
+          const key = `${String(champId)}:${String(sid)}`;
+          if (regMap.has(key)) continue;
+          regMap.set(key, {
+            championshipId: champId,
+            stageId: sid,
+            firstRace:
+              Boolean(existingPilot.firstRace) ||
+              existingPilot.racesCount === 2,
+            secondRace:
+              Boolean(existingPilot.secondRace) ||
+              existingPilot.racesCount === 2,
+            racesCount: existingPilot.racesCount ?? 1,
+          });
+        }
+      }
+
+      // Migrate legacy single `stageId` into registrations if present
+      if (existingPilot.stageId) {
+        const champId = existingPilot.championshipId;
+        const key = `${String(champId)}:${String(existingPilot.stageId)}`;
+        if (!regMap.has(key)) {
+          regMap.set(key, {
+            championshipId: champId,
+            stageId: existingPilot.stageId,
+            firstRace:
+              Boolean(existingPilot.firstRace) ||
+              existingPilot.racesCount === 2,
+            secondRace:
+              Boolean(existingPilot.secondRace) ||
+              existingPilot.racesCount === 2,
+            racesCount: existingPilot.racesCount ?? 1,
+          });
+        }
+      }
+
+      // Handle provided stage
+      if (providedStageId === undefined) {
+        // registering to all stages in this championship — clear per-stage registrations
+        existingPilot.stageId = undefined;
+        // remove any registrations for this championship (if present)
+        existingPilot.registrations = (
+          existingPilot.registrations || []
+        ).filter(
+          (r: any) =>
+            String(r.championshipId ?? existingPilot.championshipId) !==
+            String(current._id),
+        );
+      } else {
+        const key = `${String(current._id)}:${providedStageId}`;
+        if (regMap.has(key)) {
+          const prev = regMap.get(key);
+          const mergedFirst = prev.firstRace || firstRace;
+          const mergedSecond = prev.secondRace || secondRace;
+          regMap.set(key, {
+            championshipId: prev.championshipId ?? current._id,
+            stageId: prev.stageId,
+            firstRace: mergedFirst,
+            secondRace: mergedSecond,
+            racesCount: mergedFirst && mergedSecond ? 2 : 1,
+          });
+        } else {
+          regMap.set(key, {
+            championshipId: current._id,
+            stageId: providedStageId,
+            firstRace,
+            secondRace,
+            racesCount: firstRace && secondRace ? 2 : 1,
+          });
+        }
+      }
+
+      // If client provided an explicit registrations[] payload, merge those as well
+      if (providedRegistrations) {
+        for (const r of providedRegistrations) {
+          const champ = r.championshipId ?? String(current._id);
+          if (!r.stageId) continue;
+          const key = `${String(champ)}:${String(r.stageId)}`;
+          const prFirst =
+            r.firstRace === undefined ? true : Boolean(r.firstRace);
+          const prSecond =
+            r.secondRace === undefined ? false : Boolean(r.secondRace);
+          if (regMap.has(key)) {
+            const prev = regMap.get(key);
+            regMap.set(key, {
+              championshipId: prev.championshipId ?? champ,
+              stageId: prev.stageId,
+              firstRace: Boolean(prev.firstRace) || prFirst,
+              secondRace: Boolean(prev.secondRace) || prSecond,
+              racesCount:
+                (Boolean(prev.firstRace) || prFirst) &&
+                (Boolean(prev.secondRace) || prSecond)
+                  ? 2
+                  : 1,
+            });
+          } else {
+            regMap.set(key, {
+              championshipId: champ,
+              stageId: r.stageId,
+              firstRace: prFirst,
+              secondRace: prSecond,
+              racesCount: r.racesCount ?? (prFirst && prSecond ? 2 : 1),
+            });
+          }
+        }
+      }
+
+      const newRegs = Array.from(regMap.values()).map((r: any) => ({
+        championshipId: r.championshipId,
+        stageId: r.stageId,
+        firstRace: r.firstRace,
+        secondRace: r.secondRace,
+        racesCount: r.racesCount,
+      }));
+
+      existingPilot.registrations = newRegs;
+
+      if (!existingPilot.name && name) existingPilot.name = name;
+      if (!existingPilot.surname && surname) existingPilot.surname = surname;
+      if (!existingPilot.swsId && providedSwsId)
+        existingPilot.swsId = providedSwsId;
+      if (!existingPilot.league && leagueToSave)
+        existingPilot.league = leagueToSave;
+
+      const saved = await existingPilot.save();
+
+      try {
+        const after = sanitizeForAudit({
+          name: saved.name,
+          surname: saved.surname,
+          league: saved.league,
+          championship: {
+            id: String(current._id),
+            name: (current as Partial<IChampionshipType>).name ?? "",
+          },
+          registrations: saved.registrations,
+        });
+        await logAudit({
+          session: null,
+          action: "update",
+          entityType: "pilot",
+          entityId: String((saved as unknown as { _id: unknown })._id),
+          entityLabel: `${saved.name} ${saved.surname}`,
+          before: null,
+          after,
+          ip: getAuditIp(req),
+        });
+      } catch (err) {
+        console.error("Failed to write pilot update audit:", err);
+      }
+
+      return NextResponse.json(saved, { status: 200 });
+    }
+
+    const createDoc: Record<string, unknown> = {
       name,
       surname,
       number,
@@ -202,10 +413,45 @@ export async function POST(req: NextRequest) {
       avatar: typeof body.avatar === "string" ? body.avatar : undefined,
       league: leagueToSave,
       swsId: providedSwsId,
-      // if user opted into all stages, `providedStageId` is undefined and pilot is not bound to a single stage
-      stageId: providedStageId,
-      racesCount: providedRacesCount,
-    });
+    };
+
+    // If a specific stage was provided, include per-stage registration record with championship context.
+    // Do NOT write top-level `stageId`, `racesCount`, `firstRace`, `secondRace` or `registeredStageIds` when using `registrations`.
+    if (providedStageId) {
+      createDoc.registrations = [
+        {
+          championshipId: current._id,
+          stageId: providedStageId,
+          firstRace,
+          secondRace,
+          racesCount: firstRace && secondRace ? 2 : 1,
+        },
+      ];
+    }
+
+    // If client provided `registrations[]`, prefer that as the authoritative set for creation (must include stageId in entries).
+    if (providedRegistrations) {
+      const regs: any[] = [];
+      for (const r of providedRegistrations) {
+        if (!r.stageId) continue;
+        regs.push({
+          championshipId: r.championshipId ? r.championshipId : current._id,
+          stageId: r.stageId,
+          firstRace: r.firstRace === undefined ? true : Boolean(r.firstRace),
+          secondRace:
+            r.secondRace === undefined ? false : Boolean(r.secondRace),
+          racesCount:
+            r.racesCount === undefined
+              ? r.firstRace && r.secondRace
+                ? 2
+                : 1
+              : Number(r.racesCount),
+        });
+      }
+      if (regs.length > 0) createDoc.registrations = regs;
+    }
+
+    const pilot = await Pilot.create(createDoc);
 
     // Log registration to audit (strip phone automatically)
     try {

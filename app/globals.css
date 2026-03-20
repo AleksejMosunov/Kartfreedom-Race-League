@@ -5,6 +5,28 @@
   --foreground: #ffffff;
   --brand-primary: #ccff00;
   --brand-accent: #ccff00;
+
+  /* Racing palette used by Calendar component (project palette provided) */
+  --color-racing-bg: #0d0d0d;
+  --color-racing-card: #161616;
+  --color-racing-text: #f0ede8;
+  --color-racing-muted: rgba(240,237,232,0.38);
+  --color-racing-spring: #00e5a0;
+  --color-racing-sprint1: #ff5c2b;
+  --color-racing-summer1: #f5c200;
+  --color-racing-summer2: #38b6ff;
+  --color-racing-sprint2: #b44fff;
+  --color-racing-endurance: #ff3a2b;
+  --color-racing-autumn: #ff8c00;
+
+  /* Translucent variants for UI accents (used as pill backgrounds) */
+  --color-racing-spring-10: rgba(0,229,160,0.12);
+  --color-racing-sprint1-10: rgba(255,92,43,0.12);
+  --color-racing-summer1-10: rgba(245,194,0,0.12);
+  --color-racing-summer2-10: rgba(56,182,255,0.12);
+  --color-racing-sprint2-10: rgba(180,79,255,0.12);
+  --color-racing-endurance-10: rgba(255,58,43,0.12);
+  --color-racing-autumn-10: rgba(255,140,0,0.12);
 }
 
 @theme inline {

@@ -73,7 +73,7 @@ export default function AdminStageDetailPage() {
 
       {!loading && data && (
         <div className="space-y-2">
-          {data.pilots.map((pilot: Pilot) => (
+          {data.pilots.map((pilot: any) => (
             <Card key={pilot._id} className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div>
@@ -109,7 +109,11 @@ export default function AdminStageDetailPage() {
 
                   <div className="flex items-center gap-2">
                     <span className="text-zinc-400 text-xs">Перегони:</span>
-                    <span className="text-white font-medium">{pilot.racesCount ?? 1}</span>
+                    <span className="text-white font-medium">
+                      {typeof pilot.firstRace === "boolean" || typeof pilot.secondRace === "boolean"
+                        ? `${pilot.firstRace ? "1" : ""}${pilot.firstRace && pilot.secondRace ? "," : ""}${pilot.secondRace ? "2" : ""}`
+                        : (pilot.racesCount ?? 1)}
+                    </span>
                   </div>
                 </div>
               </div>

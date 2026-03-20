@@ -39,6 +39,8 @@ function RegisterPageInner() {
   const [stageId, setStageId] = useState("");
   const [league, setLeague] = useState("");
   const [bothRaces, setBothRaces] = useState(false);
+  const [firstRace, setFirstRace] = useState(false);
+  const [secondRace, setSecondRace] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -100,7 +102,6 @@ function RegisterPageInner() {
       }
       const payload: Record<string, unknown> = {
         // Teams registration removed — always use individual payload
-        championshipId: selectedChampionshipId,
         name: name.trim(),
         surname: surname.trim(),
         number: Number(number),
@@ -110,10 +111,29 @@ function RegisterPageInner() {
       if (championshipMode === "sprint-pro") (payload as Record<string, unknown>).league = "pro";
 
       if (swsId && swsId.trim()) (payload as Record<string, unknown>).swsId = swsId.trim();
-      if (stageId) (payload as Record<string, unknown>).stageId = stageId;
-      // For regular sprint (non-pro) allow participation in both races of the stage
-      if (championshipMode === "sprint") {
-        (payload as Record<string, unknown>).racesCount = bothRaces ? 2 : 1;
+      // Attach registrations[] instead of legacy top-level per-stage fields.
+      if (stageId) {
+        if (championshipMode === "sprint") {
+          if (!firstRace && !secondRace) {
+            setError("Оберіть хоча б одну гонку");
+            setSubmitting(false);
+            return;
+          }
+        }
+
+        (payload as Record<string, unknown>).championshipId = selectedChampionshipId;
+        (payload as Record<string, unknown>).registrations = [
+          {
+            championshipId: selectedChampionshipId,
+            stageId,
+            firstRace,
+            secondRace,
+            racesCount: firstRace && secondRace ? 2 : 1,
+          },
+        ];
+      } else {
+        // No stage selected — still include championship context so server can choose current or provided championship
+        (payload as Record<string, unknown>).championshipId = selectedChampionshipId;
       }
 
       const res = await fetch("/api/pilot-registration", {
@@ -127,11 +147,12 @@ function RegisterPageInner() {
         throw new Error(body.error ?? "Не вдалося завершити реєстрацію");
       }
 
-      setName("");
-      setSurname("");
-      setNumber("");
-      setPhone("");
-      setSuccess("Реєстрацію успішно завершено. До зустрічі на етапах!");
+      // Keep user personal data so they can quickly register for another stage.
+      setStageId("");
+      setBothRaces(false);
+      setFirstRace(false);
+      setSecondRace(false);
+      setSuccess("Реєстрацію успішно завершено. Можете зареєструватися на інший етап.");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -257,7 +278,7 @@ function RegisterPageInner() {
                     )}
 
                     <div className="mt-3">
-                      <label className="text-sm text-zinc-400 block mb-2">SWS ID (необ&apos;язково)</label>
+                      <label className="text-sm text-zinc-400 block mb-2">SWS ID</label>
                       <input
                         type="text"
                         placeholder="SWS ID або псевдонім"
@@ -270,7 +291,7 @@ function RegisterPageInner() {
                         <a href="https://www.sodiwseries.com/en-gb/become-sws-driver.html" target="_blank" rel="noreferrer" className="text-red-500">
                           Інструкція SWS
                         </a>
-                        . Для деталей звертайтесь до організатора: <a href={SOCIAL_LINK_DEFAULTS.telegram} className="text-red-500">Telegram</a>.
+                        . Для деталей звертайтесь до організатора: <a href="https://t.me/aleksej_mosunov" className="text-red-500">Telegram</a>.
                       </p>
                     </div>
 
@@ -299,27 +320,55 @@ function RegisterPageInner() {
                           Етап складається з 2 класичних спринтів KartFreedom. Якщо ви берете участь в обох гонках етапу, діє спеціальна ціна.
                         </p>
 
-                        <div className="mt-3 flex items-center gap-3">
+                        <div className="mt-3 flex items-center gap-4">
                           <label className="flex items-center gap-2 text-sm">
                             <input
-                              type="radio"
-                              name="racesCount"
-                              checked={!bothRaces}
-                              onChange={() => setBothRaces(false)}
+                              type="checkbox"
+                              checked={firstRace}
+                              onChange={(e) => {
+                                const v = e.target.checked;
+                                setFirstRace(v);
+                                if (!v) setBothRaces(false);
+                                else if (v && secondRace) setBothRaces(true);
+                              }}
                               className="w-4 h-4"
                             />
-                            <span className="text-zinc-300">Участь в 1 гонці</span>
+                            <span className="text-zinc-300">Перша гонка</span>
                           </label>
 
                           <label className="flex items-center gap-2 text-sm">
                             <input
-                              type="radio"
-                              name="racesCount"
-                              checked={bothRaces}
-                              onChange={() => setBothRaces(true)}
+                              type="checkbox"
+                              checked={secondRace}
+                              onChange={(e) => {
+                                const v = e.target.checked;
+                                setSecondRace(v);
+                                if (!v) setBothRaces(false);
+                                else if (v && firstRace) setBothRaces(true);
+                              }}
                               className="w-4 h-4"
                             />
-                            <span className="text-zinc-300">Участь в 2 гонках (спеціальна ціна)</span>
+                            <span className="text-zinc-300">Друга гонка</span>
+                          </label>
+
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={bothRaces}
+                              onChange={(e) => {
+                                const v = e.target.checked;
+                                setBothRaces(v);
+                                if (v) {
+                                  setFirstRace(true);
+                                  setSecondRace(true);
+                                } else {
+                                  setFirstRace(false);
+                                  setSecondRace(false);
+                                }
+                              }}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-zinc-300">Обидві гонки (спеціальна ціна)</span>
                           </label>
                         </div>
                       </div>
@@ -331,11 +380,6 @@ function RegisterPageInner() {
                   <Button type="submit" disabled={submitting}>
                     {submitting ? "Реєстрація..." : "Зареєструватися"}
                   </Button>
-                  {championshipMode === "sprint" && (
-                    <Link href="/pilots" className="text-zinc-500 hover:text-white text-sm transition-colors">
-                      Переглянути список пілотів
-                    </Link>
-                  )}
                 </div>
               </form>
 

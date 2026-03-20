@@ -245,12 +245,16 @@ export default function AdminImportPage() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                championshipId: selected._id,
-                isSolo: true,
+                // Send canonical registrations[] instead of top-level per-stage/legacy fields
                 name: row.name,
                 surname: row.surname,
                 number: row.number,
                 phone: row.phone,
+                registrations: [
+                  {
+                    championshipId: selected._id,
+                  },
+                ],
               }),
             });
             if (!res.ok) {

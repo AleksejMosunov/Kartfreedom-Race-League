@@ -20,11 +20,11 @@ export function Header() {
   };
 
   const championshipLinks = [
-    { href: "/stages", label: "Етапи" },
+    // { href: "/stages", label: "Етапи" },
     // { href: "/pilots", label: "Учасники" },
     // { href: "/stats", label: "Статистика" },
     { href: "/regulations", label: "Регламент" },
-    // { href: "/register", label: "Реєстрація" },
+    { href: "/register", label: "Реєстрація" },
   ];
 
   const navLinks = [...baseLinks, ...championshipLinks];

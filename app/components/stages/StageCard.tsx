@@ -46,7 +46,16 @@ export function StageCard({ stage, championshipId }: StageCardProps) {
         if (cancelled) return;
         if (!Array.isArray(data)) return;
         const count = data.filter((p: Pilot) => {
-          return (!p.stageId && p.championshipId === championshipId) || String(p.stageId) === String(stage._id);
+          if (!Array.isArray(p.registrations)) return false;
+          const regsForChamp = p.registrations.filter((r) =>
+            String(r.championshipId ?? p.championshipId) === String(championshipId),
+          );
+          if (regsForChamp.length === 0) return false;
+          const regForStage = regsForChamp.find((r) => String(r.stageId) === String(stage._id));
+          if (!regForStage) return false;
+          const fr = Boolean(regForStage.firstRace) || (regForStage.racesCount ?? 0) >= 1;
+          const sr = Boolean(regForStage.secondRace) || (regForStage.racesCount ?? 0) === 2;
+          return fr || sr;
         }).length;
         setParticipantsCount(count);
       } catch {
@@ -104,7 +113,7 @@ export function StageCard({ stage, championshipId }: StageCardProps) {
 
           <div className="rounded-lg bg-zinc-900/70 px-3 py-2">
             <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">Учасників</p>
-            <p className="mt-1 text-sm font-semibold text-white">{participantsCount && participantsCount > 0 ? participantsCount : "0х"}</p>
+            <p className="mt-1 text-sm font-semibold text-white">{participantsCount && participantsCount > 0 ? participantsCount : "0"}</p>
           </div>
 
           <div className="rounded-lg bg-zinc-900/70 px-3 py-2">

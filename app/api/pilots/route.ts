@@ -60,7 +60,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(participants);
   }
 
-  const pilots = await Pilot.find({ championshipId: current._id })
+  const stages = await Stage.find()
+    .where("championshipId")
+    .equals(current._id)
+    .select({ _id: 1 })
+    .lean();
+
+  const stageIds = (stages as unknown as IStageType[]).map((s) => s._id);
+
+  // Prefer canonical `registrations[]` model: only return pilots with per-championship
+  // registrations (or explicit registrations for any stage in this championship).
+  const pilots = await Pilot.find({
+    $or: [
+      { "registrations.championshipId": current._id },
+      { "registrations.stageId": { $in: stageIds } },
+    ],
+  })
     .sort({ number: 1 })
     .select(isAdmin ? {} : { phone: 0, __v: 0 })
     .lean();
@@ -203,16 +218,67 @@ export async function POST(req: NextRequest) {
   try {
     const defaultLeague =
       current.championshipType === "sprint-pro" ? "pro" : "newbie";
-    const pilot = await Pilot.create({
-      ...body,
-      championshipId: current._id,
+    // Build create document without legacy top-level race/stage fields
+    const providedStageId =
+      typeof body.stageId === "string" ? body.stageId : undefined;
+    // Determine race booleans from admin-provided fields
+    let adminFirstRace = true;
+    let adminSecondRace = false;
+    if (body.firstRace !== undefined || body.secondRace !== undefined) {
+      adminFirstRace = Boolean(body.firstRace);
+      adminSecondRace = Boolean(body.secondRace);
+    } else if (body.racesCount !== undefined) {
+      const rc = Number(body.racesCount);
+      adminFirstRace = true;
+      adminSecondRace = rc === 2;
+    }
+
+    // If a pilot with same phone exists anywhere, update it by adding a registration
+    const existingPilot = phone ? await Pilot.findOne({ phone }) : null;
+    if (existingPilot) {
+      const reg = {
+        championshipId: current._id,
+        stageId: providedStageId,
+        firstRace: adminFirstRace,
+        secondRace: adminSecondRace,
+        racesCount: adminFirstRace && adminSecondRace ? 2 : 1,
+      };
+      existingPilot.registrations = Array.isArray(existingPilot.registrations)
+        ? existingPilot.registrations.concat([reg])
+        : [reg];
+
+      if (!existingPilot.name && name) existingPilot.name = name;
+      if (!existingPilot.surname && surname) existingPilot.surname = surname;
+      if (!existingPilot.league)
+        existingPilot.league =
+          typeof body.league === "string" ? body.league : defaultLeague;
+      if (!existingPilot.phone && phone) existingPilot.phone = phone;
+
+      const saved = await existingPilot.save();
+      return NextResponse.json(saved, { status: 200 });
+    }
+
+    const createDoc: Record<string, unknown> = {
       name,
       surname,
       number,
       phone: phone || undefined,
-      // if admin didn't provide league, choose sensible default depending on championship type
       league: typeof body.league === "string" ? body.league : defaultLeague,
-    });
+    };
+
+    if (providedStageId) {
+      createDoc.registrations = [
+        {
+          championshipId: current._id,
+          stageId: providedStageId,
+          firstRace: adminFirstRace,
+          secondRace: adminSecondRace,
+          racesCount: adminFirstRace && adminSecondRace ? 2 : 1,
+        },
+      ];
+    }
+
+    const pilot = await Pilot.create(createDoc);
 
     try {
       // Resolve admin session for audit

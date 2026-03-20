@@ -22,18 +22,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json([]);
   }
 
-  const [participants, stages] = await Promise.all([
-    Pilot.find({ championshipId: current._id })
-      .sort({ number: 1 })
-      .select(isAdmin ? {} : { phone: 0, __v: 0 })
-      .lean(),
-    Stage.find()
-      .where("championshipId")
-      .equals(current._id)
-      .populate("results.pilotId", "name surname number team avatar")
-      .sort({ number: 1 })
-      .lean(),
-  ]);
+  const stages = await Stage.find()
+    .where("championshipId")
+    .equals(current._id)
+    .populate("results.pilotId", "name surname number team avatar")
+    .sort({ number: 1 })
+    .lean();
+
+  const stageIds = (stages as unknown as IStageType[]).map((s) => s._id);
+
+  // Prefer canonical `registrations[]` model: include pilots with per-championship
+  // registrations or explicit registrations for any stage in this championship.
+  const participants = await Pilot.find({
+    $or: [
+      { "registrations.championshipId": current._id },
+      { "registrations.stageId": { $in: stageIds } },
+    ],
+  })
+    .sort({ number: 1 })
+    .select(isAdmin ? {} : { phone: 0, __v: 0 })
+    .lean();
 
   // normalize participants so `league` is always present (fallback to 'newbie')
   const normalizedParticipants = (participants as unknown as IPilotType[]).map(

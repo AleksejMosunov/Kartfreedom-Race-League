@@ -10,8 +10,13 @@ export interface IPilot extends Document {
   avatar?: string;
   league: "pro" | "newbie";
   swsId?: string;
-  stageId?: mongoose.Types.ObjectId;
-  racesCount?: number;
+  registrations?: {
+    championshipId?: mongoose.Types.ObjectId;
+    stageId: mongoose.Types.ObjectId;
+    firstRace: boolean;
+    secondRace: boolean;
+    racesCount: number;
+  }[];
   createdAt: Date;
 }
 
@@ -20,7 +25,7 @@ const PilotSchema = new Schema<IPilot>(
     championshipId: {
       type: Schema.Types.ObjectId,
       ref: "Championship",
-      required: true,
+      required: false,
       index: true,
     },
     name: {
@@ -56,8 +61,21 @@ const PilotSchema = new Schema<IPilot>(
     phone: { type: String, trim: true },
     avatar: { type: String },
     swsId: { type: String, trim: true },
-    stageId: { type: Schema.Types.ObjectId, ref: "Stage" },
-    racesCount: { type: Number, enum: [1, 2], required: true, default: 1 },
+    // Legacy top-level per-stage/registration fields removed.
+    // Use `registrations[]` for per-championship/per-stage registration state.
+    registrations: [
+      {
+        championshipId: {
+          type: Schema.Types.ObjectId,
+          ref: "Championship",
+          required: false,
+        },
+        stageId: { type: Schema.Types.ObjectId, ref: "Stage", required: true },
+        firstRace: { type: Boolean, required: true, default: true },
+        secondRace: { type: Boolean, required: true, default: false },
+        racesCount: { type: Number, enum: [1, 2], required: true, default: 1 },
+      },
+    ],
     league: {
       type: String,
       enum: ["pro", "newbie"],
@@ -68,7 +86,14 @@ const PilotSchema = new Schema<IPilot>(
   { timestamps: true },
 );
 
-PilotSchema.index({ championshipId: 1, number: 1 }, { unique: true });
+// Unique number per championship only when `championshipId` is present.
+PilotSchema.index(
+  { championshipId: 1, number: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { championshipId: { $exists: true } },
+  },
+);
 
 if (process.env.NODE_ENV !== "production" && models.Pilot) {
   delete models.Pilot;

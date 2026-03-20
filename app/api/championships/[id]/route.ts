@@ -27,13 +27,21 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const [participants, stages] = await Promise.all([
-    Pilot.find({ championshipId: id }).sort({ number: 1 }).lean(),
-    Stage.find({ championshipId: id })
-      .populate("results.pilotId", "name surname number team avatar")
-      .sort({ number: 1 })
-      .lean(),
-  ]);
+  const stages = await Stage.find({ championshipId: id })
+    .populate("results.pilotId", "name surname number team avatar")
+    .sort({ number: 1 })
+    .lean();
+
+  const stageIds = (stages as unknown as IStageType[]).map((s) => s._id);
+
+  const participants = await Pilot.find({
+    $or: [
+      { "registrations.championshipId": id },
+      { "registrations.stageId": { $in: stageIds } },
+    ],
+  })
+    .sort({ number: 1 })
+    .lean();
 
   const mappedStages = stages;
 

@@ -8,7 +8,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
-import { Pilot } from "@/types";
 
 export default function StageDetailPage({ params }: { params: Promise<{ id: string; }>; }) {
   const { id } = use(params);
@@ -23,6 +22,8 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
   const [groupsLoading, setGroupsLoading] = useState(false);
 
   const [participantsCount, setParticipantsCount] = useState<number>(0);
+  const [firstRaceCount, setFirstRaceCount] = useState<number | null>(null);
+  const [secondRaceCount, setSecondRaceCount] = useState<number | null>(null);
 
   useEffect(() => {
     // initialize participants count based on stage results until we fetch real participants
@@ -50,28 +51,45 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
     }
     fetchGroups();
     // fetch participants count for championship (fallback to stage.results)
+    let cancelled2 = false;
     (async () => {
-      let cancelled2 = false;
       try {
         if (!championshipId) return;
         const url = `/api/pilots?championship=${encodeURIComponent(championshipId)}`;
         const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled2 && Array.isArray(data)) {
-          const count = data.filter((p: Pilot) => {
-            // include pilots explicitly registered to this stage
-            // and pilots registered to "all" stages (stageId absent/null)
-            return (!p.stageId && p.championshipId === championshipId) || String(p.stageId) === String(id);
-          }).length;
-          setParticipantsCount(count);
+        if (cancelled2 || !Array.isArray(data)) return;
+
+        let total = 0;
+        let firstCount = 0;
+        let secondCount = 0;
+        for (const p of data) {
+          if (!Array.isArray(p.registrations)) continue;
+          const regsForChamp = p.registrations.filter((r: any) => String(r.championshipId ?? p.championshipId) === String(championshipId));
+          const regForStage = regsForChamp.find((r: any) => String(r.stageId) === String(id));
+          if (!regForStage) continue;
+          const fr = Boolean(regForStage.firstRace);
+          const sr = Boolean(regForStage.secondRace);
+          if (fr) firstCount += 1;
+          if (sr) secondCount += 1;
+          if (fr || sr) total += 1;
+        }
+
+        if (!cancelled2) {
+          setParticipantsCount(total);
+          setFirstRaceCount(firstCount);
+          setSecondRaceCount(secondCount);
         }
       } catch {
         // ignore
       }
-      return () => { cancelled2 = true; };
     })();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+      cancelled2 = true;
+    };
   }, [id, championshipId, setParticipantsCount]);
 
   if (isLoading) return <Loader />;
@@ -151,9 +169,10 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
             </div>
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3">
               <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">Учасників</p>
-              <p className="mt-1 text-lg font-bold text-white">
-                {participantsCount > 0 ? participantsCount : "Немає даних"}
-              </p>
+              <p className="mt-1 text-lg font-bold text-white">{participantsCount > 0 ? participantsCount : "Немає даних"}</p>
+              {firstRaceCount !== null && secondRaceCount !== null && (
+                <p className="mt-1 text-sm text-zinc-400">1 гонка: {firstRaceCount} · 2 гонки: {secondRaceCount}</p>
+              )}
             </div>
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3">
               <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">Результати</p>
