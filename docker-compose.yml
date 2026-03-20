@@ -10,4 +10,4 @@ services:
     ports:
       - "3001:3001"
     env_file:
-      - /root/Kartfreedom-Race-League/.env
+      - ./.env
