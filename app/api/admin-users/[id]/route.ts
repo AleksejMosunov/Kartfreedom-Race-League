@@ -6,7 +6,7 @@ import {
   getAuthenticatedAdminSession,
   hashAdminPassword,
 } from "@/lib/auth";
-import { logAudit, getAuditIp } from "@/lib/audit";
+import { logAudit, getAuditIp, sanitizeForAudit, Change } from "@/lib/audit";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -135,20 +135,56 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     action = "activate";
   }
 
-  void logAudit({
-    session: auth.session,
-    action,
-    entityType: "admin_user",
-    entityId: id,
-    entityLabel: targetName,
-    before: { role: user.role, isActive: user.isActive },
-    after: {
+  try {
+    const changes: Change[] = [];
+    if (updates.role !== undefined && updates.role !== user.role) {
+      changes.push({
+        type: "role_changed",
+        message: `Змінено роль: ${user.role} → ${String(updates.role)}`,
+        data: { before: user.role, after: updates.role },
+      });
+    }
+    if (updates.isActive === false && user.isActive) {
+      changes.push({
+        type: "deactivated",
+        message: `Деактивовано користувача: «${targetName}»`,
+      });
+    } else if (updates.isActive === true && !user.isActive) {
+      changes.push({
+        type: "activated",
+        message: `Активовано користувача: «${targetName}»`,
+      });
+    }
+    if (updates.passwordHash) {
+      changes.push({
+        type: "password_reset",
+        message: `Змінено пароль для «${targetName}»`,
+      });
+    }
+
+    const beforeSnapshot = sanitizeForAudit({
+      role: user.role,
+      isActive: user.isActive,
+    });
+    const afterSnapshot = sanitizeForAudit({
       role: updated?.role ?? user.role,
       isActive: updated?.isActive ?? user.isActive,
-    },
-    ip: getAuditIp(req),
-    alertMessage,
-  });
+    });
+
+    void logAudit({
+      session: auth.session,
+      action,
+      entityType: "admin_user",
+      entityId: id,
+      entityLabel: targetName,
+      before: beforeSnapshot,
+      after: { ...afterSnapshot, changes },
+      ip: getAuditIp(req),
+      alertMessage,
+    });
+  } catch (err) {
+    console.error("Failed to write admin user update audit:", err);
+  }
 
   return NextResponse.json({ user: updated });
 }

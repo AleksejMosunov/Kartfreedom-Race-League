@@ -5,6 +5,12 @@ import { sendAlertMessage } from "@/lib/telegram";
 
 export type { AuditAction, AuditEntityType };
 
+export type Change = {
+  type: string;
+  message?: string;
+  data?: Record<string, unknown>;
+};
+
 export interface AuditSession {
   userId: string;
   username: string;

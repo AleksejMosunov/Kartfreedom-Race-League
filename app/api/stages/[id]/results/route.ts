@@ -7,7 +7,7 @@ import { Pilot } from "@/lib/models/Pilot";
 import { getPointsByPosition } from "@/lib/utils/championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
-import { logAudit, getAuditIp } from "@/lib/audit";
+import { logAudit, getAuditIp, sanitizeForAudit, Change } from "@/lib/audit";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -154,18 +154,33 @@ export async function POST(req: NextRequest, { params }: Params) {
     : `Етап ${id}`;
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   const session = await getAuthenticatedAdminSession(token);
-  void logAudit({
-    session,
-    action: "update",
-    entityType: "stage",
-    entityId: id,
-    entityLabel: stageLabel,
-    before: stageBefore
-      ? { results: (stageBefore as Record<string, unknown>).results }
-      : null,
-    after: { results: enrichedResults },
-    ip: getAuditIp(req),
-  });
+  try {
+    const before = stageBefore
+      ? sanitizeForAudit({
+          results: (stageBefore as Record<string, unknown>).results,
+        })
+      : null;
+    const afterSnapshot = sanitizeForAudit({ results: enrichedResults });
+    const changes: Change[] = [
+      {
+        type: "results_published",
+        message: `Опубліковано результати: «${stageLabel}»`,
+        data: { resultsCount: enrichedResults.length },
+      },
+    ];
+    void logAudit({
+      session,
+      action: "update",
+      entityType: "stage",
+      entityId: id,
+      entityLabel: stageLabel,
+      before,
+      after: { ...afterSnapshot, changes },
+      ip: getAuditIp(req),
+    });
+  } catch (err) {
+    console.error("Failed to write stage results audit:", err);
+  }
 
   if (current.championshipType === "teams") {
     const teams = await Team.find({ championshipId: current._id }).lean();

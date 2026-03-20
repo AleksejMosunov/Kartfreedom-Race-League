@@ -6,7 +6,7 @@ import {
   getAuthenticatedAdminSession,
   hashAdminPassword,
 } from "@/lib/auth";
-import { logAudit, getAuditIp } from "@/lib/audit";
+import { logAudit, getAuditIp, sanitizeForAudit, Change } from "@/lib/audit";
 
 function forbidden() {
   return NextResponse.json({ error: "Недостатньо прав" }, { status: 403 });
@@ -112,16 +112,31 @@ export async function POST(req: NextRequest) {
     isActive: body.isActive !== false,
   });
 
-  void logAudit({
-    session: auth.session,
-    action: "create_user",
-    entityType: "admin_user",
-    entityId: String(created._id),
-    entityLabel: username,
-    after: { username, role, isActive: body.isActive !== false },
-    ip: getAuditIp(req),
-    alertMessage: `👤 <b>Новий admin-користувач</b>\n${username} (роль: ${role})\nСтворено: ${auth.session.username}`,
-  });
+  try {
+    const afterSnapshot = sanitizeForAudit({
+      username,
+      role,
+      isActive: body.isActive !== false,
+    });
+    const changes: Change[] = [
+      {
+        type: "created_admin_user",
+        message: `Створено адміністратора: «${username}» (роль: ${role})`,
+      },
+    ];
+    void logAudit({
+      session: auth.session,
+      action: "create_user",
+      entityType: "admin_user",
+      entityId: String(created._id),
+      entityLabel: username,
+      after: { ...afterSnapshot, changes },
+      ip: getAuditIp(req),
+      alertMessage: `👤 <b>Новий адміністратор</b>\n${username} (роль: ${role})\nСтворено: ${auth.session.username}`,
+    });
+  } catch (err) {
+    console.error("Failed to write admin user create audit:", err);
+  }
 
   return NextResponse.json(
     {

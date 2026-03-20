@@ -5,7 +5,7 @@ import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
-import { logAudit, getAuditIp } from "@/lib/audit";
+import { logAudit, getAuditIp, sanitizeForAudit, Change } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   try {
@@ -104,13 +104,27 @@ export async function POST(req: NextRequest) {
 
     const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
     const session = await getAuthenticatedAdminSession(token);
+
+    const afterSnapshot = sanitizeForAudit({
+      number: body.number,
+      name: body.name,
+      championshipId: String(current._id),
+    });
+
+    const changes: Change[] = [
+      {
+        type: "created_stage",
+        message: `Створено етап: ${body.number} — «${body.name}»`,
+      },
+    ];
+
     void logAudit({
       session,
       action: "create",
       entityType: "stage",
       entityId: String(stage._id),
       entityLabel: `Етап ${body.number as string}: ${body.name as string}`,
-      after: { number: body.number, name: body.name },
+      after: { ...afterSnapshot, changes },
       ip: getAuditIp(req),
     });
 

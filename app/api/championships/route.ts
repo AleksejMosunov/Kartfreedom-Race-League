@@ -5,7 +5,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
 import { LeagueSettings } from "@/lib/models/LeagueSettings";
 import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
-import { logAudit, getAuditIp } from "@/lib/audit";
+import { logAudit, getAuditIp, sanitizeForAudit, Change } from "@/lib/audit";
 import { normalizeSocialLinks, SocialLinks } from "@/lib/socialLinks";
 
 const SETTINGS_KEY = "global";
@@ -102,17 +102,32 @@ export async function POST(req: NextRequest) {
     prizes,
   });
 
-  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
-  const session = await getAuthenticatedAdminSession(token);
-  void logAudit({
-    session,
-    action: "create",
-    entityType: "championship",
-    entityId: String(created._id),
-    entityLabel: name,
-    after: { name, championshipType, fastestLapBonusEnabled },
-    ip: getAuditIp(req),
-  });
+  try {
+    const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+    const session = await getAuthenticatedAdminSession(token);
+    const afterSnapshot = sanitizeForAudit({
+      name,
+      championshipType,
+      fastestLapBonusEnabled,
+    });
+    const changes: Change[] = [
+      {
+        type: "created_championship",
+        message: `Створено чемпіонат: «${name}»`,
+      },
+    ];
+    void logAudit({
+      session,
+      action: "create",
+      entityType: "championship",
+      entityId: String(created._id),
+      entityLabel: name,
+      after: { ...afterSnapshot, changes },
+      ip: getAuditIp(req),
+    });
+  } catch (err) {
+    console.error("Failed to write championship create audit:", err);
+  }
 
   return NextResponse.json(created, { status: 201 });
 }

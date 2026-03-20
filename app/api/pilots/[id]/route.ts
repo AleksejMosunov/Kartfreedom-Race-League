@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Pilot } from "@/lib/models/Pilot";
@@ -12,7 +11,7 @@ import {
   isValidAdminSession,
   getAuthenticatedAdminSession,
 } from "@/lib/auth";
-import { logAudit, getAuditIp } from "@/lib/audit";
+import { logAudit, getAuditIp, sanitizeForAudit, Change } from "@/lib/audit";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -189,7 +188,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     // strip legacy top-level championshipId from admin-provided body
     // migrations and per-championship association should live in `registrations[]`
     // so we don't allow writing `championshipId` directly here.
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+
     delete (body as Record<string, unknown>).championshipId;
   }
 
@@ -252,14 +251,58 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
   if (afterCount < beforeCount) {
     await pilotDoc.save();
+
+    // compute removed registrations for this championship
+    const removedRegs = regs.filter(
+      (r: any) =>
+        String(r.championshipId ?? pilotDoc.championshipId) ===
+          String(current._id) &&
+        !pilotDoc.registrations.some(
+          (nr: any) => String(nr.stageId) === String(r.stageId),
+        ),
+    );
+    const removedStageIds = removedRegs
+      .map((r: any) => String(r.stageId))
+      .filter(Boolean);
+    const changes: Change[] = [];
+    if (removedStageIds.length) {
+      // try to resolve stage names for better messages
+      try {
+        const stages = await Stage.find({ _id: { $in: removedStageIds } })
+          .select({ _id: 1, name: 1 })
+          .lean();
+        const stageNameMap: Record<string, string> = {};
+        for (const s of stages)
+          stageNameMap[String(s._id)] = s.name ?? String(s._id);
+        for (const sid of removedStageIds) {
+          changes.push({
+            type: "unregistered_stage",
+            message: `Скасовано реєстрацію: «${stageNameMap[sid] ?? sid}»`,
+            data: { stageId: sid, stageLabel: stageNameMap[sid] ?? sid },
+          });
+        }
+      } catch {
+        changes.push({
+          type: "removed_registrations",
+          message: `Видалено реєстрації: ${removedStageIds.join(", ")}`,
+          data: { stageIds: removedStageIds },
+        });
+      }
+    }
+
     const token = _req.cookies.get(AUTH_COOKIE_NAME)?.value;
     const session = await getAuthenticatedAdminSession(token);
+    const before = sanitizeForAudit({ registrations: regs });
+    const after = sanitizeForAudit({ registrations: pilotDoc.registrations });
+
     void logAudit({
       session,
       action: "update",
       entityType: "pilot",
       entityId: id,
       entityLabel: `${pilotDoc.name} ${pilotDoc.surname} #${pilotDoc.number}`,
+      before,
+      after: { ...after, changes },
       ip: getAuditIp(_req),
     });
     return NextResponse.json({ success: true });
@@ -281,6 +324,12 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       entityId: id,
       entityLabel: pilotLabel,
       ip: getAuditIp(_req),
+      before: sanitizeForAudit(pilotRec),
+      after: {
+        changes: [
+          { type: "deleted", message: `Видалено пілота: «${pilotLabel}»` },
+        ],
+      },
       alertMessage: `⚠️ <b>Пілот видалено</b>\n«${pilotLabel}»\nАдмін: ${session?.username ?? "unknown"}`,
     });
     return NextResponse.json({ success: true });

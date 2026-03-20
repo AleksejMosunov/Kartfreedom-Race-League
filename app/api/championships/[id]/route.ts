@@ -10,7 +10,7 @@ import {
   isValidAdminSession,
   getAuthenticatedAdminSession,
 } from "@/lib/auth";
-import { logAudit, getAuditIp } from "@/lib/audit";
+import { logAudit, getAuditIp, sanitizeForAudit } from "@/lib/audit";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -97,12 +97,22 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
   const token = _req.cookies.get(AUTH_COOKIE_NAME)?.value;
   const session = await getAuthenticatedAdminSession(token);
+  const before = sanitizeForAudit(championship as Record<string, unknown>);
   void logAudit({
     session,
     action: "delete",
     entityType: "championship",
     entityId: id,
     entityLabel: String(championship.name),
+    before,
+    after: {
+      changes: [
+        {
+          type: "deleted_championship",
+          message: `Видалено чемпіонат: «${championship.name}»`,
+        },
+      ],
+    },
     ip: getAuditIp(_req),
     alertMessage: `⛔ <b>Чемпіонат видалено</b>\n«${championship.name}»\nАдмін: ${session?.username ?? "unknown"}`,
   });

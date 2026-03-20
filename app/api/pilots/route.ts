@@ -17,7 +17,7 @@ import {
   isValidAdminSession,
   getAuthenticatedAdminSession,
 } from "@/lib/auth";
-import { logAudit, sanitizeForAudit, getAuditIp } from "@/lib/audit";
+import { logAudit, sanitizeForAudit, getAuditIp, Change } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   await connectToDatabase();
@@ -299,7 +299,7 @@ export async function POST(req: NextRequest) {
           };
       }
 
-      const after = sanitizeForAudit({
+      const afterSnapshot = sanitizeForAudit({
         name,
         surname,
         league: typeof body.league === "string" ? body.league : defaultLeague,
@@ -310,16 +310,30 @@ export async function POST(req: NextRequest) {
         stage: stageInfo,
       });
 
-      await logAudit({
-        session: session ?? null,
-        action: "create",
-        entityType: "pilot",
-        entityId: String((pilot as unknown as { _id: unknown })._id),
-        entityLabel: `${name} ${surname}`,
-        before: null,
-        after,
-        ip: getAuditIp(req),
-      });
+      try {
+        const changes: Change[] = [
+          {
+            type: "created_pilot",
+            message: `Створено пілота: «${name} ${surname}»`,
+            data: {
+              championshipId: String(current._id),
+              stage: stageInfo ?? null,
+            },
+          },
+        ];
+        await logAudit({
+          session: session ?? null,
+          action: "create",
+          entityType: "pilot",
+          entityId: String((pilot as unknown as { _id: unknown })._id),
+          entityLabel: `${name} ${surname}`,
+          before: null,
+          after: { ...afterSnapshot, changes },
+          ip: getAuditIp(req),
+        });
+      } catch (err) {
+        console.error("Failed to write audit for admin pilot create:", err);
+      }
     } catch (err) {
       console.error("Failed to write audit for admin pilot create:", err);
     }

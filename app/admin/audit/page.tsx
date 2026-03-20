@@ -143,6 +143,65 @@ export default function AdminAuditPage() {
     });
   }
 
+  function getChanges(obj: Record<string, unknown> | null): string[] | null {
+    if (!obj) return null;
+    const val = obj["changes"];
+    if (!Array.isArray(val)) return null;
+    // normalize array of strings or array of structured change objects
+    const out: string[] = [];
+    for (const it of val) {
+      if (typeof it === "string") {
+        out.push(it);
+        continue;
+      }
+      if (typeof it === "object" && it !== null) {
+        const v = it as { message?: unknown; type?: unknown; data?: unknown; };
+        if (typeof v.message === "string") {
+          out.push(v.message);
+          continue;
+        }
+        if (typeof v.type === "string") {
+          // fallback message by type
+          switch (v.type) {
+            case "name_changed":
+              out.push("Ім\'я змінено");
+              break;
+            case "surname_changed":
+              out.push("Прізвище змінено");
+              break;
+            case "league_changed":
+              out.push("Ліга змінена");
+              break;
+            case "registered_stage":
+              out.push("Зареєстровано на етап");
+              break;
+            case "unregistered_stage":
+              out.push("Скасовано реєстрацію на етап");
+              break;
+            case "registration_updated":
+              out.push("Оновлено реєстрацію");
+              break;
+            default:
+              out.push(String(v.type));
+          }
+          continue;
+        }
+      }
+      // fallback
+      try {
+        out.push(JSON.stringify(it));
+      } catch {
+        out.push(String(it));
+      }
+    }
+    return out.length ? out : null;
+  }
+
+  const [showRawJson, setShowRawJson] = useState<Record<string, boolean>>({});
+  function toggleRawJson(id: string) {
+    setShowRawJson((s) => ({ ...s, [id]: !s[id] }));
+  }
+
   const cleanupAudit = async (
     scope: "all" | "today" | "week" | "month",
   ) => {
@@ -319,6 +378,7 @@ export default function AdminAuditPage() {
           {logs.map((log) => {
             const isOpen = expanded === log._id;
             const hasDiff = log.before !== null || log.after !== null;
+            const changes = getChanges(log.after);
             return (
               <div
                 key={log._id}
@@ -379,21 +439,66 @@ export default function AdminAuditPage() {
                 </div>
 
                 {isOpen && hasDiff && (
-                  <div className="border-t border-zinc-800 px-4 py-3 grid md:grid-cols-2 gap-4">
-                    {log.before !== null && (
-                      <div>
-                        <p className="text-zinc-500 text-xs mb-1 font-semibold uppercase tracking-wide">До</p>
-                        <pre className="text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 rounded p-3 overflow-auto max-h-64 whitespace-pre-wrap break-all">
-                          {JSON.stringify(log.before, null, 2)}
-                        </pre>
+                  <div className="border-t border-zinc-800 px-4 py-3">
+                    <div className="flex justify-end mb-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleRawJson(log._id)}
+                        className="text-xs text-zinc-400 hover:text-zinc-200"
+                      >
+                        {showRawJson[log._id] ? "Сховати сирий JSON" : "Показати сирий JSON"}
+                      </button>
+                    </div>
+
+                    {!showRawJson[log._id] ? (
+                      // condensed view: show human-readable changes only
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {log.before !== null && (
+                          <div>
+                            <p className="text-zinc-500 text-xs mb-1 font-semibold uppercase tracking-wide">До</p>
+                            <p className="text-zinc-400 text-xs">Короткого опису немає. Натисніть «Показати сирий JSON» для деталей.</p>
+                          </div>
+                        )}
+
+                        {log.after !== null && (
+                          <div>
+                            <p className="text-zinc-500 text-xs mb-1 font-semibold uppercase tracking-wide">Після</p>
+
+                            {changes ? (
+                              <div className="mb-3">
+                                <p className="text-zinc-400 text-xs mb-1">Коротко</p>
+                                <ul className="list-disc ml-5 text-sm text-zinc-200 space-y-1">
+                                  {changes.map((c, i) => (
+                                    <li key={i}>{c}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : (
+                              <p className="text-zinc-400 text-xs">Короткого опису немає. Натисніть «Показати сирий JSON» для деталей.</p>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {log.after !== null && (
-                      <div>
-                        <p className="text-zinc-500 text-xs mb-1 font-semibold uppercase tracking-wide">Після</p>
-                        <pre className="text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 rounded p-3 overflow-auto max-h-64 whitespace-pre-wrap break-all">
-                          {JSON.stringify(log.after, null, 2)}
-                        </pre>
+                    ) : (
+                      // raw JSON view
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {log.before !== null && (
+                          <div>
+                            <p className="text-zinc-500 text-xs mb-1 font-semibold uppercase tracking-wide">До</p>
+                            <pre className="text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 rounded p-3 overflow-auto max-h-64 whitespace-pre-wrap break-all">
+                              {JSON.stringify(log.before, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+
+                        {log.after !== null && (
+                          <div>
+                            <p className="text-zinc-500 text-xs mb-1 font-semibold uppercase tracking-wide">Після</p>
+                            <pre className="text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 rounded p-3 overflow-auto max-h-64 whitespace-pre-wrap break-all">
+                              {JSON.stringify(log.after, null, 2)}
+                            </pre>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

@@ -4,7 +4,7 @@ import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
-import { logAudit, getAuditIp } from "@/lib/audit";
+import { logAudit, getAuditIp, sanitizeForAudit, Change } from "@/lib/audit";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -144,6 +144,9 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const teamLabel = `${removedRec.name as string} #${removedRec.number as number}`;
   const token = _req.cookies.get(AUTH_COOKIE_NAME)?.value;
   const session = await getAuthenticatedAdminSession(token);
+  const changes: Change[] = [
+    { type: "deleted_team", message: `Видалено команду: «${teamLabel}»` },
+  ];
   void logAudit({
     session,
     action: "delete",
@@ -151,6 +154,8 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     entityId: id,
     entityLabel: teamLabel,
     ip: getAuditIp(_req),
+    before: sanitizeForAudit(removedRec),
+    after: { changes },
     alertMessage: `⚠️ <b>Команда видалена</b>\n«${teamLabel}»\nАдмін: ${session?.username ?? "unknown"}`,
   });
 

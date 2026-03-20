@@ -49,6 +49,45 @@ const ENTITY_LABELS: Record<string, string> = {
   admin_user: "Адмін",
 };
 
+function extractChangesFromRecent(entry: RecentEntry): string[] | null {
+  const maybe = entry as unknown as { after?: unknown; };
+  if (!maybe.after || typeof maybe.after !== "object") return null;
+  const after = maybe.after as Record<string, unknown>;
+  const val = after.changes;
+  if (!Array.isArray(val)) return null;
+  const out: string[] = [];
+  for (const it of val) {
+    if (typeof it === "string") {
+      out.push(it);
+      continue;
+    }
+    if (typeof it === "object" && it !== null) {
+      const v = it as { message?: unknown; type?: unknown; };
+      if (typeof v.message === "string") {
+        out.push(v.message);
+        continue;
+      }
+      if (typeof v.type === "string") {
+        out.push(String(v.type));
+        continue;
+      }
+    }
+    try {
+      out.push(JSON.stringify(it));
+    } catch {
+      out.push(String(it));
+    }
+  }
+  return out.length ? out : null;
+}
+
+function shortAuditSummary(entry: RecentEntry): string {
+  const verb = ACTION_LABELS[entry.action] ?? entry.action;
+  const changes = extractChangesFromRecent(entry);
+  const details = changes && changes.length ? changes.join("; ") : "Короткого опису немає. Натисніть «Показати сирий JSON» для деталей.";
+  return `${verb}: ${details}`;
+}
+
 function StatCard({ label, value, sub }: { label: string; value: number | string; sub?: string; }) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
@@ -220,12 +259,12 @@ export default function AdminMetricsPage() {
                 <span className="text-xs text-zinc-500 shrink-0">
                   {ENTITY_LABELS[entry.entityType] ?? entry.entityType}
                 </span>
-                <span className="text-white text-sm flex-1 min-w-0 truncate">
-                  {entry.entityLabel || entry._id}
-                </span>
-                <span className="text-zinc-500 text-xs shrink-0">
-                  {ACTION_LABELS[entry.action] ?? entry.action}
-                </span>
+
+                <div className="flex-1 min-w-0">
+                  <div className="text-white text-sm truncate">{entry.entityLabel || entry._id}</div>
+                  <div className="text-zinc-400 text-xs truncate">{shortAuditSummary(entry)}</div>
+                </div>
+
                 <span className="text-zinc-600 text-xs shrink-0">
                   {entry.adminUsername}
                 </span>

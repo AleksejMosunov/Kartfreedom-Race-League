@@ -5,7 +5,7 @@ import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { AUTH_COOKIE_NAME, getAuthenticatedAdminSession } from "@/lib/auth";
-import { logAudit, getAuditIp } from "@/lib/audit";
+import { logAudit, getAuditIp, sanitizeForAudit, Change } from "@/lib/audit";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -159,12 +159,19 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const stageLabel = `Етап ${(stage as Record<string, unknown>).number as number}: ${(stage as Record<string, unknown>).name as string}`;
   const token = _req.cookies.get(AUTH_COOKIE_NAME)?.value;
   const session = await getAuthenticatedAdminSession(token);
+
+  const before = sanitizeForAudit(stage);
+  const changes: Change[] = [
+    { type: "deleted_stage", message: `Видалено етап: «${stageLabel}»` },
+  ];
   void logAudit({
     session,
     action: "delete",
     entityType: "stage",
     entityId: id,
     entityLabel: stageLabel,
+    before,
+    after: { changes },
     ip: getAuditIp(_req),
     alertMessage: `⚠️ <b>Етап видалено</b>\n«${stageLabel}»\nАдмін: ${session?.username ?? "unknown"}`,
   });

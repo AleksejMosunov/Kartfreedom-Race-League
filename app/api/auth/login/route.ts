@@ -10,7 +10,7 @@ import {
   getCsrfCookieOptions,
   CSRF_COOKIE_NAME,
 } from "@/lib/auth";
-import { getAuditIp, logAudit } from "@/lib/audit";
+import { getAuditIp, logAudit, Change } from "@/lib/audit";
 import { AdminUser } from "@/lib/models/AdminUser";
 import { connectToDatabase } from "@/lib/mongodb";
 import { clearRateLimit, consumeRateLimit } from "@/lib/security/rateLimit";
@@ -64,11 +64,18 @@ export async function POST(req: NextRequest) {
     }
 
     if (!user) {
+      const changes: Change[] = [
+        {
+          type: "login_failed",
+          message: `Невдалий вхід: користувач «${normalizedUsername || "unknown"}»`,
+        },
+      ];
       void logAudit({
         action: "login_failed",
         entityType: "admin_user",
         entityId: normalizedUsername || "unknown",
         entityLabel: `Failed login: ${normalizedUsername || "unknown"}`,
+        after: { changes },
         ip,
       });
 

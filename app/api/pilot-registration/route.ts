@@ -11,7 +11,7 @@ import {
 import { isValidNamePart, normalizeNamePart } from "@/lib/utils/pilotName";
 import { requireCurrentChampionship } from "@/lib/championship/current";
 import { isValidUkrPhone, normalizePhone } from "@/lib/utils/phone";
-import { logAudit, sanitizeForAudit, getAuditIp } from "@/lib/audit";
+import { logAudit, sanitizeForAudit, getAuditIp, Change } from "@/lib/audit";
 
 // Teams/endurance removed from registration flow; helper removed.
 
@@ -246,6 +246,17 @@ export async function POST(req: NextRequest) {
     // If a pilot with same phone exists anywhere, update it instead of creating duplicate
     const existingPilot = await Pilot.findOne({ phone });
     if (existingPilot) {
+      // capture snapshot before modifications for accurate audit diff
+      const before = sanitizeForAudit({
+        name: existingPilot.name,
+        surname: existingPilot.surname,
+        league: existingPilot.league,
+        championship: {
+          id: String(current._id),
+          name: (current as Partial<IChampionshipType>).name ?? "",
+        },
+        registrations: existingPilot.registrations,
+      });
       // Build registrations map starting from existing registrations
       const regMap = new Map();
       if (Array.isArray(existingPilot.registrations)) {
@@ -395,7 +406,7 @@ export async function POST(req: NextRequest) {
       const saved = await existingPilot.save();
 
       try {
-        const after = sanitizeForAudit({
+        const afterSnapshot = sanitizeForAudit({
           name: saved.name,
           surname: saved.surname,
           league: saved.league,
@@ -405,13 +416,117 @@ export async function POST(req: NextRequest) {
           },
           registrations: saved.registrations,
         });
+
+        // compute human-friendly change list between before and after
+        const changes: Change[] = [];
+
+        // name/surname/league changes
+        if ((before.name as string) !== saved.name) {
+          changes.push({
+            type: "name_changed",
+            message: `Оновлено ім'я: "${before.name ?? ""}" → "${saved.name}"`,
+            data: { field: "name", before: before.name, after: saved.name },
+          });
+        }
+        if ((before.surname as string) !== saved.surname) {
+          changes.push({
+            type: "surname_changed",
+            message: `Оновлено прізвище: "${before.surname ?? ""}" → "${saved.surname}"`,
+            data: {
+              field: "surname",
+              before: before.surname,
+              after: saved.surname,
+            },
+          });
+        }
+        if ((before.league as string) !== saved.league) {
+          changes.push({
+            type: "league_changed",
+            message: `Оновлено лігу: "${before.league ?? ""}" → "${saved.league}"`,
+            data: {
+              field: "league",
+              before: before.league,
+              after: saved.league,
+            },
+          });
+        }
+
+        type RegEntry = {
+          championshipId?: unknown;
+          stageId?: unknown;
+          firstRace?: boolean;
+          secondRace?: boolean;
+          racesCount?: number;
+        };
+
+        const beforeRegs: Record<string, RegEntry> = {};
+        for (const r of (before.registrations as RegEntry[]) || []) {
+          const key = `${String(r.championshipId ?? current._id)}:${String(r.stageId)}`;
+          beforeRegs[key] = r;
+        }
+        const afterRegs: Record<string, RegEntry> = {};
+        for (const r of (saved.registrations || []) as RegEntry[]) {
+          const key = `${String(r.championshipId ?? current._id)}:${String(r.stageId)}`;
+          afterRegs[key] = r;
+        }
+
+        const allStageKeys = Array.from(
+          new Set([...Object.keys(beforeRegs), ...Object.keys(afterRegs)]),
+        );
+        const stageIdsToLoad = allStageKeys.map((k) => k.split(":")[1]);
+        const stagesInfo = (await Stage.find({ _id: { $in: stageIdsToLoad } })
+          .select({ _id: 1, name: 1 })
+          .lean()) as Array<{ _id: unknown; name?: string }>;
+        const stageNameMap: Record<string, string> = {};
+        for (const s of stagesInfo)
+          stageNameMap[String(s._id)] = s.name ?? String(s._id);
+
+        for (const key of allStageKeys) {
+          const beforeR = beforeRegs[key];
+          const afterR = afterRegs[key];
+          const stageId = key.split(":")[1];
+          const stageLabel = stageNameMap[stageId] ?? stageId;
+          if (!beforeR && afterR) {
+            const races =
+              afterR.racesCount ??
+              (afterR.firstRace && afterR.secondRace ? 2 : 1);
+            changes.push({
+              type: "registered_stage",
+              message: `Додано реєстрацію: «${stageLabel}» (${races} гонок)`,
+              data: { stageId, stageLabel, races },
+            });
+          } else if (beforeR && !afterR) {
+            changes.push({
+              type: "unregistered_stage",
+              message: `Скасовано реєстрацію: «${stageLabel}»`,
+              data: { stageId, stageLabel },
+            });
+          } else if (beforeR && afterR) {
+            const beforeRaces =
+              beforeR.racesCount ??
+              (beforeR.firstRace && beforeR.secondRace ? 2 : 1);
+            const afterRaces =
+              afterR.racesCount ??
+              (afterR.firstRace && afterR.secondRace ? 2 : 1);
+            if (beforeRaces !== afterRaces) {
+              changes.push({
+                type: "registration_updated",
+                message: `Оновлено реєстрацію: «${stageLabel}» ${beforeRaces} → ${afterRaces} гонок`,
+                data: { stageId, stageLabel, beforeRaces, afterRaces },
+              });
+            }
+          }
+        }
+
+        const after = { ...afterSnapshot, changes };
+
         await logAudit({
           session: null,
           action: "update",
           entityType: "pilot",
           entityId: String((saved as unknown as { _id: unknown })._id),
           entityLabel: `${saved.name} ${saved.surname}`,
-          before: null,
+          before,
           after,
           ip: getAuditIp(req),
         });
@@ -499,7 +614,7 @@ export async function POST(req: NextRequest) {
           };
       }
 
-      const after = sanitizeForAudit({
+      const afterSnapshot = sanitizeForAudit({
         name,
         surname,
         league: leagueToSave,
@@ -510,6 +625,17 @@ export async function POST(req: NextRequest) {
         stage: stageInfo,
       });
 
+      const changes = [
+        {
+          type: "created_pilot",
+          message: `Створено пілота: «${name} ${surname}»`,
+          data: {
+            championshipId: String(current._id),
+            stage: stageInfo ?? null,
+          },
+        },
+      ];
+
       await logAudit({
         session: null,
         action: "create",
@@ -517,7 +643,7 @@ export async function POST(req: NextRequest) {
         entityId: String((pilot as unknown as { _id: unknown })._id),
         entityLabel: `${name} ${surname}`,
         before: null,
-        after,
+        after: { ...afterSnapshot, changes },
         ip: getAuditIp(req),
       });
     } catch (err) {
