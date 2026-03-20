@@ -73,7 +73,7 @@ function LoginPageContent() {
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-red-400">
             KartFreedom Admin
           </p>
-          <h1 className="mt-3 text-3xl font-black text-white">Вхід до адмінки</h1>
+          <h1 className="mt-3 text-3xl font-black text-white">Вхід до адмін панелі</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-400">
             Введіть логін і пароль адміністратора для керування етапами та пілотами.
           </p>
