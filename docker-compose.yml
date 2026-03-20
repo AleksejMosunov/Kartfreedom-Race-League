@@ -15,7 +15,6 @@ services:
     networks:
       - webnet
 
-
 # NOTE: nginx service removed — use the system Nginx on the host to reverse-proxy to
 # the app at 127.0.0.1:3001. Keeping the nginx config in ./nginx for convenience.
 
