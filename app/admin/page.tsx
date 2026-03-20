@@ -2,6 +2,8 @@ import Link from "next/link";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "Адмін-панель — KartFreedom Race League",
 };
@@ -14,13 +16,6 @@ export default async function AdminPage() {
     <main className="max-w-3xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-black text-white mb-1">Дашборд</h1>
       <p className="text-zinc-500 text-sm mb-8">KartFreedom Race League</p>
-
-      {/* <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <div className="text-3xl font-black text-[#ccff00]">{active.length}</div>
-          <div className="text-zinc-400 text-sm mt-1">Активних чемпіонатів</div>
-        </div>
-      </div> */}
 
       {active.length > 0 ? (
         <div>
