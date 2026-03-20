@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/Button";
 import { apiFetch } from "@/app/services/api/request";
 
-type SocialLinkKey = "telegram" | "instagram" | "facebook" | "youtube";
+type SocialLinkKey = "telegram" | "instagram" | "facebook" | "youtube" | "tiktok";
 
 type SocialLinks = Record<SocialLinkKey, string>;
 
@@ -13,6 +13,7 @@ const SOCIAL_LINK_FIELDS: Array<{ key: SocialLinkKey; label: string; tag: string
   { key: "instagram", label: "Instagram", tag: "IG" },
   { key: "facebook", label: "Facebook", tag: "FB" },
   { key: "youtube", label: "YouTube", tag: "YT" },
+  { key: "tiktok", label: "TikTok", tag: "TT" },
 ];
 
 type AdminRole = "organizer" | "marshal" | "editor";
@@ -45,6 +46,7 @@ export default function AdminUsersPage() {
     instagram: "",
     facebook: "",
     youtube: "",
+    tiktok: "",
   });
   const [socialLinksSaving, setSocialLinksSaving] = useState(false);
 
@@ -81,6 +83,7 @@ export default function AdminUsersPage() {
           instagram: data.socialLinks?.instagram ?? "",
           facebook: data.socialLinks?.facebook ?? "",
           youtube: data.socialLinks?.youtube ?? "",
+          tiktok: data.socialLinks?.tiktok ?? "",
         });
       } catch {
         // ignore

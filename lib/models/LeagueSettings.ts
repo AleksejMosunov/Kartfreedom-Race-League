@@ -41,6 +41,11 @@ const LeagueSettingsSchema = new Schema<ILeagueSettings>(
         default: SOCIAL_LINK_DEFAULTS.youtube,
         trim: true,
       },
+      tiktok: {
+        type: String,
+        default: SOCIAL_LINK_DEFAULTS.tiktok,
+        trim: true,
+      },
     },
   },
   { timestamps: true },

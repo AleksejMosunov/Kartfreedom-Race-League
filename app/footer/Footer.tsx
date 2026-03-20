@@ -84,6 +84,13 @@ export async function Footer() {
         <polygon points="8,6 15,10 8,14" fill="white" />
       </svg>
     ),
+    tiktok: (
+      <img
+        src="https://img.freepik.com/premium-vector/tik-tok-logo_578229-290.jpg?w=360"
+        alt="TikTok"
+        className="w-5 h-5 object-cover rounded"
+      />
+    ),
   };
 
   return (
