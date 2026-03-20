@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  backend:
+  frontend:
     image: ghcr.io/aleksejmosunov/kartfreedom-app:latest
     container_name: kartfreedom-аpp
     restart: unless-stopped
