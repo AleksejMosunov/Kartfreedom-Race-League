@@ -10,7 +10,6 @@ type Participant = {
   _id: string;
   name: string;
   surname: string;
-  number: number;
 };
 
 type StageResultRow = {
@@ -77,15 +76,15 @@ export async function GET(req: NextRequest) {
             })),
           )
       : Pilot.find({ championshipId: current._id })
-          .select({ name: 1, surname: 1, number: 1, league: 1 })
-          .sort({ number: 1 })
+          .select({ name: 1, surname: 1, league: 1 })
+          .sort({ surname: 1, name: 1 })
           .lean()
           .then((pilots) =>
             pilots.map((pilot) => ({
               _id: String(pilot._id),
               name: pilot.name,
               surname: pilot.surname,
-              number: pilot.number,
+              // pilot number removed
               league: (pilot.league ?? "newbie") as "pro" | "newbie",
             })),
           ),
@@ -183,7 +182,6 @@ export async function GET(req: NextRequest) {
 
     return {
       participantId: participant._id,
-      participantNumber: participant.number,
       participantName: participantLabel(participant),
       totalPoints: cumulative,
       averagePosition,

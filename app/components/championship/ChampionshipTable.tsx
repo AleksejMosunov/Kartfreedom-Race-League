@@ -73,8 +73,7 @@ export function ChampionshipTable({
   const filteredStandings = standings.filter((row) => {
     const search = teamFilter.trim().toLowerCase();
     const name = formatPilotFullName(row.pilot.name, row.pilot.surname).toLowerCase();
-    const numberText = String(row.pilot.number);
-    const searchMatch = !search || name.includes(search) || numberText.includes(search);
+    const searchMatch = !search || name.includes(search);
 
     let classMatch = true;
     const pilotLeague = row.pilot.league ?? "newbie";
@@ -178,8 +177,8 @@ export function ChampionshipTable({
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-zinc-500 text-xs font-mono w-6">
-                      #{row.pilot.number}
+                    <span className="text-zinc-500 text-xs font-mono w-6" aria-hidden>
+                      {/* initials intentionally removed */}
                     </span>
                     <div>
                       <span className="font-semibold text-white block">
@@ -248,7 +247,7 @@ export function ChampionshipTable({
               <div>
                 <p className="text-zinc-400 text-xs">Позиція {positionMedals[row.position] ?? row.position}</p>
                 <p className="text-white font-semibold">
-                  #{row.pilot.number} {formatPilotFullName(row.pilot.name, row.pilot.surname)}
+                  {formatPilotFullName(row.pilot.name, row.pilot.surname)}
                   {(() => {
                     const league = row.pilot.league ?? "newbie";
                     return (

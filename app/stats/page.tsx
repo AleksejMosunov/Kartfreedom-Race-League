@@ -8,7 +8,6 @@ import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiCha
 
 type StatsParticipant = {
   participantId: string;
-  participantNumber: number;
   participantName: string;
   league?: "pro" | "newbie";
   totalPoints: number;
@@ -151,7 +150,7 @@ export default function StatsPage() {
           <article key={participant.participantId} className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
-                <p className="text-zinc-400 text-xs">#{participant.participantNumber}</p>
+                {/* pilot number removed */}
                 <h3 className="flex items-center gap-2 text-lg font-bold text-white">
                   <span>{participant.participantName}</span>
                   <span className="ml-1 text-xs uppercase text-zinc-400 tracking-wide">{participant.league === "pro" ? "PRO" : "ROOKIE"}</span>

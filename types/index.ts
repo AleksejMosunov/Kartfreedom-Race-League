@@ -3,7 +3,6 @@ export interface Pilot {
   name: string;
   surname: string;
   league?: "pro" | "newbie";
-  number: number;
   phone?: string;
   swsId?: string;
   stageId?: string;

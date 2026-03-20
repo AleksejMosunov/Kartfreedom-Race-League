@@ -32,7 +32,7 @@ function RegisterPageInner() {
   const [selectedChampionshipId, setSelectedChampionshipId] = useState("");
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
-  const [number, setNumber] = useState("");
+  // pilot number removed from registration
 
   const [phone, setPhone] = useState("");
   const [swsId, setSwsId] = useState("");
@@ -77,6 +77,8 @@ function RegisterPageInner() {
     if (found) setStageId(stageFromUrl);
   }, [stageFromUrl, stages]);
 
+
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
@@ -94,8 +96,20 @@ function RegisterPageInner() {
           return;
         }
       }
-      // Require selecting a stage when stages are available
-      if (stages && stages.length > 0 && !stageId) {
+      // Require selecting a stage when stages are available.
+      // Try multiple fallbacks for stage id: React state, native form data, and DOM lookup.
+      const formData = new FormData(e.currentTarget as HTMLFormElement);
+      const formStage = (formData.get("stageId") as string) || "";
+      let effectiveStageId = stageId || formStage || "";
+
+      if (!effectiveStageId) {
+        const select = (e.currentTarget as HTMLFormElement).querySelector(
+          'select[name="stageId"]',
+        ) as HTMLSelectElement | null;
+        if (select && select.value) effectiveStageId = select.value;
+      }
+
+      if (stages && stages.length > 0 && !effectiveStageId) {
         setError("Оберіть етап для реєстрації");
         setSubmitting(false);
         return;
@@ -104,7 +118,6 @@ function RegisterPageInner() {
         // Teams registration removed — always use individual payload
         name: name.trim(),
         surname: surname.trim(),
-        number: Number(number),
         phone: phone.trim(),
       };
       if (championshipMode === "sprint") (payload as Record<string, unknown>).league = league;
@@ -112,7 +125,7 @@ function RegisterPageInner() {
 
       if (swsId && swsId.trim()) (payload as Record<string, unknown>).swsId = swsId.trim();
       // Attach registrations[] instead of legacy top-level per-stage fields.
-      if (stageId) {
+      if (effectiveStageId) {
         if (championshipMode === "sprint") {
           if (!firstRace && !secondRace) {
             setError("Оберіть хоча б одну гонку");
@@ -122,10 +135,12 @@ function RegisterPageInner() {
         }
 
         (payload as Record<string, unknown>).championshipId = selectedChampionshipId;
+        // include top-level stageId for backwards-compatible server validation
+        (payload as Record<string, unknown>).stageId = effectiveStageId;
         (payload as Record<string, unknown>).registrations = [
           {
             championshipId: selectedChampionshipId,
-            stageId,
+            stageId: effectiveStageId,
             firstRace,
             secondRace,
             racesCount: firstRace && secondRace ? 2 : 1,
@@ -226,21 +241,7 @@ function RegisterPageInner() {
                     title="Лише літери, пробіл, дефіс або апостроф"
                     required
                   />
-                  <input
-                    type="text"
-                    placeholder="Номер *"
-                    value={number}
-                    onChange={(e) => {
-                      const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 3);
-                      setNumber(onlyDigits);
-                    }}
-                    className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-                    inputMode="numeric"
-                    pattern="\d{1,3}"
-                    maxLength={3}
-                    title="Введіть номер від 1 до 999"
-                    required
-                  />
+                  {/* Pilot number removed — no longer collected */}
                   <input
                     type="tel"
                     placeholder="Телефон +380XXXXXXXXX *"
@@ -299,6 +300,7 @@ function RegisterPageInner() {
                       <div className="mt-3">
                         <label className="text-sm text-zinc-400 block mb-2">Реєстрація на етап (обов&apos;язково)</label>
                         <select
+                          name="stageId"
                           required
                           className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                           value={stageId}
@@ -310,6 +312,9 @@ function RegisterPageInner() {
                           ))}
                           <option value="all">Реєстрація на всі етапи</option>
                         </select>
+                        <div className="mt-2 text-xs text-zinc-500">
+                          Debug: state: <span className="text-white">{stageId || '(empty)'}</span> • DOM select: <span className="text-white">{domSelectValue ?? '(null)'}</span> • URL param: <span className="text-white">{stageFromUrl || '(none)'}</span> • stages: <span className="text-white">{stages?.length ?? 0}</span>
+                        </div>
                       </div>
                     )}
                     {/* For regular sprint stages: explain that a stage is two classic sprints and allow choosing 1 or 2 races */}

@@ -44,9 +44,8 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
         ? (result.pilotId as typeof result.pilot)
         : null);
     const title = pilotObj ? formatPilotFullName(pilotObj.name, pilotObj.surname).toLowerCase() : "";
-    const number = pilotObj ? String(pilotObj.number) : "";
     const search = teamFilter.trim().toLowerCase();
-    const searchMatch = !search || title.includes(search) || number.includes(search);
+    const searchMatch = !search || title.includes(search);
 
     // league filtering (applies to sprint / sprint-pro championships)
     let leagueMatch = true;
@@ -170,7 +169,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
                   <td className="px-4 py-3">
                     {pilotObj ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-zinc-500 text-xs font-mono w-6">#{pilotObj.number}</span>
+                        <span className="text-zinc-500 text-xs font-mono w-6">{((pilotObj.name?.[0] ?? "") + (pilotObj.surname?.[0] ?? "")).toUpperCase()}</span>
                         <div className="min-w-0">
                           <div className="font-semibold text-white truncate">{formatPilotFullName(pilotObj.name, pilotObj.surname)}</div>
                           <div className="text-zinc-400 text-xs mt-1">{(pilotObj as Pilot).league === "pro" ? "PRO" : "ROOKIE"}</div>
@@ -239,7 +238,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
                 <div>
                   <p className="text-zinc-400 text-xs">{positionMedals[result.position] ?? result.position} місце</p>
                   <p className="text-white font-semibold">
-                    {pilotObj ? `#${pilotObj.number} ${formatPilotFullName(pilotObj.name, pilotObj.surname)}` : String(result.pilotId)}
+                    {pilotObj ? formatPilotFullName(pilotObj.name, pilotObj.surname) : String(result.pilotId)}
                   </p>
                   {pilotObj ? (
                     <div className="text-zinc-400 text-xs mt-1">{(pilotObj as Pilot).league === "pro" ? "PRO" : "ROOKIE"}</div>

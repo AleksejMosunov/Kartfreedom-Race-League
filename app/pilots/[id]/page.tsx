@@ -69,7 +69,8 @@ function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; 
       </Link>
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-6 flex items-center gap-5">
         <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-2xl shrink-0">
-          #{pilot.number}
+          {/* Pilot number removed — show initials instead */}
+          {pilot.name?.[0] ? pilot.name[0].toUpperCase() : ""}{pilot.surname?.[0] ? pilot.surname[0].toUpperCase() : ""}
         </div>
         <div>
           <h1 className="text-2xl font-black text-white">{pilotFullName}</h1>

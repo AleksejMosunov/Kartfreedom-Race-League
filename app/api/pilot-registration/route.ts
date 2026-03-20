@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     typeof body.name === "string" ? normalizeNamePart(body.name) : "";
   const surname =
     typeof body.surname === "string" ? normalizeNamePart(body.surname) : "";
-  const number = Number(body.number);
+  // pilot number removed — ignore body.number
   const phone = normalizePhone(
     typeof body.phone === "string" ? body.phone : "",
   );
@@ -126,15 +126,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (
-    !isValidNamePart(name) ||
-    !isValidNamePart(surname) ||
-    !Number.isInteger(number) ||
-    number < 1 ||
-    number > 999
-  ) {
+  if (!isValidNamePart(name) || !isValidNamePart(surname)) {
     return NextResponse.json(
-      { error: "Name, surname and number (1-999) are required" },
+      { error: "Name and surname are required and must contain only letters" },
       { status: 400 },
     );
   }
@@ -408,7 +402,6 @@ export async function POST(req: NextRequest) {
     const createDoc: Record<string, unknown> = {
       name,
       surname,
-      number,
       phone,
       avatar: typeof body.avatar === "string" ? body.avatar : undefined,
       league: leagueToSave,
@@ -513,7 +506,7 @@ export async function POST(req: NextRequest) {
       (err as { code: number }).code === 11000
     ) {
       return NextResponse.json(
-        { error: `Pilot with number ${number} already exists` },
+        { error: `Duplicate entry or unique constraint violation` },
         { status: 409 },
       );
     }

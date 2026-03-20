@@ -280,7 +280,7 @@ export function HomeChampionshipHub({
                       <div>
                         <p className="text-zinc-400 text-xs">#{leader.position}</p>
                         <div className="text-white font-semibold">
-                          <div className="leading-tight">#{leader.pilot.number} {leader.pilot.name} {leader.pilot.surname}</div>
+                          <div className="leading-tight">{leader.pilot.name} {leader.pilot.surname}</div>
                         </div>
                       </div>
                       <p className="text-white font-black text-xl">{leader.totalPoints}</p>

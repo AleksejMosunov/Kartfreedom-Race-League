@@ -5,7 +5,6 @@ export interface IPilot extends Document {
   championshipId: mongoose.Types.ObjectId;
   name: string;
   surname: string;
-  number: number;
   phone?: string;
   avatar?: string;
   league: "pro" | "newbie";
@@ -48,13 +47,15 @@ const PilotSchema = new Schema<IPilot>(
         message: "Pilot surname must contain only letters",
       },
     },
+    // `number` removed from required fields; keep optional for legacy compatibility
     number: {
       type: Number,
-      required: true,
+      required: false,
       min: 1,
       max: 999,
       validate: {
-        validator: (value: number) => Number.isInteger(value),
+        validator: (value: number) =>
+          value == null ? true : Number.isInteger(value),
         message: "Pilot number must be an integer",
       },
     },
@@ -87,13 +88,8 @@ const PilotSchema = new Schema<IPilot>(
 );
 
 // Unique number per championship only when `championshipId` is present.
-PilotSchema.index(
-  { championshipId: 1, number: 1 },
-  {
-    unique: true,
-    partialFilterExpression: { championshipId: { $exists: true } },
-  },
-);
+// NOTE: Unique per-championship pilot numbers removed in favor of registration-based identifiers.
+// If an index remains from older deployments, run the provided migration script to drop it.
 
 if (process.env.NODE_ENV !== "production" && models.Pilot) {
   delete models.Pilot;

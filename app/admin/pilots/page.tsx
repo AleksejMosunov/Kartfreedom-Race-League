@@ -132,7 +132,6 @@ function AdminPilotsPageContent() {
             <Card key={pilot._id} className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div>
-                  <span className="text-zinc-500 text-sm font-mono mr-2">#{pilot.number}</span>
                   <span className="text-white font-semibold">{formatPilotFullName(pilot.name, pilot.surname)}</span>
                 </div>
 
@@ -317,7 +316,7 @@ function AdminPilotsPageContent() {
                         else dnsSet.delete(pilot._id);
                       }}
                     />
-                    <span className="text-zinc-300">#{pilot.number} — {formatPilotFullName(pilot.name, pilot.surname)}</span>
+                    <span className="text-zinc-300">{formatPilotFullName(pilot.name, pilot.surname)}</span>
                   </label>
                 ))}
               </div>
