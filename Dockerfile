@@ -1,5 +1,5 @@
 ### Multi-stage Dockerfile for Next.js production
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -11,7 +11,7 @@ RUN npm ci --production=false
 COPY . .
 RUN npm run build
 
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
