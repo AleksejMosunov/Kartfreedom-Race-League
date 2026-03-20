@@ -33,4 +33,4 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           APP_DIR: ${{ secrets.APP_DIR }}
         run: |
-          ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "cd $APP_DIR && docker-compose pull || true && docker-compose up -d --build --remove-orphans"
+          ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "cd $APP_DIR && docker compose pull || true && docker compose up -d --build --remove-orphans"
