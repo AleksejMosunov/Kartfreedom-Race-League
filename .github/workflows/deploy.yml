@@ -11,10 +11,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Start SSH agent
-        uses: webfactory/ssh-agent@v0.8.1
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Start SSH agent (built-in)
+        run: |
+          set -e
+          eval "$(ssh-agent -s)"
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-add ~/.ssh/deploy_key
 
       - name: Sync repository to server (rsync)
         env:
