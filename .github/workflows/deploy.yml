@@ -61,10 +61,10 @@ jobs:
             docker image prune --force
 
             echo "📦 Pulling latest image..."
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
             docker pull $DOCKER_PULL_IMAGE
 
             echo "🚀 Starting container with env_file..."
             cd ~/Kartfreedom-Race-League
-            git pull
             docker-compose pull
             docker-compose up -d --force-recreate
