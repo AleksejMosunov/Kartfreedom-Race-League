@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Championship } from "@/lib/models/Championship";
@@ -19,7 +17,7 @@ import { logAudit, sanitizeForAudit, getAuditIp } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
-  const body = await req.json().catch(() => ({}));
+  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
   // validate league if provided; default to 'newbie' on create
   if (body.league !== undefined) {
@@ -212,15 +210,20 @@ export async function POST(req: NextRequest) {
     | undefined = undefined;
   if (Array.isArray(body.registrations)) {
     // minimal validation; detailed validation happens later when merging
-    providedRegistrations = body.registrations.map((r: any) => ({
-      championshipId:
-        typeof r.championshipId === "string" ? r.championshipId : undefined,
-      stageId: String(r.stageId),
-      firstRace: r.firstRace === undefined ? undefined : Boolean(r.firstRace),
-      secondRace:
-        r.secondRace === undefined ? undefined : Boolean(r.secondRace),
-      racesCount: r.racesCount === undefined ? undefined : Number(r.racesCount),
-    }));
+    providedRegistrations = (body.registrations as unknown[]).map((r) => {
+      const rr = r as Record<string, unknown>;
+      return {
+        championshipId:
+          typeof rr.championshipId === "string" ? rr.championshipId : undefined,
+        stageId: String(rr.stageId ?? ""),
+        firstRace:
+          rr.firstRace === undefined ? undefined : Boolean(rr.firstRace),
+        secondRace:
+          rr.secondRace === undefined ? undefined : Boolean(rr.secondRace),
+        racesCount:
+          rr.racesCount === undefined ? undefined : Number(rr.racesCount),
+      };
+    });
   }
 
   try {
@@ -290,11 +293,13 @@ export async function POST(req: NextRequest) {
         // remove any registrations for this championship (if present)
         existingPilot.registrations = (
           existingPilot.registrations || []
-        ).filter(
-          (r: any) =>
-            String(r.championshipId ?? existingPilot.championshipId) !==
-            String(current._id),
-        );
+        ).filter((r: Record<string, unknown>) => {
+          const rr = r as Record<string, unknown>;
+          return (
+            String(rr.championshipId ?? existingPilot.championshipId) !==
+            String(current._id)
+          );
+        });
       } else {
         const key = `${String(current._id)}:${providedStageId}`;
         if (regMap.has(key)) {
@@ -354,7 +359,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const newRegs = Array.from(regMap.values()).map((r: any) => ({
+      const newRegs = Array.from(regMap.values()).map((r) => ({
         championshipId: r.championshipId,
         stageId: r.stageId,
         firstRace: r.firstRace,
@@ -426,21 +431,37 @@ export async function POST(req: NextRequest) {
 
     // If client provided `registrations[]`, prefer that as the authoritative set for creation (must include stageId in entries).
     if (providedRegistrations) {
-      const regs: any[] = [];
+      const regs: Array<{
+        championshipId?: string | unknown;
+        stageId: string;
+        firstRace: boolean;
+        secondRace: boolean;
+        racesCount: number;
+      }> = [];
       for (const r of providedRegistrations) {
         if (!r.stageId) continue;
+        const pr = r as {
+          championshipId?: string;
+          stageId: string;
+          firstRace?: boolean;
+          secondRace?: boolean;
+          racesCount?: number;
+        };
+        const prFirst =
+          pr.firstRace === undefined ? true : Boolean(pr.firstRace);
+        const prSecond =
+          pr.secondRace === undefined ? false : Boolean(pr.secondRace);
         regs.push({
-          championshipId: r.championshipId ? r.championshipId : current._id,
-          stageId: r.stageId,
-          firstRace: r.firstRace === undefined ? true : Boolean(r.firstRace),
-          secondRace:
-            r.secondRace === undefined ? false : Boolean(r.secondRace),
+          championshipId: pr.championshipId ? pr.championshipId : current._id,
+          stageId: pr.stageId,
+          firstRace: prFirst,
+          secondRace: prSecond,
           racesCount:
-            r.racesCount === undefined
-              ? r.firstRace && r.secondRace
+            pr.racesCount === undefined
+              ? prFirst && prSecond
                 ? 2
                 : 1
-              : Number(r.racesCount),
+              : Number(pr.racesCount),
         });
       }
       if (regs.length > 0) createDoc.registrations = regs;
