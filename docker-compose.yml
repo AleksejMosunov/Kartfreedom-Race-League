@@ -1,7 +1,10 @@
 version: "3.8"
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        MONGODB_URI: ${MONGODB_URI}
     image: kartfreedom-app:latest
     restart: always
     environment:

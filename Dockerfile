@@ -3,6 +3,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Allow passing sensitive values at build time (do not commit them)
+ARG MONGODB_URI
+ENV MONGODB_URI=${MONGODB_URI}
+
 # Install deps
 COPY package*.json ./
 RUN npm ci --production=false
