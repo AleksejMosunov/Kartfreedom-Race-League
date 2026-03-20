@@ -175,6 +175,22 @@ export async function POST(req: NextRequest) {
       ? body.swsId.trim()
       : undefined;
 
+  // If client provided SWS ID, check for duplicates within the championship to provide a nicer error.
+  if (providedSwsId) {
+    const existingWithSws = await Pilot.findOne({
+      championshipId: current._id,
+      swsId: providedSwsId,
+    })
+      .select({ _id: 1 })
+      .lean();
+    if (existingWithSws) {
+      return NextResponse.json(
+        { error: "SWS ID вже використовується в цьому чемпіонаті" },
+        { status: 409 },
+      );
+    }
+  }
+
   // Accept new boolean fields `firstRace` and `secondRace`. Backwards compatible with `racesCount`.
   let firstRace = true;
   let secondRace = false;

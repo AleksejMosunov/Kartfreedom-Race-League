@@ -92,6 +92,13 @@ const PilotSchema = new Schema<IPilot>(
 // NOTE: Unique per-championship pilot numbers removed in favor of registration-based identifiers.
 // If an index remains from older deployments, run the provided migration script to drop it.
 
+// Ensure SWS ID is unique per championship when provided.
+// Sparse index used so pilots without swsId are unaffected.
+PilotSchema.index(
+  { championshipId: 1, swsId: 1 },
+  { unique: true, sparse: true },
+);
+
 if (process.env.NODE_ENV !== "production" && models.Pilot) {
   delete models.Pilot;
 }

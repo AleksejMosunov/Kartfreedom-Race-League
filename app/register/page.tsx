@@ -36,6 +36,8 @@ function RegisterPageInner() {
 
   const [phone, setPhone] = useState("");
   const [swsId, setSwsId] = useState("");
+  const [swsError, setSwsError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [stageId, setStageId] = useState("");
   const [league, setLeague] = useState("");
   const [bothRaces, setBothRaces] = useState(false);
@@ -88,6 +90,8 @@ function RegisterPageInner() {
     // Teams registration removed; no multi-driver validation required here.
 
     try {
+      setSwsError("");
+      setPhoneError("");
       // client-side check: league required for regular sprint registration
       if (championshipMode === "sprint") {
         if (!league) {
@@ -126,26 +130,49 @@ function RegisterPageInner() {
       if (swsId && swsId.trim()) (payload as Record<string, unknown>).swsId = swsId.trim();
       // Attach registrations[] instead of legacy top-level per-stage fields.
       if (effectiveStageId) {
-        if (championshipMode === "sprint") {
-          if (!firstRace && !secondRace) {
-            setError("Оберіть хоча б одну гонку");
-            setSubmitting(false);
-            return;
+        // If user selected 'all', expand to individual registrations for every stage
+        if (effectiveStageId === "all") {
+          if (championshipMode === "sprint" && !firstRace && !secondRace && !bothRaces) {
+            // default to firstRace if none explicitly selected
           }
-        }
+          const regs = (stages ?? []).map((s: Stage) => {
+            const useFirst = bothRaces ? true : firstRace || (!firstRace && !secondRace);
+            const useSecond = bothRaces ? true : secondRace || false;
+            return {
+              championshipId: selectedChampionshipId,
+              stageId: s._id,
+              firstRace: Boolean(useFirst),
+              secondRace: Boolean(useSecond),
+              racesCount: (useFirst && useSecond) ? 2 : 1,
+            };
+          }).filter(Boolean as unknown as (v: unknown) => boolean);
 
-        (payload as Record<string, unknown>).championshipId = selectedChampionshipId;
-        // include top-level stageId for backwards-compatible server validation
-        (payload as Record<string, unknown>).stageId = effectiveStageId;
-        (payload as Record<string, unknown>).registrations = [
-          {
-            championshipId: selectedChampionshipId,
-            stageId: effectiveStageId,
-            firstRace,
-            secondRace,
-            racesCount: firstRace && secondRace ? 2 : 1,
-          },
-        ];
+          (payload as Record<string, unknown>).championshipId = selectedChampionshipId;
+          // set top-level stageId to 'all' so server recognizes optingAllStages
+          (payload as Record<string, unknown>).stageId = "all";
+          (payload as Record<string, unknown>).registrations = regs;
+        } else {
+          if (championshipMode === "sprint") {
+            if (!firstRace && !secondRace) {
+              setError("Оберіть хоча б одну гонку");
+              setSubmitting(false);
+              return;
+            }
+          }
+
+          (payload as Record<string, unknown>).championshipId = selectedChampionshipId;
+          // include top-level stageId for backwards-compatible server validation
+          (payload as Record<string, unknown>).stageId = effectiveStageId;
+          (payload as Record<string, unknown>).registrations = [
+            {
+              championshipId: selectedChampionshipId,
+              stageId: effectiveStageId,
+              firstRace,
+              secondRace,
+              racesCount: firstRace && secondRace ? 2 : 1,
+            },
+          ];
+        }
       } else {
         // No stage selected — still include championship context so server can choose current or provided championship
         (payload as Record<string, unknown>).championshipId = selectedChampionshipId;
@@ -159,7 +186,23 @@ function RegisterPageInner() {
 
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(body.error ?? "Не вдалося завершити реєстрацію");
+        const msg = body.error ?? "Не вдалося завершити реєстрацію";
+        // Field-specific mapping
+        if (res.status === 409) {
+          if (msg.toLowerCase().includes("телефон")) {
+            setPhoneError(msg);
+            setError("");
+            setSubmitting(false);
+            return;
+          }
+          if (msg.toLowerCase().includes("sws")) {
+            setSwsError(msg);
+            setError("");
+            setSubmitting(false);
+            return;
+          }
+        }
+        throw new Error(msg);
       }
 
       // Keep user personal data so they can quickly register for another stage.
@@ -227,8 +270,6 @@ function RegisterPageInner() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-                    pattern="[A-Za-zА-Яа-яІіЇїЄєҐґ'’ -]+"
-                    title="Лише літери, пробіл, дефіс або апостроф"
                     required
                   />
                   <input
@@ -237,8 +278,6 @@ function RegisterPageInner() {
                     value={surname}
                     onChange={(e) => setSurname(e.target.value)}
                     className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-                    pattern="[A-Za-zА-Яа-яІіЇїЄєҐґ'’ -]+"
-                    title="Лише літери, пробіл, дефіс або апостроф"
                     required
                   />
                   {/* Pilot number removed — no longer collected */}
@@ -261,6 +300,7 @@ function RegisterPageInner() {
                     title="Тільки українські номери: +380XXXXXXXXX"
                     required
                   />
+                  {phoneError && <p className="text-red-400 text-xs mt-2">{phoneError}</p>}
                   <div className="sm:col-span-2">
                     {championshipMode === "sprint" && (
                       <>
@@ -287,6 +327,7 @@ function RegisterPageInner() {
                         onChange={(e) => setSwsId(e.target.value)}
                         className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                       />
+                      {swsError && <p className="text-red-400 text-xs mt-2">{swsError}</p>}
                       <p className="text-zinc-500 text-xs mt-2">
                         Якщо ви ще не SWS пілот — зареєструйтесь на сайті SWS.{' '}
                         <a href="https://www.sodiwseries.com/en-gb/become-sws-driver.html" target="_blank" rel="noreferrer" className="text-red-500">

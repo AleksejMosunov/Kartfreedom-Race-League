@@ -586,9 +586,9 @@ export default function AdminStagesPage() {
               <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                 {participantsMap[stage._id] ? (
                   <div className="text-sm text-zinc-300 mr-2 text-right">
-                    <div className="text-zinc-400 text-xs">Учасників {participantsMap[stage._id].total}</div>
-                    <div className="text-zinc-400 text-xs">1 гонка: {participantsMap[stage._id].byRacesCount[1]} </div>
-                    <div className="text-zinc-400 text-xs">2 гонки: {participantsMap[stage._id].byRacesCount[2]}</div>
+                    <div className="text-zinc-400 text-xs">Загальна кількість: {participantsMap[stage._id].total}</div>
+                    <div className="text-zinc-400 text-xs">Перша гонка: {participantsMap[stage._id].byRacesCount[1]} </div>
+                    <div className="text-zinc-400 text-xs">Друга гонка: {participantsMap[stage._id].byRacesCount[2]}</div>
                     {participantsMap[stage._id].total > 0 && (
                       <Link href={`/admin/stages/${stage._id}`} className="text-sm text-zinc-400 hover:text-white">Список пілотів</Link>
                     )}
