@@ -79,7 +79,6 @@ export function HomeChampionshipHub({
         .sort((a, b) => b.number - a.number)[0] ?? null,
     [stages],
   );
-  console.log(latestCompleted);
   const leaders = standings.slice(0, 3);
   const isSprint = selectedChampionship?.championshipType === "sprint";
   const newbieLeaders = isSprint
