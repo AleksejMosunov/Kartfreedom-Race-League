@@ -67,11 +67,7 @@ function PilotDetailPageContent({ params }: { params: Promise<{ id: string; }>; 
       <Link href="/pilots" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
         ← Усі {isTeams ? "команди" : "пілоти"}
       </Link>
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-6 flex items-center gap-5">
-        <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-2xl shrink-0">
-          {/* Pilot number removed — show initials instead */}
-          {pilot.name?.[0] ? pilot.name[0].toUpperCase() : ""}{pilot.surname?.[0] ? pilot.surname[0].toUpperCase() : ""}
-        </div>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-6 flex items-center gap-4">
         <div>
           <h1 className="text-2xl font-black text-white">{pilotFullName}</h1>
         </div>

@@ -169,7 +169,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
                   <td className="px-4 py-3">
                     {pilotObj ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-zinc-500 text-xs font-mono w-6">{((pilotObj.name?.[0] ?? "") + (pilotObj.surname?.[0] ?? "")).toUpperCase()}</span>
+                        {/* initials removed */}
                         <div className="min-w-0">
                           <div className="font-semibold text-white truncate">{formatPilotFullName(pilotObj.name, pilotObj.surname)}</div>
                           <div className="text-zinc-400 text-xs mt-1">{(pilotObj as Pilot).league === "pro" ? "PRO" : "ROOKIE"}</div>
