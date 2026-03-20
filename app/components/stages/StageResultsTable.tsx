@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useState, useEffect } from "react";
 import { Stage, Pilot } from "@/types";
 import { Badge } from "@/app/components/ui/Badge";

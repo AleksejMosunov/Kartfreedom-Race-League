@@ -5,6 +5,7 @@ export interface IPilot extends Document {
   championshipId: mongoose.Types.ObjectId;
   name: string;
   surname: string;
+  number?: number;
   phone?: string;
   avatar?: string;
   league: "pro" | "newbie";

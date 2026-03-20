@@ -1,8 +1,7 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports */
 const mongoose = require("mongoose");
 const { ObjectId } = mongoose.Types;
-
-process.env.MONGODB_URI = "mongodb+srv://AdminKartfreedom:Bscme9imrKAsHpks@cluster0.b3vxtny.mongodb.net/kartfreedom?retryWrites=true&w=majority&appName=Cluster0";
 
 async function main() {
   const clearLegacy = process.argv.includes("--clear-legacy");

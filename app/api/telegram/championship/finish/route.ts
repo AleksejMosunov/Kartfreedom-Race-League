@@ -33,7 +33,9 @@ export async function POST(req: NextRequest) {
   }
 
   const [participantsRaw, stagesRaw] = await Promise.all([
-    Pilot.find({ championshipId: championship._id }).sort({ number: 1 }).lean(),
+    Pilot.find({ championshipId: championship._id })
+      .sort({ surname: 1, name: 1 })
+      .lean(),
     Stage.find({ championshipId: championship._id }).sort({ number: 1 }).lean(),
   ]);
 
@@ -50,8 +52,8 @@ export async function POST(req: NextRequest) {
   const medals = ["🥇", "🥈", "🥉"];
   const podium = top3.map((row, idx) => {
     const title = row.pilot.surname
-      ? `#${row.pilot.number} ${row.pilot.name} ${row.pilot.surname}`
-      : `#${row.pilot.number} ${row.pilot.name}`;
+      ? `${row.pilot.name} ${row.pilot.surname}`
+      : `${row.pilot.name}`;
     return `${medals[idx]} <b>${escapeHtml(title)}</b> — ${row.totalPoints} очк.`;
   });
 

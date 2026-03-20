@@ -202,7 +202,6 @@ export default function AdminChampionshipDetailsPage() {
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-zinc-500 text-xs font-mono w-5">#{row.pilot.number}</span>
                         <span className="font-semibold text-white">
                           {formatPilotFullName(row.pilot.name, row.pilot.surname)}
                         </span>
@@ -316,9 +315,7 @@ export default function AdminChampionshipDetailsPage() {
                                   </td>
                                   <td className="px-4 py-2">
                                     <div className="flex items-center gap-2">
-                                      {pilot && (
-                                        <span className="text-zinc-500 text-xs font-mono">#{pilot.number}</span>
-                                      )}
+                                      {pilot && null}
                                       <span className="text-white">
                                         {pilot
                                           ? formatPilotFullName(pilot.name, pilot.surname)
@@ -366,7 +363,6 @@ export default function AdminChampionshipDetailsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {pilots.map((pilot) => (
               <div key={pilot._id} className="border border-zinc-800 rounded-lg px-4 py-2 flex items-center gap-3">
-                <span className="text-zinc-500 text-sm font-mono w-8">#{pilot.number}</span>
                 <span className="text-white font-medium">
                   {formatPilotFullName(pilot.name, pilot.surname)}
                 </span>

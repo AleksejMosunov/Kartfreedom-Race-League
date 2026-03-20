@@ -312,9 +312,7 @@ function RegisterPageInner() {
                           ))}
                           <option value="all">Реєстрація на всі етапи</option>
                         </select>
-                        <div className="mt-2 text-xs text-zinc-500">
-                          Debug: state: <span className="text-white">{stageId || '(empty)'}</span> • DOM select: <span className="text-white">{domSelectValue ?? '(null)'}</span> • URL param: <span className="text-white">{stageFromUrl || '(none)'}</span> • stages: <span className="text-white">{stages?.length ?? 0}</span>
-                        </div>
+                        {/* debug info removed */}
                       </div>
                     )}
                     {/* For regular sprint stages: explain that a stage is two classic sprints and allow choosing 1 or 2 races */}

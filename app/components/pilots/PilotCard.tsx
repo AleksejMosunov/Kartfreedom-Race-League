@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Pilot } from "@/types";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
@@ -8,7 +7,7 @@ interface PilotCardProps {
   championshipId?: string;
 }
 
-const passthroughImageLoader = ({ src }: { src: string; }) => src;
+// Image and passthrough loader removed — avatars are hidden by design
 
 export function PilotCard({ pilot, championshipId }: PilotCardProps) {
   const fullName = formatPilotFullName(pilot.name, pilot.surname);

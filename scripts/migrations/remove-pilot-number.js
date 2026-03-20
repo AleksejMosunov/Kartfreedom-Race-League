@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Migration script: remove `number` field from Pilot documents and drop related index.
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const { connectToDatabase } = require("../../lib/mongodb");
 const { Pilot } = require("../../lib/models/Pilot");
 

@@ -393,7 +393,7 @@ export default function AdminStagesPage() {
     if (invalidPenaltyRow) {
       const pilot = pilots.find((p) => p._id === invalidPenaltyRow.pilotId);
       setResultsError(
-        `Для штрафу пілота #${pilot?.number ?? "?"} ${pilot ? formatPilotFullName(pilot.name, pilot.surname) : ""} потрібно вказати причину.`,
+        `Для штрафу пілота ${pilot ? formatPilotFullName(pilot.name, pilot.surname) : "?"} потрібно вказати причину.`,
       );
       return;
     }
@@ -680,10 +680,10 @@ export default function AdminStagesPage() {
 
                 <div className="mb-3 flex flex-wrap gap-2">
                   <Button type="button" variant="ghost" size="sm" onClick={() => {
-                    const sorted = [...pilots].sort((a, b) => a.number - b.number);
+                    const sorted = [...pilots].sort((a, b) => formatPilotFullName(a.name, a.surname).localeCompare(formatPilotFullName(b.name, b.surname)));
                     setResultsRows((rows) => rows.map((row) => ({ ...row, position: sorted.findIndex((p) => p._id === row.pilotId) + 1, dnf: false, dns: false })));
                   }}>
-                    Авто-розстановка за номером
+                    Авто-розстановка за іменем
                   </Button>
                   <Button type="button" variant="ghost" size="sm" onClick={() => setResultsRows((rows) => rows.map((row) => ({ ...row, penaltyPoints: 0, penaltyReason: "" })))}>
                     Очистити всі штрафи
@@ -728,7 +728,7 @@ export default function AdminStagesPage() {
                           <label className="flex items-center gap-1 text-xs text-zinc-400">
                             <input type="checkbox" checked={selectedRows.includes(row.pilotId)} onChange={() => toggleSelectRow(row.pilotId)} className="accent-[#ccff00]" /> Обрати
                           </label>
-                          <span className="text-white w-40 shrink-0 text-sm">#{pilot?.number} {pilot ? formatPilotFullName(pilot.name, pilot.surname) : ""}</span>
+                          <span className="text-white w-40 shrink-0 text-sm">{pilot ? formatPilotFullName(pilot.name, pilot.surname) : ""}</span>
                           <div className="flex items-center gap-1">
                             <span className="text-zinc-500 text-xs">Місце:</span>
                             <input type="number" value={row.position} min={1} max={pilots.length} onChange={(e) => updateRow(row.pilotId, "position", Number(e.target.value))} className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm text-center" />
