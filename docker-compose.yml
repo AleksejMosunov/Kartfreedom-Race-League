@@ -2,12 +2,10 @@ version: "3.9"
 
 services:
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/aleksejmosunov/kartfreedom-app:latest
     container_name: kartfreedom-app
     restart: unless-stopped
     ports:
       - "3001:3001"
     env_file:
-      - ./.env
+      - /root/Kartfreedom-Race-League/.env
