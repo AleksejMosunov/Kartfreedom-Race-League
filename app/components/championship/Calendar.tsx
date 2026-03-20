@@ -208,7 +208,7 @@ const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, i
       />
       <div className="flex justify-between items-start mb-1 relative z-10">
         <div
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-[11px] font-black tracking-[0.15em] uppercase"
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-[9px] sm:text-[11px] font-black tracking-[0.15em] uppercase"
           style={{ background: (cup.colorVarAlpha as any), color: (cup.colorVar as any) }}
         >
           {cup.tag === 'Sprint Pro' ? <Zap size={12} /> : <Trophy size={12} />}
@@ -221,14 +221,14 @@ const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, i
         </div>
       </div>
 
-      <h3 className="font-display text-lg sm:text-2xl font-black uppercase tracking-tight leading-none mb-1 relative z-10">
+      <h3 className="font-display text-sm sm:text-2xl font-black uppercase tracking-tight leading-none mb-1 relative z-10">
         <span className="whitespace-pre-line">{cup.title}</span>
       </h3>
 
       <div className="flex-grow flex flex-col relative z-10">
         <div className={`space-y-1 ${cup.id === 'endurance' ? 'mb-0 min-h-0' : 'mb-0 min-h-[140px]'}`}>
-          <div className="text-[11px] font-bold text-white/20 uppercase tracking-widest">Формат</div>
-          <div className="text-[12px] text-racing-muted leading-tight flex items-start gap-1.5">
+          <div className="text-[9px] sm:text-[11px] font-bold text-white/20 uppercase tracking-widest">Формат</div>
+          <div className="text-[11px] sm:text-[12px] text-racing-muted leading-tight flex items-start gap-1.5">
             <div className="flex-1 space-y-1">
               {cup.stages.some(s => s.format) ? (
                 cup.stages.map((s: Stage, i: number) => s.format ? (
@@ -246,8 +246,8 @@ const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, i
 
         <div className={`${cup.id === 'endurance' ? '' : 'flex-grow flex flex-col'}`}>
           <div className={`space-y-0.5 border-t border-white/5 mb-5 ${cup.id === 'endurance' ? 'pt-0.5' : 'pt-0.5'}`}>
-            <div className="text-[11px] font-bold text-white/20 uppercase tracking-widest">{cup.tag === 'Sprint Pro' || cup.tag === 'Endurance' ? 'Нагорода' : 'Нагорода для заліку Rookie'}</div>
-            <div className="text-[12px] text-racing-muted leading-tight flex items-start gap-1.5 min-h-[18px]">
+            <div className="text-[9px] sm:text-[11px] font-bold text-white/20 uppercase tracking-widest">{cup.tag === 'Sprint Pro' || cup.tag === 'Endurance' ? 'Нагорода' : 'Нагорода для заліку Rookie'}</div>
+            <div className="text-[11px] sm:text-[12px] text-racing-muted leading-tight flex items-start gap-1.5 min-h-[18px]">
               <Award size={10} className="opacity-40 shrink-0 mt-0.5" />
               <span className="flex-1 whitespace-pre-line">{cup.prize}</span>
             </div>
@@ -260,7 +260,7 @@ const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, i
                 className={`bg-white/5 border border-white/5 rounded py-3 sm:py-4 px-4 sm:px-6 flex flex-col justify-start items-center text-center flex-1 min-w-[30px] relative group transition-all hover:border-white/20 hover:bg-white/10`}
               >
                 <span className="block text-[8px] font-bold tracking-widest uppercase text-white/20 mb-0.5 mt-1">{stage.label}</span>
-                <span style={{ color: (cup.colorVar as any) }} className={`font-display text-lg sm:text-xl font-bold tracking-wider leading-none`}>{stage.date}</span>
+                <span style={{ color: (cup.colorVar as any) }} className={`font-display text-base sm:text-xl font-bold tracking-wider leading-none`}>{stage.date}</span>
 
                 {idx === cup.stages.length - 1 && (
                   <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-[#ff3a2b] rounded-full shadow-[0_0_6px_rgba(255,58,43,0.5)]" />
@@ -317,7 +317,7 @@ const Calendar: React.FC = () => {
               <img src={(mainLogo as any).src ?? mainLogo} alt="KartFreedom Logo" className="h-full w-auto object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
             </div>
             <div className="flex items-center justify-center gap-3">
-              <div className="font-display text-xl sm:text-2xl font-bold tracking-[0.2em] uppercase text-white -mt-1 opacity-80">
+              <div className="font-display text-base sm:text-2xl font-bold tracking-[0.2em] uppercase text-white -mt-1 opacity-80">
                 Race League 2026
               </div>
               {/* {!isExporting &&
@@ -332,46 +332,46 @@ const Calendar: React.FC = () => {
               } */}
             </div>
 
-            <div className="flex justify-center items-center gap-4 mt-2">
+            <div className="flex flex-wrap justify-center items-center gap-4 mt-2">
 
-              <div className="w-px h-4 bg-white/10" />
+              <div className="hidden sm:block w-px h-4 bg-white/10" />
               <div className="flex flex-col items-center">
-                <div className="text-[14px] font-black text-white leading-none">39</div>
+                <div className="text-[12px] sm:text-[14px] font-black text-white leading-none">39</div>
                 <div className="text-[8px] font-bold text-racing-muted uppercase tracking-widest mt-1">Гонок</div>
               </div>
-              <div className="w-px h-4 bg-white/10" />
+              <div className="hidden sm:block w-px h-4 bg-white/10" />
               <div className="flex flex-col items-center">
-                <div className="text-[14px] font-black text-white leading-none">25</div>
+                <div className="text-[12px] sm:text-[14px] font-black text-white leading-none">25</div>
                 <div className="text-[8px] font-bold text-racing-muted uppercase tracking-widest mt-1">Етапів</div>
               </div>
-              <div className="w-px h-4 bg-white/10" />
+              <div className="hidden sm:block w-px h-4 bg-white/10" />
               <div className="flex flex-col items-center">
-                <div className="text-[14px] font-black text-white leading-none">7</div>
+                <div className="text-[12px] sm:text-[14px] font-black text-white leading-none">7</div>
                 <div className="text-[8px] font-bold text-racing-muted uppercase tracking-widest mt-1">Чемпіонатів</div>
               </div>
-              <div className="w-px h-4 bg-white/10" />
+              <div className="hidden sm:block w-px h-4 bg-white/10" />
               <div className="flex flex-col items-center">
-                <div className="text-[14px] font-black text-[#ff3a2b] leading-none">05.04</div>
+                <div className="text-[12px] sm:text-[14px] font-black text-[#ff3a2b] leading-none">05.04</div>
                 <div className="text-[8px] font-bold text-[#ff3a2b] uppercase tracking-widest mt-1">Старт</div>
               </div>
-              <div className="w-px h-4 bg-white/10" />
+              <div className="hidden sm:block w-px h-4 bg-white/10" />
 
               <img src={(rbLogo as any).src ?? rbLogo}
                 alt="Red Bull Logo"
-                className="h-12 w-auto object-contain opacity-100"
+                className="h-8 sm:h-12 w-auto object-contain opacity-100"
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous" />
               <img
                 src={(Glogo as any).src ?? Glogo}
                 alt="2G Logo"
-                className="h-7 w-auto object-contain opacity-100"
+                className="h-6 sm:h-7 w-auto object-contain opacity-100"
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
               />
               <img
                 src={(swsLogo as any).src ?? swsLogo}
                 alt="SWS Logo"
-                className="h-7 w-auto object-contain opacity-100"
+                className="h-6 sm:h-7 w-auto object-contain opacity-100"
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
               />
