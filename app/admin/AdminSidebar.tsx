@@ -135,9 +135,6 @@ export function AdminSidebar() {
     if (role === "marshal") {
       return navItems.filter((item) => item.href === "/admin/stages");
     }
-    if (role === "editor") {
-      return [];
-    }
     return navItems;
   }, [role]);
 

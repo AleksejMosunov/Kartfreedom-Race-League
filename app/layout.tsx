@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/app/header/Header";
 import { Footer } from "@/app/footer/Footer";
-import { Analytics } from '@vercel/analytics/react';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +40,6 @@ export default function RootLayout({
           {children}
         </div>
         <Footer />
-        <Analytics />
       </body>
     </html>
   );

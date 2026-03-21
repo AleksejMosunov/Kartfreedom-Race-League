@@ -75,7 +75,7 @@ function RegisterPageInner() {
   useEffect(() => {
     if (!stageFromUrl) return;
     if (!stages || stages.length === 0) return;
-    const found = stages.find((s: Stage) => s._id === stageFromUrl);
+    const found = stages.find((s: Stage) => s._id === stageFromUrl && !s.isCompleted);
     if (found) setStageId(stageFromUrl);
   }, [stageFromUrl, stages]);
 
@@ -135,7 +135,7 @@ function RegisterPageInner() {
           if (championshipMode === "sprint" && !firstRace && !secondRace && !bothRaces) {
             // default to firstRace if none explicitly selected
           }
-          const regs = (stages ?? []).map((s: Stage) => {
+          const regs = (stages ?? []).filter((s: Stage) => !s.isCompleted).map((s: Stage) => {
             const useFirst = bothRaces ? true : firstRace || (!firstRace && !secondRace);
             const useSecond = bothRaces ? true : secondRace || false;
             return {
@@ -349,10 +349,15 @@ function RegisterPageInner() {
                         >
                           <option value="">-- оберіть етап --</option>
                           {stages.map((s: Stage) => (
-                            <option key={s._id} value={s._id}>{`${s.number} — ${s.name} (${new Date(s.date).toLocaleDateString()})`}</option>
+                            <option key={s._id} value={s._id} disabled={s.isCompleted}>
+                              {`${s.number} — ${s.name} (${new Date(s.date).toLocaleDateString()})`}
+                              {s.isCompleted ? " — (Завершено)" : ""}
+                            </option>
                           ))}
-                          <option value="all">Реєстрація на всі етапи</option>
+                          <option value="all">Реєстрація на всі етапи (без завершених)</option>
                         </select>
+                        <p className="text-zinc-500 text-xs mt-2">Опція «Реєстрація на всі етапи» не включає етапи, які вже позначені як завершені.</p>
+
                         {/* debug info removed */}
                       </div>
                     )}
