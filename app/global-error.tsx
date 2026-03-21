@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 
 type GlobalErrorProps = {
@@ -12,6 +13,8 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
+
+  const router = useRouter();
 
   return (
     <html>
@@ -27,6 +30,13 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             className="mt-5 inline-flex items-center justify-center rounded-md bg-[#ccff00] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-95"
           >
             Спробувати ще раз
+          </button>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="mt-3 inline-flex items-center justify-center rounded-md border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800"
+          >
+            Назад
           </button>
         </div>
       </body>

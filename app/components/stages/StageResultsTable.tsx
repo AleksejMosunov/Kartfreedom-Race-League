@@ -32,6 +32,11 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
   );
   const [statusFilter, setStatusFilter] = useState<"all" | "fin" | "dnf" | "dns">("all");
   const [teamFilter, setTeamFilter] = useState("");
+  // derive the effective championship type and league filter without
+  // forcing setState inside effects (prevents cascading renders)
+  const effectiveChampionshipType = championshipTypeLocal ?? championshipType;
+  const effectiveLeagueFilter: "all" | "pro" | "newbie" =
+    effectiveChampionshipType === "sprint-pro" ? "pro" : leagueFilter;
 
   const sorted = [...stage.results].sort((a, b) => a.position - b.position);
   const filtered = sorted.filter((result) => {
@@ -83,11 +88,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
     };
   }, [championshipIdFromStage]);
 
-  // derive the effective championship type and league filter without
-  // forcing setState inside effects (prevents cascading renders)
-  const effectiveChampionshipType = championshipTypeLocal ?? championshipType;
-  const effectiveLeagueFilter: "all" | "pro" | "newbie" =
-    effectiveChampionshipType === "sprint-pro" ? "pro" : leagueFilter;
+
 
   if (!sorted.length) {
     return <p className="text-zinc-500 text-center py-8">Результати ще не додані.</p>;
