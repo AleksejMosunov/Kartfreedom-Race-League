@@ -11,6 +11,8 @@ import {
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const ALLOWED_CORS_ORIGINS = new Set([
   "https://kartfreedom-race-league.vercel.app",
+  // Production domain served by your nginx proxy
+  "https://kartfreedom-race-league.pp.ua",
   "http://localhost:3000",
 ]);
 
