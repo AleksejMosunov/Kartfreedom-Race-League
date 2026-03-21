@@ -155,7 +155,7 @@ const CALENDAR_DATA: Cup[] = [
     colorVar: 'var(--color-racing-endurance)',
     colorVarAlpha: 'var(--color-racing-endurance-10)',
     format: '3 етапи · 4-годинна командна гонка',
-    prize: 'Фінансування участі у 7г гонці на треку 2G для топ-3 пілотів чемпіонату\nФінансування включає трансфер, проживання та участь у гонці.',
+    prize: '',
     stages: [
       { date: '13.09', label: 'Етап 1', format: 'Кваліфікація → Гонка 240 хв → Нагородження' },
       { date: '25.10', label: 'Етап 2', format: 'Кваліфікація → Гонка 240 хв → Нагородження' },
@@ -244,13 +244,20 @@ const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, i
           </div>
         </div>
 
+
         <div className={`${cup.id === 'endurance' ? '' : 'flex-grow flex flex-col'}`}>
           <div className={`space-y-0.5 border-t border-white/5 mb-5 ${cup.id === 'endurance' ? 'pt-0.5' : 'pt-0.5'}`}>
-            <div className="text-[9px] sm:text-[11px] font-bold text-white/20 uppercase tracking-widest">{cup.tag === 'Sprint Pro' || cup.tag === 'Endurance' ? 'Нагорода' : 'Нагорода для заліку Rookie'}</div>
-            <div className="text-[11px] sm:text-[12px] text-racing-muted leading-tight flex items-start gap-1.5 min-h-[18px]">
-              <Award size={10} className="opacity-40 shrink-0 mt-0.5" />
-              <span className="flex-1 whitespace-pre-line">{cup.prize}</span>
-            </div>
+            {cup.tag !== 'Endurance' && (
+              <>
+                <div className="text-[9px] sm:text-[11px] font-bold text-white/20 uppercase tracking-widest">
+                  {cup.tag === 'Sprint Pro' || cup.tag === 'Endurance' ? 'Нагорода' : 'Нагорода для заліку Rookie'}
+                </div>
+                <div className="text-[11px] sm:text-[12px] text-racing-muted leading-tight flex items-start gap-1.5 min-h-[18px]">
+                  <Award size={10} className="opacity-40 shrink-0 mt-0.5" />
+                  <span className="flex-1 whitespace-pre-line">{cup.prize}</span>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="mt-auto flex flex-wrap gap-1 pl-[5px]">
