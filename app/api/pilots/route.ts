@@ -94,10 +94,17 @@ export async function GET(req: NextRequest) {
         isCompleted: true,
       },
     },
-    { $unwind: "$results" },
+    { $unwind: "$races" },
+    { $unwind: "$races.results" },
+    // unique per stage + pilot
     {
       $group: {
-        _id: "$results.pilotId",
+        _id: { stage: "$_id", pilot: "$races.results.pilotId" },
+      },
+    },
+    {
+      $group: {
+        _id: "$_id.pilot",
         completedStagesCount: { $sum: 1 },
       },
     },

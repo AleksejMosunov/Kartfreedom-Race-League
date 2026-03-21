@@ -32,7 +32,15 @@ export function StageCard({ stage, championshipId }: StageCardProps) {
     (stageDay.getTime() - todayDay.getTime()) / (1000 * 60 * 60 * 24),
   );
 
-  const [participantsCount, setParticipantsCount] = useState<number | null>(stage.results.length ?? null);
+  const [participantsCount, setParticipantsCount] = useState<number | null>(() => {
+    const ids = ((stage as any).races ?? []).flatMap((r: any) => (r.results ?? []).map((res: any) => {
+      if (res.pilot?._id) return String(res.pilot._id);
+      if (res.pilotId !== null && typeof res.pilotId === "object" && "_id" in (res.pilotId as object)) return String((res.pilotId as any)._id);
+      return String(res.pilotId);
+    }));
+    const s = new Set(ids.filter(Boolean));
+    return s.size || null;
+  });
 
   useEffect(() => {
     let cancelled = false;

@@ -19,6 +19,53 @@ export async function POST(req: NextRequest) {
   await connectToDatabase();
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
+  // Helper: attach raceIds to registration entries when possible.
+  async function attachRaceIdsToRegs(
+    regs: Array<{
+      championshipId?: unknown;
+      stageId: string;
+      firstRace?: boolean;
+      secondRace?: boolean;
+      racesCount?: number;
+      raceIds?: unknown[];
+    }>,
+  ) {
+    const toLoad: string[] = [];
+    for (const r of regs) {
+      if (!r.stageId) continue;
+      // If raceIds already provided, skip
+      if (Array.isArray(r.raceIds) && r.raceIds.length > 0) continue;
+      toLoad.push(r.stageId);
+    }
+    if (toLoad.length === 0) return;
+    const stages = await Stage.find({ _id: { $in: toLoad } })
+      .select({ races: 1 })
+      .lean();
+    const stageMap: Record<string, any> = {};
+    for (const s of stages) stageMap[String(s._id)] = s;
+
+    for (const r of regs) {
+      if (!r.stageId) continue;
+      if (Array.isArray(r.raceIds) && r.raceIds.length > 0) continue;
+      const s = stageMap[String(r.stageId)];
+      if (!s || !Array.isArray(s.races)) continue;
+      const ids: string[] = [];
+      const useFirst = r.firstRace === undefined ? true : Boolean(r.firstRace);
+      const useSecond =
+        r.secondRace === undefined ? false : Boolean(r.secondRace);
+      if (useFirst && s.races[0] && s.races[0]._id)
+        ids.push(String(s.races[0]._id));
+      if (useSecond && s.races[1] && s.races[1]._id)
+        ids.push(String(s.races[1]._id));
+      // Fallback: if neither selected but racesCount===2, include both available
+      if (ids.length === 0 && r.racesCount === 2) {
+        if (s.races[0] && s.races[0]._id) ids.push(String(s.races[0]._id));
+        if (s.races[1] && s.races[1]._id) ids.push(String(s.races[1]._id));
+      }
+      r.raceIds = ids;
+    }
+  }
+
   // validate league if provided; default to 'newbie' on create
   if (body.league !== undefined) {
     if (body.league !== "pro" && body.league !== "newbie") {
@@ -270,6 +317,9 @@ export async function POST(req: NextRequest) {
             firstRace: Boolean(r.firstRace),
             secondRace: Boolean(r.secondRace),
             racesCount: r.racesCount ?? (r.firstRace && r.secondRace ? 2 : 1),
+            raceIds: Array.isArray((r as any).raceIds)
+              ? (r as any).raceIds
+              : undefined,
           });
         }
       }
@@ -373,6 +423,12 @@ export async function POST(req: NextRequest) {
                 (Boolean(prev.secondRace) || prSecond)
                   ? 2
                   : 1,
+              raceIds:
+                (prev as any).raceIds && (prev as any).raceIds.length > 0
+                  ? (prev as any).raceIds
+                  : Array.isArray((r as any).raceIds)
+                    ? (r as any).raceIds
+                    : undefined,
             });
           } else {
             regMap.set(key, {
@@ -381,6 +437,9 @@ export async function POST(req: NextRequest) {
               firstRace: prFirst,
               secondRace: prSecond,
               racesCount: r.racesCount ?? (prFirst && prSecond ? 2 : 1),
+              raceIds: Array.isArray((r as any).raceIds)
+                ? (r as any).raceIds
+                : undefined,
             });
           }
         }
@@ -393,6 +452,9 @@ export async function POST(req: NextRequest) {
         secondRace: r.secondRace,
         racesCount: r.racesCount,
       }));
+
+      // Resolve raceIds for these registrations when possible
+      await attachRaceIdsToRegs(newRegs as any);
 
       existingPilot.registrations = newRegs;
 
@@ -558,6 +620,8 @@ export async function POST(req: NextRequest) {
           racesCount: firstRace && secondRace ? 2 : 1,
         },
       ];
+      // resolve raceIds for the single-stage registration
+      await attachRaceIdsToRegs(createDoc.registrations as any);
     }
 
     // If client provided `registrations[]`, prefer that as the authoritative set for creation (must include stageId in entries).
@@ -595,7 +659,11 @@ export async function POST(req: NextRequest) {
               : Number(pr.racesCount),
         });
       }
-      if (regs.length > 0) createDoc.registrations = regs;
+      if (regs.length > 0) {
+        // resolve raceIds for provided registrations
+        await attachRaceIdsToRegs(regs as any);
+        createDoc.registrations = regs;
+      }
     }
 
     const pilot = await Pilot.create(createDoc);
@@ -652,6 +720,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(pilot, { status: 201 });
   } catch (err: unknown) {
+    console.error("pilot-registration error:", err);
     if (
       typeof err === "object" &&
       err !== null &&

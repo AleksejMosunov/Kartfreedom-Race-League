@@ -89,26 +89,26 @@ export async function GET(req: NextRequest) {
             })),
           ),
     Stage.find({ championshipId: current._id })
-      .select({ number: 1, name: 1, isCompleted: 1, results: 1 })
+      .select({ number: 1, name: 1, isCompleted: 1, races: 1 })
       .sort({ number: 1 })
       .lean(),
   ]);
 
   const participants = participantsRaw as Participant[];
-  const completedStages = (stagesRaw as unknown as StageRow[])
+  const completedStages = (stagesRaw as unknown as any[])
     .filter((stage) => stage.isCompleted)
-    .map(
-      (stage) =>
-        ({
-          ...stage,
-          resultByPilotId: new Map(
-            ((stage.results as StageResultRow[]) ?? []).map((row) => [
-              String(row.pilotId),
-              row,
-            ]),
-          ),
-        }) as PreparedStageRow,
-    );
+    .map((stage) => {
+      const combined = ((stage.races ?? []) as any[]).flatMap(
+        (r) => r.results ?? [],
+      );
+      return {
+        ...stage,
+        results: combined,
+        resultByPilotId: new Map(
+          (combined ?? []).map((row: any) => [String(row.pilotId), row]),
+        ),
+      } as PreparedStageRow;
+    });
 
   const stageLabels = completedStages.map((stage) => ({
     id: String(stage._id),

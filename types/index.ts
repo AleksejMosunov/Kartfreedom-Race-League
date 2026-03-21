@@ -16,6 +16,7 @@ export interface Pilot {
     firstRace: boolean;
     secondRace: boolean;
     racesCount: number;
+    raceIds?: string[];
   }[];
   championshipId?: string;
   teamIsSolo?: boolean;
@@ -42,13 +43,21 @@ export interface StageResult {
   penaltyReason?: string;
 }
 
+export interface Race {
+  _id?: string;
+  swsLink?: string;
+  results: StageResult[];
+}
+
 export interface Stage {
   _id: string;
   name: string;
   number: number;
   date: string;
   isCompleted: boolean;
-  results: StageResult[];
+  // For sprint stages we store an array of races (2 races). Other championship types may keep a single
+  // race in the first element to remain compatible.
+  races: Race[];
   createdAt?: string;
 }
 

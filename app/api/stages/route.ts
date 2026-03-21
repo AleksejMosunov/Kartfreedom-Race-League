@@ -19,19 +19,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json([]);
     }
 
-    const stages =
-      current.championshipType === "teams"
-        ? await Stage.find()
-            .where("championshipId")
-            .equals(current._id)
-            .sort({ number: 1 })
-            .lean()
-        : await Stage.find()
-            .where("championshipId")
-            .equals(current._id)
-            .populate("results.pilotId", "name surname number avatar")
-            .sort({ number: 1 })
-            .lean();
+    const stages = await Stage.find()
+      .where("championshipId")
+      .equals(current._id)
+      .sort({ number: 1 })
+      // populate pilot info inside races.results
+      .populate("races.results.pilotId", "name surname number avatar")
+      .lean();
 
     if (current.championshipType === "teams") {
       const teams = await Team.find({ championshipId: current._id }).lean();
@@ -39,27 +33,31 @@ export async function GET(req: NextRequest) {
 
       const mappedStages = stages.map((stage) => ({
         ...stage,
-        results: (stage.results ?? []).map(
-          (result: Record<string, unknown>) => {
-            const id =
-              result.pilotId !== null &&
-              typeof result.pilotId === "object" &&
-              "_id" in (result.pilotId as object)
-                ? String((result.pilotId as { _id: unknown })._id)
-                : String(result.pilotId);
-            const team = teamById.get(id);
-            if (!team) return result;
-            return {
-              ...result,
-              pilot: {
-                _id: String(team._id),
-                name: team.name,
-                surname: "",
-                number: team.number,
-              },
-            };
-          },
-        ),
+        // map results inside each race to include team info as pilot
+        races: (stage.races ?? []).map((race: any) => ({
+          ...race,
+          results: (race.results ?? []).map(
+            (result: Record<string, unknown>) => {
+              const id =
+                result.pilotId !== null &&
+                typeof result.pilotId === "object" &&
+                "_id" in (result.pilotId as object)
+                  ? String((result.pilotId as { _id: unknown })._id)
+                  : String(result.pilotId);
+              const team = teamById.get(id);
+              if (!team) return result;
+              return {
+                ...result,
+                pilot: {
+                  _id: String(team._id),
+                  name: team.name,
+                  surname: "",
+                  number: team.number,
+                },
+              };
+            },
+          ),
+        })),
       }));
 
       return NextResponse.json(mappedStages);

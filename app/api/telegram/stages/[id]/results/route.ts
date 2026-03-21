@@ -56,32 +56,52 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
   const participantById = new Map(participants.map((p) => [p._id, p]));
 
-  const sorted = [...(stage.results ?? [])].sort(
-    (a, b) => a.position - b.position,
+  // Combine results across races: sum points per participant and pick best position as tiebreaker
+  const allResults = ((stage as any).races ?? []).flatMap(
+    (r: any) => r.results ?? [],
   );
-  const podium = sorted
-    .filter((row) => !row.dnf && !row.dns)
-    .slice(0, 3)
-    .map((row) => {
-      const idValue =
-        row.pilotId !== null &&
-        typeof row.pilotId === "object" &&
-        "_id" in (row.pilotId as object)
-          ? String((row.pilotId as { _id: unknown })._id)
-          : String(row.pilotId);
-      const participant = participantById.get(idValue);
-      return participant
-        ? {
-            label: participantLabel(participant),
-            points: row.points,
-          }
-        : {
-            label: idValue,
-            points: row.points,
-          };
-    });
+  const aggregated = new Map<
+    string,
+    {
+      label: string;
+      points: number;
+      bestPosition: number;
+      dnf: boolean;
+      dns: boolean;
+    }
+  >();
+  for (const row of allResults) {
+    const idValue =
+      row.pilotId !== null &&
+      typeof row.pilotId === "object" &&
+      "_id" in (row.pilotId as object)
+        ? String((row.pilotId as { _id: unknown })._id)
+        : String(row.pilotId);
+    const participant = participantById.get(idValue);
+    const label = participant ? participantLabel(participant) : idValue;
+    const current = aggregated.get(idValue) ?? {
+      label,
+      points: 0,
+      bestPosition: Infinity,
+      dnf: false,
+      dns: false,
+    };
+    current.points += row.points ?? 0;
+    const pos = typeof row.position === "number" ? row.position : Infinity;
+    if (pos < current.bestPosition) current.bestPosition = pos;
+    current.dnf = current.dnf || Boolean(row.dnf);
+    current.dns = current.dns || Boolean(row.dns);
+    aggregated.set(idValue, current);
+  }
 
-  const fastestLapRow = sorted.find((row) => row.bestLap);
+  const podium = [...aggregated.entries()]
+    .map(([id, data]) => ({ id, ...data }))
+    .filter((p) => !p.dnf && !p.dns)
+    .sort((a, b) => b.points - a.points || a.bestPosition - b.bestPosition)
+    .slice(0, 3)
+    .map((p) => ({ label: p.label, points: p.points }));
+
+  const fastestLapRow = allResults.find((row: any) => row.bestLap);
   let fastestLapLine = "";
   if (fastestLapRow) {
     const fastestId =

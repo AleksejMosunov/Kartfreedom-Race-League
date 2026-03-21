@@ -249,7 +249,8 @@ export default function AdminChampionshipDetailsPage() {
           <div className="space-y-2">
             {stages.map((stage) => {
               const isExpanded = expandedStageId === stage._id;
-              const sortedResults = [...(stage.results ?? [])].sort((a, b) => {
+              const combined = ((stage as any).races ?? []).flatMap((r: any) => r.results ?? []);
+              const sortedResults = [...combined].sort((a, b) => {
                 if (a.dnf || a.dns) return 1;
                 if (b.dnf || b.dns) return -1;
                 return a.position - b.position;

@@ -39,7 +39,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
   const { id } = await params;
   const body = await req.json();
-  const { results }: { results: ResultInput[] } = body;
+  const {
+    results,
+    raceIndex = 0,
+  }: { results: ResultInput[]; raceIndex?: number } = body;
 
   if (!current) {
     return NextResponse.json(
@@ -128,23 +131,54 @@ export async function POST(req: NextRequest, { params }: Params) {
     _id: id,
     championshipId: current._id,
   })
-    .select({ results: 1, name: 1, number: 1 })
+    .select({ races: 1, name: 1, number: 1 })
     .lean();
 
-  const stage =
-    current.championshipType === "teams"
-      ? await Stage.findOneAndUpdate(
-          { _id: id, championshipId: current._id },
-          { results: enrichedResults, isCompleted: true },
-          { returnDocument: "after", runValidators: true },
-        ).lean()
-      : await Stage.findOneAndUpdate(
-          { _id: id, championshipId: current._id },
-          { results: enrichedResults, isCompleted: true },
-          { returnDocument: "after", runValidators: true },
-        )
-          .populate("results.pilotId", "name surname number team avatar")
-          .lean();
+  // Update the specific race results (default raceIndex = 0). Determine whether stage
+  // is completed only when all races have non-empty results.
+  const stageQuery = { _id: id, championshipId: current._id };
+
+  // Prepare update document: set races.<raceIndex>.results = enrichedResults
+  const setPath = `races.${Number(raceIndex)}.results`;
+
+  // compute isCompleted: after update, check if all races have results length > 0
+  const stageAfterTemp = await Stage.findOne(stageQuery)
+    .select({ races: 1 })
+    .lean();
+  const racesCurrent = (stageAfterTemp?.races as any[]) ?? [];
+  // ensure array has at least raceIndex+1 entries
+  while (racesCurrent.length <= raceIndex) {
+    racesCurrent.push({ swsLink: "", results: [] });
+  }
+  racesCurrent[Number(raceIndex)] = {
+    ...(racesCurrent[Number(raceIndex)] ?? {}),
+    results: enrichedResults,
+  };
+  const isCompletedAfter = racesCurrent.every(
+    (r) => Array.isArray(r.results) && r.results.length > 0,
+  );
+
+  const updateDoc: any = {
+    $set: {
+      [setPath]: enrichedResults,
+      isCompleted: isCompletedAfter,
+    },
+  };
+
+  let stage;
+  if (current.championshipType === "teams") {
+    stage = await Stage.findOneAndUpdate(stageQuery, updateDoc, {
+      returnDocument: "after",
+      runValidators: true,
+    }).lean();
+  } else {
+    stage = await Stage.findOneAndUpdate(stageQuery, updateDoc, {
+      returnDocument: "after",
+      runValidators: true,
+    })
+      .populate("races.results.pilotId", "name surname number team avatar")
+      .lean();
+  }
 
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
@@ -157,10 +191,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   try {
     const before = stageBefore
       ? sanitizeForAudit({
-          results: (stageBefore as Record<string, unknown>).results,
+          races: (stageBefore as Record<string, unknown>).races,
         })
       : null;
-    const afterSnapshot = sanitizeForAudit({ results: enrichedResults });
+    const afterSnapshot = sanitizeForAudit({ races: racesCurrent });
     const changes: Change[] = [
       {
         type: "results_published",
@@ -187,25 +221,28 @@ export async function POST(req: NextRequest, { params }: Params) {
     const teamById = new Map(teams.map((team) => [String(team._id), team]));
     const mappedStage = {
       ...stage,
-      results: (stage.results ?? []).map((result: Record<string, unknown>) => {
-        const id =
-          result.pilotId !== null &&
-          typeof result.pilotId === "object" &&
-          "_id" in (result.pilotId as object)
-            ? String((result.pilotId as { _id: unknown })._id)
-            : String(result.pilotId);
-        const team = teamById.get(id);
-        if (!team) return result;
-        return {
-          ...result,
-          pilot: {
-            _id: String(team._id),
-            name: team.name,
-            surname: "",
-            number: team.number,
-          },
-        };
-      }),
+      races: ((stage as any).races ?? []).map((race: any) => ({
+        ...race,
+        results: (race.results ?? []).map((result: Record<string, unknown>) => {
+          const id =
+            result.pilotId !== null &&
+            typeof result.pilotId === "object" &&
+            "_id" in (result.pilotId as object)
+              ? String((result.pilotId as { _id: unknown })._id)
+              : String(result.pilotId);
+          const team = teamById.get(id);
+          if (!team) return result;
+          return {
+            ...result,
+            pilot: {
+              _id: String(team._id),
+              name: team.name,
+              surname: "",
+              number: team.number,
+            },
+          };
+        }),
+      })),
     };
     return NextResponse.json(mappedStage);
   }

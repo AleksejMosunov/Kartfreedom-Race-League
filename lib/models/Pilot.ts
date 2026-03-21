@@ -16,6 +16,8 @@ export interface IPilot extends Document {
     firstRace: boolean;
     secondRace: boolean;
     racesCount: number;
+    // explicit race ids within the stage (references to Stage.races._id)
+    raceIds?: mongoose.Types.ObjectId[];
   }[];
   createdAt: Date;
 }
@@ -76,6 +78,7 @@ const PilotSchema = new Schema<IPilot>(
         firstRace: { type: Boolean, required: true, default: true },
         secondRace: { type: Boolean, required: true, default: false },
         racesCount: { type: Number, enum: [1, 2], required: true, default: 1 },
+        raceIds: [{ type: Schema.Types.ObjectId, required: false }],
       },
     ],
     league: {

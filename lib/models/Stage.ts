@@ -17,8 +17,11 @@ export interface IStage extends Document {
   number: number;
   date: Date;
   isCompleted: boolean;
-  results: IStageResult[];
-  swsLinks: string[];
+  // races: array of race objects (each race has its own sws link and results)
+  races: ({ _id?: mongoose.Types.ObjectId } & {
+    swsLink?: string;
+    results: IStageResult[];
+  })[];
   createdAt: Date;
 }
 
@@ -48,23 +51,20 @@ const StageSchema = new Schema<IStage>(
     number: { type: Number, required: true },
     date: { type: Date, required: true },
     isCompleted: { type: Boolean, default: false },
-    results: { type: [StageResultSchema], default: [] },
-    swsLinks: {
-      type: [String],
-      required: true,
-      default: [],
-      validate: {
-        validator: function (v: unknown) {
-          return (
-            Array.isArray(v) &&
-            v.length > 0 &&
-            (v as string[]).every(
-              (s) => typeof s === "string" && s.trim().length > 0,
-            )
-          );
-        },
-        message: "swsLinks must contain at least one non-empty URL",
-      },
+    races: {
+      type: [
+        new Schema(
+          {
+            swsLink: { type: String, default: "", trim: true },
+            results: { type: [StageResultSchema], default: [] },
+          },
+          // allow Mongoose to create an `_id` for each race element
+        ),
+      ],
+      default: [
+        { swsLink: "", results: [] },
+        { swsLink: "", results: [] },
+      ],
     },
   },
   { timestamps: true },

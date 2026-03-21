@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 "use client";
 
@@ -29,7 +29,12 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
 
   useEffect(() => {
     // initialize participants count based on stage results until we fetch real participants
-    setParticipantsCount(stage?.results?.length ?? 0);
+    const ids = ((stage as any)?.races ?? []).flatMap((r: any) => (r.results ?? []).map((res: any) => {
+      if (res.pilot?._id) return String(res.pilot._id);
+      if (res.pilotId !== null && typeof res.pilotId === "object" && "_id" in (res.pilotId as object)) return String((res.pilotId as any)._id);
+      return String(res.pilotId);
+    }));
+    setParticipantsCount(new Set(ids.filter(Boolean)).size || 0);
   }, [stage, setParticipantsCount]);
 
   useEffect(() => {

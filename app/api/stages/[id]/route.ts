@@ -22,29 +22,31 @@ async function mapStageParticipantsForTeams(
   teams: TeamLite[],
 ) {
   const teamById = new Map(teams.map((team) => [String(team._id), team]));
-
   return {
     ...stage,
-    results: ((stage.results as Array<Record<string, unknown>>) ?? []).map(
-      (result) => {
-        const id =
-          result.pilotId !== null &&
-          typeof result.pilotId === "object" &&
-          "_id" in (result.pilotId as object)
-            ? String((result.pilotId as { _id: unknown })._id)
-            : String(result.pilotId);
-        const team = teamById.get(id);
-        if (!team) return result;
-        return {
-          ...result,
-          pilot: {
-            _id: String(team._id),
-            name: team.name,
-            surname: "",
-            number: team.number,
-          },
-        };
-      },
+    races: ((stage.races as Array<Record<string, unknown>>) ?? []).map(
+      (race) => ({
+        ...race,
+        results: ((race as any).results ?? []).map((result: any) => {
+          const id =
+            result.pilotId !== null &&
+            typeof result.pilotId === "object" &&
+            "_id" in (result.pilotId as object)
+              ? String((result.pilotId as { _id: unknown })._id)
+              : String(result.pilotId);
+          const team = teamById.get(id);
+          if (!team) return result;
+          return {
+            ...result,
+            pilot: {
+              _id: String(team._id),
+              name: team.name,
+              surname: "",
+              number: team.number,
+            },
+          };
+        }),
+      }),
     ),
   };
 }
@@ -53,7 +55,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   await connectToDatabase();
   const { id } = await params;
   const stage = await Stage.findById(id)
-    .populate("results.pilotId", "name surname number team avatar league")
+    .populate("races.results.pilotId", "name surname number team avatar league")
     .lean();
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
@@ -95,26 +97,16 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
   const { id } = await params;
   const body = await req.json();
-  const stage =
-    current.championshipType === "teams"
-      ? await Stage.findOneAndUpdate(
-          { _id: id, championshipId: current._id },
-          body,
-          {
-            returnDocument: "after",
-            runValidators: true,
-          },
-        ).lean()
-      : await Stage.findOneAndUpdate(
-          { _id: id, championshipId: current._id },
-          body,
-          {
-            returnDocument: "after",
-            runValidators: true,
-          },
-        )
-          .populate("results.pilotId", "name surname number team avatar league")
-          .lean();
+  const stage = await Stage.findOneAndUpdate(
+    { _id: id, championshipId: current._id },
+    body,
+    {
+      returnDocument: "after",
+      runValidators: true,
+    },
+  )
+    .populate("races.results.pilotId", "name surname number team avatar league")
+    .lean();
   if (!stage)
     return NextResponse.json({ error: "Stage not found" }, { status: 404 });
 

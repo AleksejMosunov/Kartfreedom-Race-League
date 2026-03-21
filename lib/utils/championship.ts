@@ -38,30 +38,69 @@ export function calculateChampionshipStandings(
   const dropsCount = championshipType === "sprint" ? 2 : 1;
 
   const standings: ChampionshipStanding[] = pilots.map((pilot) => {
+    // For sprint stages with two races we aggregate per-pilot results across races
     const pilotStandings: PilotStanding[] = completedStages.map((stage) => {
       const pilotIdStr = String(pilot._id);
-      const result = stage.results.find((r) => {
-        // pilotId may be a populated object or a raw ObjectId/string
-        const rId =
-          r.pilotId !== null &&
-          typeof r.pilotId === "object" &&
-          "_id" in (r.pilotId as object)
-            ? String((r.pilotId as { _id: unknown })._id)
-            : String(r.pilotId);
-        return rId === pilotIdStr;
-      });
+
+      // collect any results for this pilot across all races
+      const perRaceResults = (stage as unknown as any).races
+        ? (stage as any).races.flatMap((race: any) =>
+            (race.results ?? []).filter((r: any) => {
+              const rId =
+                r.pilotId !== null &&
+                typeof r.pilotId === "object" &&
+                "_id" in (r.pilotId as object)
+                  ? String((r.pilotId as { _id: unknown })._id)
+                  : String(r.pilotId);
+              return rId === pilotIdStr;
+            }),
+          )
+        : [];
+
+      if (perRaceResults.length === 0) {
+        return {
+          stageId: stage._id,
+          stageName: stage.name,
+          stageNumber: stage.number,
+          points: 0,
+          position: null,
+          isDropped: false,
+          dnf: false,
+          dns: false,
+          penaltyPoints: 0,
+          penaltyReason: "",
+        };
+      }
+
+      const totalPoints = perRaceResults.reduce(
+        (s: number, r: any) => s + (r.points || 0),
+        0,
+      );
+      const bestPosition = perRaceResults
+        .map((r: any) =>
+          typeof r.position === "number" ? r.position : Infinity,
+        )
+        .reduce((a: number, b: number) => Math.min(a, b), Infinity);
+      const allDnf = perRaceResults.every((r: any) => Boolean(r.dnf));
+      const allDns = perRaceResults.every((r: any) => Boolean(r.dns));
+      const totalPenalty = perRaceResults.reduce(
+        (s: number, r: any) => s + (r.penaltyPoints || 0),
+        0,
+      );
+      const penaltyReason =
+        perRaceResults.map((r: any) => r.penaltyReason).find(Boolean) || "";
 
       return {
         stageId: stage._id,
         stageName: stage.name,
         stageNumber: stage.number,
-        points: result ? result.points : 0,
-        position: result ? result.position : null,
+        points: totalPoints,
+        position: isFinite(bestPosition) ? bestPosition : null,
         isDropped: false,
-        dnf: result?.dnf ?? false,
-        dns: result?.dns ?? false,
-        penaltyPoints: result?.penaltyPoints ?? 0,
-        penaltyReason: result?.penaltyReason ?? "",
+        dnf: allDnf,
+        dns: allDns,
+        penaltyPoints: totalPenalty,
+        penaltyReason: penaltyReason,
       };
     });
 

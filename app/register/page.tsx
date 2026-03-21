@@ -135,17 +135,25 @@ function RegisterPageInner() {
           if (championshipMode === "sprint" && !firstRace && !secondRace && !bothRaces) {
             // default to firstRace if none explicitly selected
           }
-          const regs = (stages ?? []).filter((s: Stage) => !s.isCompleted).map((s: Stage) => {
-            const useFirst = bothRaces ? true : firstRace || (!firstRace && !secondRace);
-            const useSecond = bothRaces ? true : secondRace || false;
-            return {
-              championshipId: selectedChampionshipId,
-              stageId: s._id,
-              firstRace: Boolean(useFirst),
-              secondRace: Boolean(useSecond),
-              racesCount: (useFirst && useSecond) ? 2 : 1,
-            };
-          }).filter(Boolean as unknown as (v: unknown) => boolean);
+          const regs = (stages ?? [])
+            .filter((s: Stage) => !s.isCompleted)
+            .map((s: Stage) => {
+              const useFirst = bothRaces ? true : firstRace || (!firstRace && !secondRace);
+              const useSecond = bothRaces ? true : secondRace || false;
+              // compute raceIds available on this stage
+              const raceIds: string[] = [];
+              if (s.races && s.races[0] && s.races[0]._id && useFirst) raceIds.push(s.races[0]._id);
+              if (s.races && s.races[1] && s.races[1]._id && useSecond) raceIds.push(s.races[1]._id);
+              return {
+                championshipId: selectedChampionshipId,
+                stageId: s._id,
+                firstRace: Boolean(useFirst),
+                secondRace: Boolean(useSecond),
+                racesCount: (useFirst && useSecond) ? 2 : 1,
+                raceIds,
+              };
+            })
+            .filter(Boolean as unknown as (v: unknown) => boolean);
 
           (payload as Record<string, unknown>).championshipId = selectedChampionshipId;
           // set top-level stageId to 'all' so server recognizes optingAllStages
@@ -163,6 +171,16 @@ function RegisterPageInner() {
           (payload as Record<string, unknown>).championshipId = selectedChampionshipId;
           // include top-level stageId for backwards-compatible server validation
           (payload as Record<string, unknown>).stageId = effectiveStageId;
+          // find the selected stage to extract race ids
+          const selStage = (stages ?? []).find((s: Stage) => s._id === effectiveStageId);
+          const raceIds: string[] = [];
+          const useFirst = bothRaces ? true : firstRace || (!firstRace && !secondRace);
+          const useSecond = bothRaces ? true : secondRace || false;
+          if (selStage) {
+            if (selStage.races && selStage.races[0] && selStage.races[0]._id && useFirst) raceIds.push(selStage.races[0]._id);
+            if (selStage.races && selStage.races[1] && selStage.races[1]._id && useSecond) raceIds.push(selStage.races[1]._id);
+          }
+
           (payload as Record<string, unknown>).registrations = [
             {
               championshipId: selectedChampionshipId,
@@ -170,6 +188,7 @@ function RegisterPageInner() {
               firstRace,
               secondRace,
               racesCount: firstRace && secondRace ? 2 : 1,
+              raceIds,
             },
           ];
         }
@@ -369,58 +388,46 @@ function RegisterPageInner() {
                           Кожен етап складається з 2 гонок на треку KartFreedom.
                           <br />
                           Якщо ви берете участь в обох гонках етапу, діє спеціальна ціна.
+                          <br />
+                          Перша гонка напрямок стандарт, старт 9-00, вартість 2000 грн
+                          <br />
+                          Друга гонка напрямок реверс, старт 12-00, вартість 2000 грн
+                          <br />
+                          Обидві гонки етапу (стандарт + реверс) за спеціальною ціною 3000 грн
                         </p>
 
-                        <div className="mt-3 flex items-center gap-4">
-                          <label className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={firstRace}
-                              onChange={(e) => {
-                                const v = e.target.checked;
-                                setFirstRace(v);
-                                if (!v) setBothRaces(false);
-                                else if (v && secondRace) setBothRaces(true);
-                              }}
-                              className="w-4 h-4"
-                            />
-                            <span className="text-zinc-300">Перша гонка (2000 грн)</span>
-                          </label>
-
-                          <label className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={secondRace}
-                              onChange={(e) => {
-                                const v = e.target.checked;
-                                setSecondRace(v);
-                                if (!v) setBothRaces(false);
-                                else if (v && firstRace) setBothRaces(true);
-                              }}
-                              className="w-4 h-4"
-                            />
-                            <span className="text-zinc-300">Друга гонка (2000 грн)</span>
-                          </label>
-
-                          <label className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={bothRaces}
-                              onChange={(e) => {
-                                const v = e.target.checked;
-                                setBothRaces(v);
-                                if (v) {
-                                  setFirstRace(true);
-                                  setSecondRace(true);
-                                } else {
-                                  setFirstRace(false);
-                                  setSecondRace(false);
-                                }
-                              }}
-                              className="w-4 h-4"
-                            />
-                            <span className="text-zinc-300">Обидві гонки (спеціальна ціна 3000 грн)</span>
-                          </label>
+                        <div className="mt-3">
+                          <label className="text-sm block mb-2 text-zinc-400">Оберіть гонку</label>
+                          <select
+                            name="raceOption"
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                            value={firstRace && secondRace ? "both" : firstRace ? "first" : secondRace ? "second" : ""}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              if (v === "first") {
+                                setFirstRace(true);
+                                setSecondRace(false);
+                                setBothRaces(false);
+                              } else if (v === "second") {
+                                setFirstRace(false);
+                                setSecondRace(true);
+                                setBothRaces(false);
+                              } else if (v === "both") {
+                                setFirstRace(true);
+                                setSecondRace(true);
+                                setBothRaces(true);
+                              } else {
+                                setFirstRace(false);
+                                setSecondRace(false);
+                                setBothRaces(false);
+                              }
+                            }}
+                          >
+                            <option value="">-- оберіть --</option>
+                            <option value="first">Перша гонка (2000грн)</option>
+                            <option value="second">Друга гонка (2000 грн)</option>
+                            <option value="both">Обидві гонки (спеціальна ціна 3000 грн)</option>
+                          </select>
                         </div>
                       </div>
                     )}

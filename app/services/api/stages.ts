@@ -16,7 +16,7 @@ export async function fetchStageById(id: string): Promise<Stage> {
 }
 
 export async function createStage(
-  data: Omit<Stage, "_id" | "results" | "isCompleted">,
+  data: Omit<Stage, "_id" | "isCompleted">,
 ): Promise<Stage> {
   const res = await apiFetch(BASE, {
     method: "POST",
@@ -48,11 +48,14 @@ export async function deleteStage(id: string): Promise<void> {
 export async function saveStageResults(
   stageId: string,
   results: Omit<StageResult, "pilot">[],
+  raceIndex?: number,
 ): Promise<Stage> {
+  const body: any = { results };
+  if (typeof raceIndex === "number") body.raceIndex = Number(raceIndex);
   const res = await apiFetch(`${BASE}/${stageId}/results`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ results }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error("Помилка збереження результатів");
   return res.json();

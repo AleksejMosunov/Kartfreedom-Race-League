@@ -9,9 +9,7 @@ interface StagesState {
   error: string | null;
   fetchStages: (championshipId?: string) => Promise<void>;
   fetchStageById: (id: string, championshipId?: string) => Promise<void>;
-  addStage: (
-    stage: Omit<Stage, "_id" | "results" | "isCompleted">,
-  ) => Promise<void>;
+  addStage: (stage: Omit<Stage, "_id" | "isCompleted">) => Promise<void>;
   updateStage: (
     id: string,
     data: Partial<Stage>,
@@ -22,6 +20,7 @@ interface StagesState {
     stageId: string,
     results: Omit<StageResult, "pilot">[],
     championshipId?: string,
+    raceIndex?: number,
   ) => Promise<void>;
   setSelectedStage: (stage: Stage | null) => void;
 }
@@ -127,14 +126,21 @@ export const useStagesStore = create<StagesState>((set) => ({
     set((state) => ({ stages: state.stages.filter((s) => s._id !== id) }));
   },
 
-  saveStageResults: async (stageId, results, championshipId?: string) => {
+  saveStageResults: async (
+    stageId,
+    results,
+    championshipId?: string,
+    raceIndex?: number,
+  ) => {
     const url = championshipId
       ? `/api/stages/${stageId}/results?championship=${encodeURIComponent(championshipId)}`
       : `/api/stages/${stageId}/results`;
+    const body: any = { results };
+    if (typeof raceIndex === "number") body.raceIndex = Number(raceIndex);
     const res = await apiFetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ results }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error("Помилка збереження результатів етапу");
     const updated: Stage = await res.json();

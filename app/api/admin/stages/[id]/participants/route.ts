@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
@@ -43,44 +43,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .sort({ number: 1 })
     .lean();
 
-  let total = 0;
-  let firstCount = 0;
-  let secondCount = 0;
-
-  for (const p of pilots) {
-    // Prefer registrations[] entries for this championship
-    const regsForChamp = Array.isArray(p.registrations)
-      ? p.registrations.filter(
-          (r: any) =>
-            String(r.championshipId ?? p.championshipId) ===
-            String(stage.championshipId),
-        )
-      : [];
-
-    // Only registrations[] entries matching this stage count (query ensures this)
-    const regForStage = Array.isArray(p.registrations)
-      ? p.registrations.find(
-          (r: any) =>
-            String(r.championshipId ?? p.championshipId) ===
-              String(stage.championshipId) &&
-            String(r.stageId) === String(stage._id),
-        )
-      : undefined;
-    if (!regForStage) continue;
-    const fr = Boolean(regForStage.firstRace);
-    const sr = Boolean(regForStage.secondRace);
-    if (fr) firstCount += 1;
-    if (sr) secondCount += 1;
-    if (fr || sr) total += 1;
-  }
-
-  const byRacesCount = { 1: firstCount, 2: secondCount };
-
-  return NextResponse.json({
-    total,
-    byRacesCount,
-    pilots: pilots.map((p) => {
-      // derive first/second race flags for this stage from registrations[]
+  // Build pilot outputs (compute race membership per pilot) and counts
+  const pilotOutputs = pilots
+    .map((p) => {
       const regForStage = Array.isArray(p.registrations)
         ? p.registrations.find(
             (r: any) =>
@@ -90,6 +55,23 @@ export async function GET(_req: NextRequest, { params }: Params) {
           )
         : undefined;
 
+      if (!regForStage) {
+        return null;
+      }
+
+      let fr = Boolean(regForStage.firstRace);
+      let sr = Boolean(regForStage.secondRace);
+      if (
+        Array.isArray((regForStage as any).raceIds) &&
+        Array.isArray(stage.races)
+      ) {
+        const rids = ((regForStage as any).raceIds || []).map(String);
+        if (stage.races[0] && stage.races[0]._id)
+          fr = rids.includes(String(stage.races[0]._id));
+        if (stage.races[1] && stage.races[1]._id)
+          sr = rids.includes(String(stage.races[1]._id));
+      }
+
       return {
         _id: String(p._id),
         number: p.number,
@@ -98,9 +80,29 @@ export async function GET(_req: NextRequest, { params }: Params) {
         swsId: p.swsId || null,
         phone: p.phone || null,
         racesCount: (regForStage ? regForStage.racesCount : undefined) ?? 1,
-        firstRace: regForStage ? Boolean(regForStage.firstRace) : undefined,
-        secondRace: regForStage ? Boolean(regForStage.secondRace) : undefined,
+        firstRace: fr,
+        secondRace: sr,
+        raceIds: Array.isArray((regForStage as any).raceIds)
+          ? (regForStage as any).raceIds.map(String)
+          : [],
       };
-    }),
-  });
+    })
+    .filter(Boolean) as Array<any>;
+
+  const firstCount = pilotOutputs.reduce(
+    (acc, p) => acc + (p.firstRace ? 1 : 0),
+    0,
+  );
+  const secondCount = pilotOutputs.reduce(
+    (acc, p) => acc + (p.secondRace ? 1 : 0),
+    0,
+  );
+  const total = pilotOutputs.reduce(
+    (acc, p) => acc + (p.firstRace || p.secondRace ? 1 : 0),
+    0,
+  );
+
+  const byRacesCount = { 1: firstCount, 2: secondCount };
+
+  return NextResponse.json({ total, byRacesCount, pilots: pilotOutputs });
 }

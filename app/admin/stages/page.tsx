@@ -49,21 +49,53 @@ export default function AdminStagesPage() {
     { enabled: Boolean(selectedChampionshipId) },
   );
   const { pilots } = usePilots(selectedChampionshipId || undefined);
-  // include all pilots in editable result lists (do not exclude 'pro')
-  const editablePilots = pilots;
+  const [editingStageId, setEditingStageId] = useState<string | null>(null);
+  const [editingRaceIndex, setEditingRaceIndex] = useState<number>(0);
+  // compute editable pilots: when editing a stage, limit to pilots registered for that stage/race
+  const editablePilots = useMemo(() => {
+    if (!editingStageId) return pilots;
+    const stageObj = stages.find((s) => s._id === editingStageId) as any;
+    if (!stageObj) return pilots;
+    const race = (stageObj.races ?? [])[editingRaceIndex];
+    const raceId = race && race._id ? String(race._id) : undefined;
+
+    const pilotMatches = (p: any) => {
+      if (!Array.isArray(p.registrations)) return false;
+      for (const r of p.registrations) {
+        if (!r || !r.stageId) continue;
+        if (String(r.stageId) !== String(editingStageId)) continue;
+        // prefer explicit raceIds when present
+        if (Array.isArray((r as any).raceIds) && (r as any).raceIds.length > 0) {
+          if (raceId && (r as any).raceIds.map(String).includes(raceId)) return true;
+          continue;
+        }
+        // fallback to boolean flags / racesCount
+        const useFirst = r.firstRace === undefined ? true : Boolean(r.firstRace);
+        const useSecond = r.secondRace === undefined ? false : Boolean(r.secondRace);
+        if (raceId && editingRaceIndex === 0 && useFirst) return true;
+        if (raceId && editingRaceIndex === 1 && useSecond) return true;
+        if (!raceId && r.racesCount === 2) return true;
+      }
+      return false;
+    };
+
+    // if stage has no pilots registered (or raceIds missing), fall back to all championship pilots
+    const filtered = pilots.filter((p) => pilotMatches(p));
+    return filtered.length > 0 ? filtered : pilots;
+  }, [pilots, stages, editingStageId, editingRaceIndex]);
   const { saveStageResults } = useStagesStore();
 
   const [stageName, setStageName] = useState("");
   const [stageNumber, setStageNumber] = useState("");
   const [stageDate, setStageDate] = useState("");
   const [swsLinks, setSwsLinks] = useState<string[]>([""]);
+  const [editingMetaStageId, setEditingMetaStageId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [resultsError, setResultsError] = useState("");
   const [sendingResultsStageId, setSendingResultsStageId] = useState<string | null>(null);
   const [sendingNewsStageId, setSendingNewsStageId] = useState<string | null>(null);
 
-  const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [resultsRows, setResultsRows] = useState<ResultInputRow[]>([]);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [bulkPenaltyPoints, setBulkPenaltyPoints] = useState(0);
@@ -140,6 +172,18 @@ export default function AdminStagesPage() {
     }
   }, []);
 
+  // default two SWS link inputs for sprint championships
+  useEffect(() => {
+    if (!selectedChampionship) return;
+    const desired = selectedChampionship.championshipType === "sprint" ? 2 : 1;
+    setSwsLinks((prev) => {
+      if (prev.length >= desired) return prev;
+      const copy = [...prev];
+      while (copy.length < desired) copy.push("");
+      return copy;
+    });
+  }, [selectedChampionship]);
+
   useEffect(() => {
     localStorage.setItem(
       FORM_DRAFT_KEY,
@@ -154,7 +198,7 @@ export default function AdminStagesPage() {
       setFormError("Оберіть чемпіонат, до якого треба додати етап.");
       return;
     }
-    if (stages.some((s) => s.number === Number(stageNumber))) {
+    if (stages.some((s) => s.number === Number(stageNumber) && s._id !== editingMetaStageId)) {
       setFormError(`Етап з номером ${stageNumber} вже існує`);
       return;
     }
@@ -169,23 +213,38 @@ export default function AdminStagesPage() {
     setSubmitting(true);
     setFormError("");
     try {
-      const res = await apiFetch("/api/stages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          championshipId: selectedChampionshipId,
+      if (editingMetaStageId) {
+        // update existing stage, preserve existing race results when possible
+        const existingStage = stages.find((s) => s._id === editingMetaStageId) as any;
+        const races = validLinks.map((l, idx) => ({
+          swsLink: l,
+          results: (existingStage?.races?.[idx]?.results ?? []),
+        }));
+        await updateStage(editingMetaStageId, {
           name: stageName.trim(),
           number: Number(stageNumber),
           date: stageDate,
-          swsLinks: validLinks,
-        }),
-      });
-      const created = (await res.json().catch(() => ({}))) as { error?: string; _id?: string; };
-      if (!res.ok) throw new Error(created.error ?? "Помилка додавання етапу");
+          races,
+        });
+        setEditingMetaStageId(null);
+      } else {
+        const res = await apiFetch("/api/stages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            championshipId: selectedChampionshipId,
+            name: stageName.trim(),
+            number: Number(stageNumber),
+            date: stageDate,
+            // create races array from SWS links (default two races for sprint)
+            races: validLinks.map((l) => ({ swsLink: l, results: [] })),
+          }),
+        });
+        const created = (await res.json().catch(() => ({}))) as { error?: string; _id?: string; };
+        if (!res.ok) throw new Error(created.error ?? "Помилка додавання етапу");
+      }
 
-      // Do not send Telegram news automatically when a stage is created.
-      // Sending should be done manually via the per-stage "Send news" button in the list.
-
+      // reset form
       setStageName("");
       setStageNumber("");
       setStageDate("");
@@ -244,9 +303,10 @@ export default function AdminStagesPage() {
     return String(result.pilotId);
   };
 
-  const startEditResults = (stageId: string, existingResults?: StageResult[]) => {
+  const startEditResults = (stageId: string, raceIndex: number = 0, existingResults?: StageResult[]) => {
     setResultsError("");
     setEditingStageId(stageId);
+    setEditingRaceIndex(raceIndex);
     setResultsRows(
       editablePilots.map((p, i) => {
         const existing = existingResults?.find((r) => extractPilotId(r) === p._id);
@@ -371,20 +431,11 @@ export default function AdminStagesPage() {
     if (!editingStageId) return;
 
     const activeRows = resultsRows.filter((r) => !r.dnf && !r.dns);
-    // Validate uniqueness of positions per league (allow same position across leagues)
-    const rowsByLeague: Record<string, number[]> = {};
-    for (const r of activeRows) {
-      const pilot = editablePilots.find((p) => p._id === r.pilotId) || pilots.find((p) => p._id === r.pilotId);
-      const league = (pilot?.league as string) ?? "newbie";
-      rowsByLeague[league] = rowsByLeague[league] ?? [];
-      rowsByLeague[league].push(r.position);
-    }
-    for (const [league, posArr] of Object.entries(rowsByLeague)) {
-      if (posArr.length !== new Set(posArr).size) {
-        const leagueLabel = league === "pro" ? "Про" : "Новачки";
-        setResultsError(`У двох або більше пілотів однакове місце у ${leagueLabel}. Виправте результати.`);
-        return;
-      }
+    // Validate uniqueness of positions across the whole table (no per-league split)
+    const positions = activeRows.map((r) => r.position);
+    if (positions.length !== new Set(positions).size) {
+      setResultsError("У двох або більше пілотів однакове місце. Виправте результати.");
+      return;
     }
 
     const invalidPenaltyRow = resultsRows.find(
@@ -414,7 +465,7 @@ export default function AdminStagesPage() {
         const fastest = fastestLapBonusEnabled && r.bestLap ? 1 : 0;
         return { ...r, points: base + fastest - (r.penaltyPoints ?? 0) };
       });
-      await saveStageResults(editingStageId, enriched, selectedChampionshipId || undefined);
+      await saveStageResults(editingStageId, enriched, selectedChampionshipId || undefined, editingRaceIndex);
       setEditingStageId(null);
     } catch (err) {
       setResultsError((err as Error).message);
@@ -516,42 +567,51 @@ export default function AdminStagesPage() {
             <div className="sm:col-span-2">
               <label className="text-zinc-400 text-sm mb-2 block">Посилання на гонку на SWS (обов&apos;язково)</label>
               <div className="space-y-2">
-                {swsLinks.map((link, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <input
-                      type="url"
-                      value={link}
-                      onChange={(e) => setSwsLinks((prev) => prev.map((p, i) => (i === idx ? e.target.value : p)))}
-                      placeholder="https://sws.example/event/..."
-                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-                      required={idx === 0}
-                    />
-                    {swsLinks.length > 1 && (
-                      <button
-                        type="button"
-                        className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-sm text-zinc-300"
-                        onClick={() => setSwsLinks((prev) => prev.filter((_, i) => i !== idx))}
-                      >
-                        Видалити
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <div>
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-md bg-zinc-900 border border-zinc-700 text-sm text-white"
-                    onClick={() => setSwsLinks((prev) => [...prev, ""])}
-                  >
-                    Додати посилання
-                  </button>
-                </div>
+                {(() => {
+                  const desired = selectedChampionship?.championshipType === "sprint" ? 2 : 1;
+                  return Array.from({ length: desired }).map((_, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={swsLinks[idx] ?? ""}
+                        onChange={(e) => setSwsLinks((prev) => {
+                          const copy = [...prev];
+                          copy[idx] = e.target.value;
+                          return copy;
+                        })}
+                        placeholder="https://sws.example/event/..."
+                        className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                        required={idx === 0}
+                      />
+                      {desired > 1 && (
+                        <button
+                          type="button"
+                          className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-sm text-zinc-300"
+                          onClick={() => setSwsLinks((prev) => prev.filter((_, i) => i !== idx))}
+                        >
+                          Видалити
+                        </button>
+                      )}
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
             <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
               <Button type="submit" disabled={submitting || !selectedChampionshipId}>
-                {submitting ? "Додавання..." : "Додати етап"}
+                {submitting ? (editingMetaStageId ? "Збереження..." : "Додавання...") : (editingMetaStageId ? "Зберегти зміни" : "Додати етап")}
               </Button>
+              {editingMetaStageId && (
+                <Button type="button" variant="ghost" onClick={() => {
+                  setEditingMetaStageId(null);
+                  setStageName("");
+                  setStageNumber("");
+                  setStageDate("");
+                  setSwsLinks([""]);
+                }}>
+                  Скасувати редагування
+                </Button>
+              )}
               {/* Manual sending only: auto-send option removed */}
               {formError && <p className="text-red-400 text-sm">{formError}</p>}
             </div>
@@ -596,7 +656,14 @@ export default function AdminStagesPage() {
                 ) : (
                   <div className="text-sm text-zinc-300 mr-2 text-right">
                     <div className="text-zinc-400 text-xs">Учасників</div>
-                    <div className="text-white font-semibold">{stage.results?.length ?? 0}</div>
+                    <div className="text-white font-semibold">{(() => {
+                      const all = ((stage as any).races ?? []).flatMap((r: any) => (r.results ?? []).map((res: any) => {
+                        if (res.pilot?._id) return String(res.pilot._id);
+                        if (res.pilotId !== null && typeof res.pilotId === "object" && "_id" in (res.pilotId as object)) return String((res.pilotId as any)._id);
+                        return String(res.pilotId);
+                      }));
+                      return new Set(all.filter(Boolean)).size;
+                    })()}</div>
                     <Link href={`/admin/stages/${stage._id}`} className="text-sm text-zinc-400 hover:text-white">Список пілотів</Link>
                   </div>
                 )}
@@ -606,7 +673,7 @@ export default function AdminStagesPage() {
                     variant="secondary"
                     size="sm"
                     className="whitespace-nowrap"
-                    onClick={() => startEditResults(stage._id, stage.results)}
+                    onClick={() => startEditResults(stage._id, 0, (stage as any).races?.[0]?.results)}
                   >
                     {stage.isCompleted ? "Редагувати результати" : "Внести результати"}
                   </Button>
@@ -657,6 +724,28 @@ export default function AdminStagesPage() {
                     variant="secondary"
                     size="sm"
                     className="whitespace-nowrap"
+                    onClick={() => {
+                      // populate top form for editing
+                      setEditingMetaStageId(stage._id);
+                      setStageName(stage.name ?? "");
+                      setStageNumber(String(stage.number ?? ""));
+                      setStageDate(new Date(stage.date).toISOString().slice(0, 10));
+                      const rawLinks = ((stage as any).races ?? []).map((r: any) => (r?.swsLink ?? ""));
+                      const desired = selectedChampionship?.championshipType === "sprint" ? 2 : 1;
+                      const links = rawLinks.length ? rawLinks.slice(0, desired) : Array(desired).fill("");
+                      while (links.length < desired) links.push("");
+                      setSwsLinks(links);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  >
+                    Редагувати етап
+                  </Button>
+                )}
+                {canManageStages && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="whitespace-nowrap"
                     onClick={() => void sendNewStageToTelegram(stage._id)}
                     disabled={sendingNewsStageId === stage._id}
                   >
@@ -670,6 +759,23 @@ export default function AdminStagesPage() {
             {editingStageId === stage._id && (
               <div className="mt-4 border-t border-zinc-700 pt-4">
                 <h3 className="text-white font-semibold mb-3">Результати гонки</h3>
+                <div className="mb-3">
+                  <div className="flex gap-2">
+                    <button type="button" className={`px-3 py-1 rounded ${editingRaceIndex === 0 ? "bg-zinc-800 text-white" : "bg-zinc-900 text-zinc-400"}`} onClick={() => {
+                      setEditingRaceIndex(0);
+                      // load race 1 existing results into rows
+                      const stageObj = stages.find((s) => s._id === editingStageId) as any;
+                      const existing = stageObj?.races?.[0]?.results ?? [];
+                      startEditResults(editingStageId as string, 0, existing);
+                    }}>Гонка 1</button>
+                    <button type="button" className={`px-3 py-1 rounded ${editingRaceIndex === 1 ? "bg-zinc-800 text-white" : "bg-zinc-900 text-zinc-400"}`} onClick={() => {
+                      setEditingRaceIndex(1);
+                      const stageObj = stages.find((s) => s._id === editingStageId) as any;
+                      const existing = stageObj?.races?.[1]?.results ?? [];
+                      startEditResults(editingStageId as string, 1, existing);
+                    }}>Гонка 2</button>
+                  </div>
+                </div>
                 {fastestLapBonusEnabled ? (
                   <p className="text-zinc-400 text-xs mb-3">
                     Увімкнено правило: <span className="text-zinc-200">Best lap = +1 очко</span>. Можна обрати тільки одного учасника.

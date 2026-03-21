@@ -116,22 +116,32 @@ export async function POST(req: NextRequest) {
     const stageDoc = await Stage.findById(body.stageId);
     if (stageDoc) {
       for (const pid of dnsPilotIds) {
-        const exists = stageDoc.results.find(
-          (r: IStageResult) => String(r.pilotId) === pid,
-        );
-        if (exists) {
-          exists.dns = true;
-        } else {
-          // Add a new result record; cast to IStageResult after creating ObjectId
-          stageDoc.results.push({
-            pilotId: new mongoose.Types.ObjectId(pid),
-            position: 0,
-            points: 0,
-            dnf: false,
-            dns: true,
-            penaltyPoints: 0,
-            penaltyReason: "",
-          } as IStageResult);
+        // Apply DNS flag for this pilot across all races in the stage
+        const pidStr = String(pid);
+        if (!Array.isArray(stageDoc.races) || stageDoc.races.length === 0) {
+          // ensure two empty races exist if missing
+          stageDoc.races = [
+            { swsLink: "", results: [] },
+            { swsLink: "", results: [] },
+          ] as any;
+        }
+        for (const race of stageDoc.races) {
+          const exists = (race.results ?? []).find(
+            (r: IStageResult) => String(r.pilotId) === pidStr,
+          );
+          if (exists) {
+            exists.dns = true;
+          } else {
+            (race.results ?? (race.results = [])).push({
+              pilotId: new mongoose.Types.ObjectId(pid),
+              position: 0,
+              points: 0,
+              dnf: false,
+              dns: true,
+              penaltyPoints: 0,
+              penaltyReason: "",
+            } as IStageResult);
+          }
         }
       }
       await stageDoc.save();
@@ -173,10 +183,12 @@ export async function DELETE(req: NextRequest) {
     const stageDoc = await Stage.findById(stageId);
     if (stageDoc) {
       let changed = false;
-      for (const r of stageDoc.results) {
-        if ((r as IStageResult).dns) {
-          (r as IStageResult).dns = false;
-          changed = true;
+      for (const race of stageDoc.races ?? []) {
+        for (const r of race.results ?? []) {
+          if ((r as IStageResult).dns) {
+            (r as IStageResult).dns = false;
+            changed = true;
+          }
         }
       }
       if (changed) await stageDoc.save();

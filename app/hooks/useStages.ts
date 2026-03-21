@@ -58,6 +58,7 @@ export function useStage(id: string, championshipId?: string) {
     saveStageResults: (
       stageId: string,
       results: Omit<import("@/types").StageResult, "pilot">[],
-    ) => saveStageResults(stageId, results, championshipId),
+      raceIndex?: number,
+    ) => saveStageResults(stageId, results, championshipId, raceIndex),
   };
 }
