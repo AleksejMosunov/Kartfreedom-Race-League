@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
       title?: string;
       intro?: string;
       sections?: Array<{ title?: string; content?: string }>;
+      startedAt?: string | number | Date;
     };
   };
   const name =
@@ -90,12 +91,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  let providedStart: Date | null = null;
+  if ((body as any).startedAt) {
+    const tmp = new Date((body as any).startedAt);
+    if (!Number.isNaN(tmp.getTime())) providedStart = tmp;
+  }
+
   const created = await Championship.create({
     name,
     status: "active",
     championshipType,
     fastestLapBonusEnabled,
-    startedAt: new Date(),
+    startedAt: providedStart ?? new Date(),
     regulations:
       regulations ??
       defaultRegulationsForNewChampionship(fastestLapBonusEnabled),

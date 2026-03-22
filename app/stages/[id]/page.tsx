@@ -24,7 +24,7 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
   const [groupsLoading, setGroupsLoading] = useState(false);
 
   const [participantsCount, setParticipantsCount] = useState<number>(0);
-
+  const [participants, setParticipants] = useState<{ _id: string; number?: number; name?: string; surname?: string; }[]>([]);
   useEffect(() => {
     // initialize participants count based on stage results until we fetch real participants
     const ids = ((stage as any)?.races ?? []).flatMap((r: any) => (r.results ?? []).map((res: any) => {
@@ -47,7 +47,21 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
           return;
         }
         const data = await res.json();
-        if (!cancelled) setGroups(data);
+        if (!cancelled) {
+          setGroups(data);
+          try {
+            const map = new Map();
+            for (const g of data ?? []) {
+              for (const p of g.pilots ?? []) {
+                if (!p?._id) continue;
+                map.set(String(p._id), { _id: String(p._id), name: p.name, surname: p.surname });
+              }
+            }
+            setParticipants(Array.from(map.values()));
+          } catch {
+            // ignore
+          }
+        }
       } catch {
         if (!cancelled) setGroups([]);
       } finally {
@@ -80,6 +94,20 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
         if (!cancelled2) {
           setParticipantsCount(total);
         }
+        // also build participants list from championship pilots registrations
+        try {
+          const participantsMap = new Map<string, { _id: string; number?: number; name?: string; surname?: string; }>();
+          for (const p of data) {
+            if (!Array.isArray(p.registrations)) continue;
+            const regsForChamp = p.registrations.filter((r: any) => String(r.championshipId ?? p.championshipId) === String(championshipId));
+            const regForStage = regsForChamp.find((r: any) => String(r.stageId) === String(id));
+            if (!regForStage) continue;
+            participantsMap.set(String(p._id ?? p.id ?? p), { _id: String(p._id ?? p.id ?? p), name: p.name, surname: p.surname });
+          }
+          if (participantsMap.size > 0) setParticipants(Array.from(participantsMap.values()));
+        } catch {
+          // ignore
+        }
       } catch {
         // ignore
       }
@@ -90,6 +118,36 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
       cancelled2 = true;
     };
   }, [id, championshipId, setParticipantsCount]);
+
+  useEffect(() => {
+    // build participants list from groups (preferred) or stage results
+    try {
+      const map = new Map<string, { _id: string; number?: number; name?: string; surname?: string; }>();
+
+      if (groups && groups.length > 0) {
+        for (const g of groups) {
+          for (const p of g.pilots ?? []) {
+            if (!p._id) continue;
+            map.set(String(p._id), { _id: String(p._id), name: p.name, surname: p.surname });
+          }
+        }
+      } else if ((stage as any)?.races) {
+        for (const r of (stage as any).races ?? []) {
+          for (const res of r.results ?? []) {
+            const pilot = res.pilot ?? res.pilotId;
+            if (!pilot) continue;
+            const idStr = String(pilot._id ?? pilot);
+            if (!idStr) continue;
+            map.set(idStr, { _id: idStr, name: pilot.name, surname: pilot.surname });
+          }
+        }
+      }
+
+      setParticipants(Array.from(map.values()));
+    } catch {
+      setParticipants([]);
+    }
+  }, [groups, stage]);
 
   if (isLoading) return <Loader />;
   if (error)
@@ -179,6 +237,20 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
       </section>
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900/55 p-6 mb-8">
         <h2 className="text-xl font-bold text-white">Список учасників</h2>
+
+        <div className="mt-3">
+          {participants.length === 0 ? (
+            <p className="text-zinc-400 mt-2">Немає даних</p>
+          ) : (
+            <ul className="mt-3 max-h-48 overflow-y-auto divide-y divide-zinc-800 pr-2">
+              {participants.map((p) => (
+                <li key={p._id} className="flex items-center justify-between py-2 text-sm text-zinc-200">
+                  <span>{p.name ? formatPilotFullName(p.name, p.surname ?? "") : p._id}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
       </section>
 

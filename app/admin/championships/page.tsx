@@ -30,6 +30,7 @@ export default function AdminChampionshipsPage() {
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<"sprint" | "sprint-pro">("sprint");
   const [newFastestLapBonusEnabled, setNewFastestLapBonusEnabled] = useState(false);
+  const [newStartDate, setNewStartDate] = useState<string>("");
   const [newRegulations, setNewRegulations] = useState<RegulationsContent>(
     defaultRegulationsForNewChampionship(false),
   );
@@ -125,7 +126,8 @@ export default function AdminChampionshipsPage() {
         newType?: "sprint" | "sprint-pro" | "solo" | "teams";
         newFastestLapBonusEnabled?: boolean;
         newPrizes?: { place: string; description: string; }[];
-        preseasonNewsByType?: { sprint?: string; sprintPro?: string; solo?: string; teams?: string };
+        preseasonNewsByType?: { sprint?: string; sprintPro?: string; solo?: string; teams?: string; };
+        newStartDate?: string;
       };
 
       if (typeof draft.newName === "string") setNewName(draft.newName);
@@ -143,6 +145,7 @@ export default function AdminChampionshipsPage() {
           sprintPro: draft.preseasonNewsByType.sprintPro ?? draft.preseasonNewsByType.teams ?? "",
         });
       }
+      if (typeof draft.newStartDate === "string") setNewStartDate(draft.newStartDate);
       setHasDraftChanges(true);
     } catch {
       // ignore broken draft payload
@@ -156,6 +159,7 @@ export default function AdminChampionshipsPage() {
       newFastestLapBonusEnabled,
       newPrizes,
       preseasonNewsByType,
+      newStartDate,
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
 
@@ -197,6 +201,7 @@ export default function AdminChampionshipsPage() {
           name: newName.trim(),
           championshipType: newType,
           fastestLapBonusEnabled: newFastestLapBonusEnabled,
+          startedAt: newStartDate ? newStartDate : undefined,
           prizes: validPrizes,
           regulations: {
             title: newRegulations.title.trim(),
@@ -227,6 +232,7 @@ export default function AdminChampionshipsPage() {
 
       setNewName("");
       setNewType("sprint");
+      setNewStartDate("");
       setNewFastestLapBonusEnabled(false);
       setNewRegulations(defaultRegulationsForNewChampionship(false));
       setNewPrizes([{ place: "1", description: "" }]);
@@ -920,6 +926,15 @@ export default function AdminChampionshipsPage() {
                 placeholder="Назва чемпіонату"
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
               />
+              <div className="mt-2">
+                <label className="block text-zinc-400 text-sm mb-2">Дата старту</label>
+                <input
+                  type="date"
+                  value={newStartDate}
+                  onChange={(e) => setNewStartDate(e.target.value)}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                />
+              </div>
               <div>
                 <label className="block text-zinc-400 text-sm mb-2">Формат</label>
                 <select
