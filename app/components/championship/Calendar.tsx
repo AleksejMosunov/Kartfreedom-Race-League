@@ -9,10 +9,10 @@ interface CupCardProps {
 import React, { useState, useEffect, useRef } from 'react';
 import { Trophy, Zap, Award, } from 'lucide-react';
 import { motion } from 'motion/react';
-import rbLogo from './rbLogo.svg';
 import mainLogo from './logoKF.png';
-import swsLogo from './swsLogo.png';
-import Glogo from './2gLogo.png';
+import rbLogo from "@/assets/sponsors/placeholder.svg";
+import Glogo from "@/assets/sponsors/placeholder.svg";
+import swsLogo from "@/assets/sponsors/placeholder.svg";
 
 
 interface Stage {

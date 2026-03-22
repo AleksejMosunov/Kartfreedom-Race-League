@@ -233,7 +233,10 @@ export function HomeChampionshipHub({
                                   {/* <div className="leading-tight"></div> */}
                                 </div>
                               </div>
-                              <p className="text-white font-black text-xl">{leader.totalPoints}</p>
+                              <div className="flex flex-col items-end">
+                                <span className="text-xs text-zinc-400 -mb-1">очок</span>
+                                <p className="text-white font-black text-xl">{leader.totalPoints}</p>
+                              </div>
                             </div>
                           </Link>
                         ))
@@ -261,7 +264,10 @@ export function HomeChampionshipHub({
                                   {/* <div className="leading-tight"></div> */}
                                 </div>
                               </div>
-                              <p className="text-white font-black text-xl">{leader.totalPoints}</p>
+                              <div className="flex flex-col items-end">
+                                <span className="text-xs text-zinc-400 -mb-1">очок</span>
+                                <p className="text-white font-black text-xl">{leader.totalPoints}</p>
+                              </div>
                             </div>
                           </Link>
                         ))
@@ -282,7 +288,10 @@ export function HomeChampionshipHub({
                           <div className="leading-tight">{leader.pilot.name} {leader.pilot.surname}</div>
                         </div>
                       </div>
-                      <p className="text-white font-black text-xl">{leader.totalPoints}</p>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs text-zinc-400 -mb-1">очок</span>
+                        <p className="text-white font-black text-xl">{leader.totalPoints}</p>
+                      </div>
                     </div>
                   ))}
                 </div>

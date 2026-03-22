@@ -2,6 +2,9 @@
 
 import { SPONSOR_CONTACT_URL } from "@/lib/config/sponsors";
 // Note: `Link` removed because this section uses external anchors
+import rbLogo from "@/assets/sponsors/rbLogo.svg";
+import Glogo from "@/assets/sponsors/2gLogo.png";
+
 
 export default function SponsorsSection() {
   return (
@@ -14,6 +17,8 @@ export default function SponsorsSection() {
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[#ccff00] mb-2">Партнери та спонсори</p>
             {/* <h2 className="text-2xl sm:text-3xl font-black text-white">Тут може бути ваш бренд</h2> */}
+            <p className="text-white font-semibold">Тут може бути ваш бренд</p>
+            <p className="text-zinc-500 text-sm mt-1">Розміщення банера, згадки у соцмережах та на трасі.</p>
           </div>
         </div>
 
@@ -24,19 +29,35 @@ export default function SponsorsSection() {
             rel="noopener noreferrer"
             className="rounded-xl border border-zinc-700 bg-zinc-900/60 p-4 flex items-center gap-3 hover:scale-102 transition-transform"
           >
-            <div className="w-12 h-12 bg-red-600 rounded flex items-center justify-center text-white font-black">RB</div>
+            <img src={(rbLogo as any).src ?? rbLogo}
+              alt="Red Bull Logo"
+              className="h-8 sm:h-12 w-auto object-contain opacity-100"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous" />
             <div>
               <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-1">Партнер</p>
               <p className="text-white font-semibold">Red Bull</p>
             </div>
           </a>
 
-          <div className="rounded-xl border border-dashed border-zinc-700 bg-zinc-900/60 p-4 flex items-center gap-3">
+          <a
+            href="https://2gcircuit.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl border border-zinc-700 bg-zinc-900/60 p-4 flex items-center gap-3 hover:scale-102 transition-transform"
+          >
+            <img
+              src={(Glogo as any).src ?? Glogo}
+              alt="2G Logo"
+              className="h-6 sm:h-7 w-auto object-contain opacity-100"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+            />
             <div>
-              <p className="text-white font-semibold">Тут може бути ваш бренд</p>
-              <p className="text-zinc-500 text-sm mt-1">Розміщення банера, згадки у соцмережах та на трасі.</p>
+              <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-1">Партнер</p>
+              <p className="text-white font-semibold">2G-Circuit</p>
             </div>
-          </div>
+          </a>
 
           <a
             href={SPONSOR_CONTACT_URL}
