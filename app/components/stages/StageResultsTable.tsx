@@ -1,4 +1,4 @@
- 
+
 
 import { useState, useEffect } from "react";
 import { Stage, Pilot } from "@/types";
@@ -28,7 +28,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
       ? "sprint-pro"
       : "sprint";
   const [leagueFilter, setLeagueFilter] = useState<"all" | "pro" | "newbie">(
-    championshipType === "sprint-pro" ? "pro" : "newbie",
+    championshipType === "sprint-pro" ? "pro" : "all",
   );
   const [statusFilter, setStatusFilter] = useState<"all" | "fin" | "dnf" | "dns">("all");
   const [teamFilter, setTeamFilter] = useState("");
@@ -110,7 +110,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
             onChange={(e) => setStatusFilter(e.target.value as "all" | "fin" | "dnf" | "dns")}
             className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
           >
-            <option value="all">Усі</option>
+            <option value="all">Загальний</option>
             <option value="fin">FIN</option>
             <option value="dnf">DNF</option>
             <option value="dns">DNS</option>
@@ -128,12 +128,12 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
           <label className="text-sm text-zinc-300">
             Залік
             <select
-              value={effectiveLeagueFilter}
+              value={leagueFilter}
               onChange={(e) => setLeagueFilter(e.target.value as "all" | "pro" | "newbie")}
               className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
               disabled={String(effectiveChampionshipType) === "sprint-pro"}
             >
-              <option value="all">Усі</option>
+              <option value="all">Загальний</option>
               <option value="pro">Про</option>
               <option value="newbie">Новачки</option>
             </select>

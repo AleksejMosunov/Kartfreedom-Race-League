@@ -25,7 +25,7 @@ export function ChampionshipTable({
 
   const [championshipTypeById, setChampionshipTypeById] = useState<ChampionshipType>("sprint");
   const [stageFilter, setStageFilter] = useState<string>("all");
-  const [classFilter, setClassFilter] = useState<"all" | "pro" | "newbie">("newbie");
+  const [classFilter, setClassFilter] = useState<"all" | "pro" | "newbie">("all");
   const [teamFilter, setTeamFilter] = useState("");
 
   const championshipType: ChampionshipType =
@@ -108,7 +108,7 @@ export function ChampionshipTable({
             onChange={(e) => setStageFilter(e.target.value)}
             className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
           >
-            <option value="all">Усі завершені</option>
+            <option value="all">Загальний завершені</option>
             {completedStages.map((stage) => (
               <option key={stage._id} value={stage._id}>
                 Етап {stage.number}: {stage.name}
@@ -121,7 +121,7 @@ export function ChampionshipTable({
           Залік
           {championshipType === "sprint-pro" ? (
             <select
-              value={effectiveClassFilter}
+              value={classFilter}
               onChange={(e) => setClassFilter(e.target.value as "all" | "pro" | "newbie")}
               className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
             >
@@ -129,13 +129,13 @@ export function ChampionshipTable({
             </select>
           ) : (
             <select
-              value={effectiveClassFilter}
+              value={classFilter}
               onChange={(e) => setClassFilter(e.target.value as "all" | "pro" | "newbie")}
               className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
             >
-              <option value="newbie">Новачки</option>
+              <option value="all">Загальний</option>
               <option value="pro">Про</option>
-              <option value="all">Усі</option>
+              <option value="newbie">Новачки</option>
             </select>
           )}
         </label>

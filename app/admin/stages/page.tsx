@@ -305,10 +305,36 @@ export default function AdminStagesPage() {
 
   const startEditResults = (stageId: string, raceIndex: number = 0, existingResults?: StageResult[]) => {
     setResultsError("");
+    // compute editable pilots synchronously based on passed stageId and raceIndex
+    const stageObj = stages.find((s) => s._id === stageId) as any;
+    const race = (stageObj?.races ?? [])[raceIndex];
+    const raceId = race && race._id ? String(race._id) : undefined;
+
+    const pilotMatchesLocal = (p: any) => {
+      if (!Array.isArray(p.registrations)) return false;
+      for (const r of p.registrations) {
+        if (!r || !r.stageId) continue;
+        if (String(r.stageId) !== String(stageId)) continue;
+        if (Array.isArray((r as any).raceIds) && (r as any).raceIds.length > 0) {
+          if (raceId && (r as any).raceIds.map(String).includes(raceId)) return true;
+          continue;
+        }
+        const useFirst = r.firstRace === undefined ? true : Boolean(r.firstRace);
+        const useSecond = r.secondRace === undefined ? false : Boolean(r.secondRace);
+        if (raceId && raceIndex === 0 && useFirst) return true;
+        if (raceId && raceIndex === 1 && useSecond) return true;
+        if (!raceId && r.racesCount === 2) return true;
+      }
+      return false;
+    };
+
+    const filtered = pilots.filter((p) => pilotMatchesLocal(p));
+    const pilotsForEdit = filtered.length > 0 ? filtered : pilots;
+
     setEditingStageId(stageId);
     setEditingRaceIndex(raceIndex);
     setResultsRows(
-      editablePilots.map((p, i) => {
+      pilotsForEdit.map((p, i) => {
         const existing = existingResults?.find((r) => extractPilotId(r) === p._id);
         if (existing) {
           return {

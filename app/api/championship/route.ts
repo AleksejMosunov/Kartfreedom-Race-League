@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   const stages = await Stage.find()
     .where("championshipId")
     .equals(current._id)
-    .populate("results.pilotId", "name surname number team avatar")
+    .populate("races.results.pilotId", "name surname number team avatar")
     .sort({ number: 1 })
     .lean();
 
