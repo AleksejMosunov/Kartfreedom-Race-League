@@ -134,8 +134,8 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
               disabled={String(effectiveChampionshipType) === "sprint-pro"}
             >
               <option value="all">Загальний</option>
-              <option value="pro">Про</option>
-              <option value="newbie">Новачки</option>
+              <option value="pro">PRO</option>
+              <option value="newbie">ROOKIE</option>
             </select>
           </label>
         )}

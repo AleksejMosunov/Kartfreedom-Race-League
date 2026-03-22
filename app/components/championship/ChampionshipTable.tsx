@@ -103,7 +103,7 @@ export function ChampionshipTable({
               onChange={(e) => setClassFilter(e.target.value as "all" | "pro" | "newbie")}
               className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
             >
-              <option value="pro">Про</option>
+              <option value="pro">PRO</option>
             </select>
           ) : (
             <select
@@ -112,8 +112,8 @@ export function ChampionshipTable({
               className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
             >
               <option value="all">Загальний</option>
-              <option value="pro">Про</option>
-              <option value="newbie">Новачки</option>
+              <option value="pro">PRO</option>
+              <option value="newbie">ROOKIE</option>
             </select>
           )}
         </label>

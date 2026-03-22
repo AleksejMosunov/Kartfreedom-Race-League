@@ -20,11 +20,11 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
     ? `/stages?championship=${encodeURIComponent(championshipId)}`
     : "/stages";
 
-  const [groups, setGroups] = useState<{ _id: string; groupNumber: number; pilots: { _id: string; number?: number; name?: string; surname?: string; }[]; }[] | null>(null);
+  const [groups, setGroups] = useState<{ _id: string; groupNumber: number; pilots: { _id: string; number?: number; name?: string; surname?: string; league?: string; }[]; }[] | null>(null);
   const [groupsLoading, setGroupsLoading] = useState(false);
 
   const [participantsCount, setParticipantsCount] = useState<number>(0);
-  const [participants, setParticipants] = useState<{ _id: string; number?: number; name?: string; surname?: string; }[]>([]);
+  const [participants, setParticipants] = useState<{ _id: string; number?: number; name?: string; surname?: string; league?: string; }[]>([]);
   useEffect(() => {
     // initialize participants count based on stage results until we fetch real participants
     const ids = ((stage as any)?.races ?? []).flatMap((r: any) => (r.results ?? []).map((res: any) => {
@@ -50,11 +50,11 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
         if (!cancelled) {
           setGroups(data);
           try {
-            const map = new Map();
+            const map = new Map<string, { _id: string; number?: number; name?: string; surname?: string; league?: string; }>();
             for (const g of data ?? []) {
               for (const p of g.pilots ?? []) {
                 if (!p?._id) continue;
-                map.set(String(p._id), { _id: String(p._id), name: p.name, surname: p.surname });
+                map.set(String(p._id), { _id: String(p._id), name: p.name, surname: p.surname, league: p.league });
               }
             }
             setParticipants(Array.from(map.values()));
@@ -96,13 +96,14 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
         }
         // also build participants list from championship pilots registrations
         try {
-          const participantsMap = new Map<string, { _id: string; number?: number; name?: string; surname?: string; }>();
+          const participantsMap = new Map<string, { _id: string; number?: number; name?: string; surname?: string; league?: string; }>();
+
           for (const p of data) {
             if (!Array.isArray(p.registrations)) continue;
             const regsForChamp = p.registrations.filter((r: any) => String(r.championshipId ?? p.championshipId) === String(championshipId));
             const regForStage = regsForChamp.find((r: any) => String(r.stageId) === String(id));
             if (!regForStage) continue;
-            participantsMap.set(String(p._id ?? p.id ?? p), { _id: String(p._id ?? p.id ?? p), name: p.name, surname: p.surname });
+            participantsMap.set(String(p._id ?? p.id ?? p), { _id: String(p._id ?? p.id ?? p), name: p.name, surname: p.surname, league: p.league });
           }
           if (participantsMap.size > 0) setParticipants(Array.from(participantsMap.values()));
         } catch {
@@ -119,16 +120,18 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
     };
   }, [id, championshipId, setParticipantsCount]);
 
+  console.log(participants);
+
   useEffect(() => {
     // build participants list from groups (preferred) or stage results
     try {
-      const map = new Map<string, { _id: string; number?: number; name?: string; surname?: string; }>();
+      const map = new Map<string, { _id: string; number?: number; name?: string; surname?: string; league?: string; }>();
 
       if (groups && groups.length > 0) {
         for (const g of groups) {
           for (const p of g.pilots ?? []) {
             if (!p._id) continue;
-            map.set(String(p._id), { _id: String(p._id), name: p.name, surname: p.surname });
+            map.set(String(p._id), { _id: String(p._id), name: p.name, surname: p.surname, league: p.league });
           }
         }
       } else if ((stage as any)?.races) {
@@ -138,7 +141,7 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
             if (!pilot) continue;
             const idStr = String(pilot._id ?? pilot);
             if (!idStr) continue;
-            map.set(idStr, { _id: idStr, name: pilot.name, surname: pilot.surname });
+            map.set(idStr, { _id: idStr, name: pilot.name, surname: pilot.surname, league: pilot.league });
           }
         }
       }
@@ -245,7 +248,14 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
             <ul className="mt-3 max-h-48 overflow-y-auto divide-y divide-zinc-800 pr-2">
               {participants.map((p) => (
                 <li key={p._id} className="flex items-center justify-between py-2 text-sm text-zinc-200">
-                  <span>{p.name ? formatPilotFullName(p.name, p.surname ?? "") : p._id}</span>
+                  <div className="flex items-center gap-2">
+                    <span>{p.name ? formatPilotFullName(p.name, p.surname ?? "") : p._id}</span>
+                    {p.league && (
+                      <span className="inline-flex items-center rounded-full bg-zinc-800/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">
+                        {p.league === "pro" ? "PRO" : "ROOKIE"}
+                      </span>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
