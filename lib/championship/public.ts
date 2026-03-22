@@ -5,8 +5,15 @@ import { LeagueSettings } from "@/lib/models/LeagueSettings";
 export async function getPublicChampionshipStatus() {
   await connectToDatabase();
 
+  const nowPlusTwoWeeks = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
+
   const [active, settings] = await Promise.all([
-    Championship.find({ status: "active" }).sort({ startedAt: -1 }).lean(),
+    Championship.find({
+      status: "active",
+      startedAt: { $lte: nowPlusTwoWeeks },
+    })
+      .sort({ startedAt: -1 })
+      .lean(),
     LeagueSettings.findOne({ key: "global" }).lean(),
   ]);
 
