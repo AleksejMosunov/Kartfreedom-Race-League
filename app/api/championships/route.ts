@@ -13,8 +13,15 @@ const SETTINGS_KEY = "global";
 export async function GET() {
   await connectToDatabase();
 
+  const nowPlusTwoWeeks = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+
   const [active, archived, settings] = await Promise.all([
-    Championship.find({ status: "active" }).sort({ startedAt: -1 }).lean(),
+    Championship.find({
+      status: "active",
+      startedAt: { $lte: nowPlusTwoWeeks },
+    })
+      .sort({ startedAt: -1 })
+      .lean(),
     Championship.find({ status: "archived" })
       .sort({ endedAt: -1, startedAt: -1 })
       .lean(),
