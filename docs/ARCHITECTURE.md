@@ -54,3 +54,46 @@
 ## Где смотреть код расчёта турнирной таблицы
 
 - Функции подсчёта очков и таблицы лидеров находятся в `lib/utils/championship.ts`.
+
+## Детальное описание компонентов и поток данных
+
+- UI (Next.js App Router `app/`): отвечает за страницы и компоненты, SSR/SSG где нужно. Компоненты админки находятся внутри `app/admin`.
+- API (Server): каждый `app/api/*/route.ts` экспортирует HTTP-обработчики для CRUD и вспомогательных задач. Авторизация проверяется внутри обработчика через `lib/auth.ts`.
+- DB layer: `lib/models/*` — Mongoose-схемы. Соединение и поддержка индексов реализованы в `lib/mongodb.ts`.
+- Business logic: `lib/utils/*` — расчёт таблицы, агрегации, общие helpers (например подсчёт очков, применение штрафов, fastest lap).
+
+Поток данных (пример публикации результатов):
+
+1. Админ отправляет `POST /api/stages/:id/results` с `results` (body) или загружает через UI.
+2. Роутер API валидирует тело, сохраняет `stage`/`race` и каждый `race.results` (в текущей модели результаты хранятся в каждой гонке `race.results`).
+3. Вызывается бизнес-логика расчёта таблицы (`lib/utils/championship.ts`), которая агрегирует результаты по пилотам и обновляет standings/points.
+4. При необходимости отправляются нотификации в Telegram (`lib/telegram.ts`) и пишется запись в `AuditLog`.
+
+## Схема данных (кратко)
+
+- Championship: metadata, rules, prizes, links на stages.
+- Stage: `races: [{ name, results: [{ pilotId, position, time, bestLap, penalties }] }]` — обратите внимание, что результаты хранятся в каждой гонке/раунде.
+- Pilot / Team: базовые сущности, связанные с championshipId.
+
+## Развертывание и производство
+
+- Рекомендовано запускать приложение через Docker (см. Dockerfile, docker-compose.yml).
+- Переменные окружения: `MONGODB_URI`, `ADMIN_SESSION_SECRET`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `NEXT_PUBLIC_APP_URL`.
+
+## Подсказки для разработчиков
+
+- Тестирование логики подсчёта: создавайте фиктивные `stages` с наборами `races[].results` и запускайте локально функцию подсчёта из `lib/utils/championship.ts`.
+- Логи аудита: при изменениях счёта или публикации результатов проверяйте таблицу `AuditLog`.
+- Производительность: для больших чемпионатов используйте пагинацию в эндпоинтах и индексирование полей `championshipId`, `startedAt`, `status`.
+
+## Диаграмма (упрощённая)
+
+UI -> API routes -> lib/utils (business) -> MongoDB
+
+---
+
+Файлы для быстрого просмотра:
+
+- `lib/utils/championship.ts` — расчёт таблицы
+- `app/api/stages/[id]/results/route.ts` и `app/api/stages/[id]/route.ts` — публикация/правка результатов
+- `lib/models/Championship.ts`, `lib/models/Stage.ts`, `lib/models/Pilot.ts` — модели

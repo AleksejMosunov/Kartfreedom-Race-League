@@ -841,15 +841,6 @@ export default function AdminStagesPage() {
                   {(() => {
                     const sorted = [...resultsRows].sort((a, b) => a.position - b.position);
 
-                    const proRows = sorted.filter((r) => {
-                      const pilot = editablePilots.find((p) => p._id === r.pilotId) || pilots.find((p) => p._id === r.pilotId);
-                      return (pilot?.league ?? "newbie") === "pro";
-                    });
-                    const newbieRows = sorted.filter((r) => {
-                      const pilot = editablePilots.find((p) => p._id === r.pilotId) || pilots.find((p) => p._id === r.pilotId);
-                      return (pilot?.league ?? "newbie") === "newbie";
-                    });
-
                     const renderRow = (row: ResultInputRow) => {
                       const pilot = editablePilots.find((p) => p._id === row.pilotId) || pilots.find((p) => p._id === row.pilotId);
                       const league = (pilot?.league as "pro" | "newbie") ?? "newbie";
@@ -876,23 +867,13 @@ export default function AdminStagesPage() {
                     };
 
                     return (
-                      <>
-                        <div className="rounded-lg border border-zinc-800 p-3 bg-zinc-900">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-semibold text-white">Про</h4>
-                            <span className="text-xs text-zinc-400">{proRows.length} обрано</span>
-                          </div>
-                          <div className="space-y-2">{proRows.map(renderRow)}</div>
+                      <div className="rounded-lg border border-zinc-800 p-3 bg-zinc-900">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-semibold text-white">Усі пілоти</h4>
+                          <span className="text-xs text-zinc-400">{sorted.length} обрано</span>
                         </div>
-
-                        <div className="rounded-lg border border-zinc-800 p-3 bg-zinc-900">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-semibold text-white">Новачки</h4>
-                            <span className="text-xs text-zinc-400">{newbieRows.length} обрано</span>
-                          </div>
-                          <div className="space-y-2">{newbieRows.map(renderRow)}</div>
-                        </div>
-                      </>
+                        <div className="space-y-2">{sorted.map(renderRow)}</div>
+                      </div>
                     );
                   })()}
                 </div>

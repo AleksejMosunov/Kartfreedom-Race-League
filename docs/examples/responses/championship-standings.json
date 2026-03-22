@@ -1,0 +1,44 @@
+[
+  {
+    "pilot": {
+      "_id": "69bf1be0cbf0c33d5a92db8a",
+      "name": "Ivan",
+      "surname": "Petrov",
+      "number": 7
+    },
+    "totalPoints": 50,
+    "bestPoints": 50,
+    "stagesCount": 1,
+    "position": 1,
+    "standings": [
+      {
+        "stageId": "69bf19c4cbf0c33d5a92dabe",
+        "stageName": "SWS Sprint Rookie&Pro Season 1",
+        "stageNumber": 1,
+        "points": 50,
+        "position": 1
+      }
+    ]
+  },
+  {
+    "pilot": {
+      "_id": "69bf1c49cbf0c33d5a92dbbb",
+      "name": "Test",
+      "surname": "Pilot",
+      "number": 12
+    },
+    "totalPoints": 43,
+    "bestPoints": 43,
+    "stagesCount": 1,
+    "position": 2,
+    "standings": [
+      {
+        "stageId": "69bf19c4cbf0c33d5a92dabe",
+        "stageName": "SWS Sprint Rookie&Pro Season 1",
+        "stageNumber": 1,
+        "points": 43,
+        "position": 1
+      }
+    ]
+  }
+]

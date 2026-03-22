@@ -1,0 +1,26 @@
+{
+  "active": [
+    {
+      "_id": "69bf05642697b92b9560a909",
+      "name": "SWS Sprint Cup League Pro Season 1",
+      "status": "active",
+      "championshipType": "sprint-pro",
+      "fastestLapBonusEnabled": false,
+      "startedAt": "2026-04-26T20:53:56.447Z"
+    },
+    {
+      "_id": "69bf053f2697b92b9560a8ec",
+      "name": "SWS Sprint Cup League Rookie&Pro Season 1",
+      "status": "active",
+      "championshipType": "sprint",
+      "fastestLapBonusEnabled": false,
+      "startedAt": "2026-04-05T20:53:19.823Z"
+    }
+  ],
+  "current": {
+    "_id": "69bf05642697b92b9560a909",
+    "name": "SWS Sprint Cup League Pro Season 1",
+    "status": "active",
+    "championshipType": "sprint-pro"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "_id": "69bf19c4cbf0c33d5a92dabe",
+  "name": "SWS Sprint Rookie&Pro Season 1",
+  "stageNumber": 1,
+  "races": [
+    {
+      "_id": "69bf19c4cbf0c33d5a92dabf",
+      "name": "Race A",
+      "results": [
+        {
+          "pilotId": "69bf1be0cbf0c33d5a92db8a",
+          "position": 1,
+          "time": "00:05:12.345",
+          "bestLap": true
+        },
+        {
+          "pilotId": "69bf1c49cbf0c33d5a92dbbb",
+          "position": 2,
+          "time": "00:05:17.890"
+        }
+      ]
+    },
+    {
+      "_id": "69bf19c4cbf0c33d5a92dac0",
+      "name": "Race B",
+      "results": []
+    }
+  ]
+}
