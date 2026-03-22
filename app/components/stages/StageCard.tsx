@@ -3,6 +3,7 @@ import { Stage } from "@/types";
 import { Badge } from "@/app/components/ui/Badge";
 import { Pilot } from "@/types";
 import { useEffect, useState } from "react";
+import { usePilots } from "@/app/hooks/usePilots";
 
 interface StageCardProps {
   stage: Stage;
@@ -42,44 +43,29 @@ export function StageCard({ stage, championshipId }: StageCardProps) {
     return s.size || null;
   });
 
+  const { pilots } = usePilots(championshipId);
+
   useEffect(() => {
-    let cancelled = false;
-    // For upcoming stages fetch championship pilots and count those registered for this stage
-    const fetchCount = async () => {
-      if (!championshipId) return;
-      try {
-        const res = await fetch(`/api/pilots?championship=${encodeURIComponent(championshipId)}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        if (!Array.isArray(data)) return;
-        const count = data.filter((p: Pilot) => {
-          if (!Array.isArray(p.registrations)) return false;
-          const regsForChamp = p.registrations.filter((r) =>
-            String(r.championshipId ?? p.championshipId) === String(championshipId),
-          );
-          if (regsForChamp.length === 0) return false;
-          const regForStage = regsForChamp.find((r) => String(r.stageId) === String(stage._id));
-          if (!regForStage) return false;
-          const fr = Boolean(regForStage.firstRace) || (regForStage.racesCount ?? 0) >= 1;
-          const sr = Boolean(regForStage.secondRace) || (regForStage.racesCount ?? 0) === 2;
-          return fr || sr;
-        }).length;
-        setParticipantsCount(count);
-      } catch {
-        // ignore
-      }
-    };
+    // derive participants count from centralized pilots store when available
+    if (!championshipId) return;
+    if (stage.isCompleted) return;
+    if (!Array.isArray(pilots) || pilots.length === 0) return;
 
-    // Only fetch for non-completed stages (registrations matter before start)
-    if (!stage.isCompleted) {
-      void fetchCount();
-    }
+    const count = pilots.filter((p: Pilot) => {
+      if (!Array.isArray(p.registrations)) return false;
+      const regsForChamp = p.registrations.filter((r) =>
+        String(r.championshipId ?? p.championshipId) === String(championshipId),
+      );
+      if (regsForChamp.length === 0) return false;
+      const regForStage = regsForChamp.find((r) => String(r.stageId) === String(stage._id));
+      if (!regForStage) return false;
+      const fr = Boolean(regForStage.firstRace) || (regForStage.racesCount ?? 0) >= 1;
+      const sr = Boolean(regForStage.secondRace) || (regForStage.racesCount ?? 0) === 2;
+      return fr || sr;
+    }).length;
 
-    return () => {
-      cancelled = true;
-    };
-  }, [stage._id, stage.isCompleted, championshipId]);
+    if (count !== participantsCount) setParticipantsCount(count);
+  }, [pilots, championshipId, stage._id, stage.isCompleted, participantsCount]);
 
   const countdownLabel =
     daysToStage > 1

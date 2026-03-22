@@ -24,7 +24,6 @@ export function ChampionshipTable({
   const { current } = useChampionshipsCatalog({ enabled: !championshipId && !propChampionshipType });
 
   const [championshipTypeById, setChampionshipTypeById] = useState<ChampionshipType>("sprint");
-  const [stageFilter, setStageFilter] = useState<string>("all");
   const [classFilter, setClassFilter] = useState<"all" | "pro" | "newbie">("all");
   const [teamFilter, setTeamFilter] = useState("");
 
@@ -60,14 +59,7 @@ export function ChampionshipTable({
   }, [championshipId, propChampionshipType]);
 
   const completedStages = stages.filter((s) => s.isCompleted);
-  const normalizedStageFilter =
-    stageFilter === "all" || completedStages.some((stage) => stage._id === stageFilter)
-      ? stageFilter
-      : "all";
-  const visibleStages =
-    normalizedStageFilter === "all"
-      ? completedStages
-      : completedStages.filter((stage) => stage._id === normalizedStageFilter);
+  const visibleStages = completedStages;
 
   // include all pilots in the public championship table (do not exclude 'pro')
   const filteredStandings = standings.filter((row) => {
@@ -101,21 +93,7 @@ export function ChampionshipTable({
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <label className="text-sm text-zinc-300">
-          Етап
-          <select
-            value={normalizedStageFilter}
-            onChange={(e) => setStageFilter(e.target.value)}
-            className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-          >
-            <option value="all">Загальний завершені</option>
-            {completedStages.map((stage) => (
-              <option key={stage._id} value={stage._id}>
-                Етап {stage.number}: {stage.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* stage filter removed per request */}
 
         <label className="text-sm text-zinc-300">
           Залік
