@@ -486,8 +486,9 @@ export default function AdminStagesPage() {
     try {
       const enriched = resultsRows.map((r) => {
         const pilot = editablePilots.find((p) => p._id === r.pilotId) || pilots.find((p) => p._id === r.pilotId);
-        const league = (pilot?.league as "pro" | "newbie") ?? "newbie";
-        const base = r.dnf || r.dns ? 0 : getPointsByPosition(r.position, league);
+        // participants = number of rows that are NOT DNS; fallback to editable/pilots
+        const participants = Math.max(1, resultsRows.filter((x) => !x.dns).length || editablePilots.length || pilots.length);
+        const base = r.dnf || r.dns ? 0 : getPointsByPosition(r.position, participants);
         const fastest = fastestLapBonusEnabled && r.bestLap ? 1 : 0;
         return { ...r, points: base + fastest - (r.penaltyPoints ?? 0) };
       });
@@ -843,8 +844,8 @@ export default function AdminStagesPage() {
 
                     const renderRow = (row: ResultInputRow) => {
                       const pilot = editablePilots.find((p) => p._id === row.pilotId) || pilots.find((p) => p._id === row.pilotId);
-                      const league = (pilot?.league as "pro" | "newbie") ?? "newbie";
-                      const basePoints = row.dnf || row.dns ? 0 : getPointsByPosition(row.position, league);
+                      const participants = Math.max(1, resultsRows.filter((x) => !x.dns).length || editablePilots.length || pilots.length);
+                      const basePoints = row.dnf || row.dns ? 0 : getPointsByPosition(row.position, participants);
                       const pts = basePoints + (fastestLapBonusEnabled && row.bestLap ? 1 : 0) - row.penaltyPoints;
                       return (
                         <div key={row.pilotId} className="flex items-center gap-3 flex-wrap">

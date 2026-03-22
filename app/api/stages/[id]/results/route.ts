@@ -28,10 +28,21 @@ export async function POST(req: NextRequest, { params }: Params) {
   let current;
   try {
     const championshipId = req.nextUrl.searchParams.get("championship");
-    current = championshipId
-      ? await Championship.findById(championshipId).lean()
-      : await requireCurrentChampionship();
-  } catch {
+    if (championshipId) {
+      current = await Championship.findById(championshipId).lean();
+    } else {
+      // Guard against possible module interop/circular-import issues where
+      // `requireCurrentChampionship` may not be a callable function at runtime.
+      if (typeof requireCurrentChampionship === "function") {
+        current = await requireCurrentChampionship();
+      } else {
+        // Fallback: query the DB directly for an active championship.
+        current = await Championship.findOne({ status: "active" })
+          .sort({ startedAt: -1 })
+          .lean();
+      }
+    }
+  } catch (err) {
     return NextResponse.json(
       { error: "Немає активного чемпіонату" },
       { status: 409 },
@@ -77,14 +88,18 @@ export async function POST(req: NextRequest, { params }: Params) {
     );
   }
 
+  // Determine participants count for this race (exclude explicit DNS when possible)
+  const participantsCount = Math.max(
+    1,
+    results.filter((r) => !r.dns).length || results.length,
+  );
+
   const enrichedResults = results.map((r) => {
     const fastestLapBonus =
       current.fastestLapBonusEnabled && r.bestLap && !r.dnf && !r.dns ? 1 : 0;
     const penaltyPoints = Math.max(0, Number(r.penaltyPoints ?? 0));
-    // pilot league lookup will be filled below; default to 'newbie'
-    const pilotLeague = "newbie" as "pro" | "newbie";
     const basePoints =
-      r.dnf || r.dns ? 0 : getPointsByPosition(r.position, pilotLeague);
+      r.dnf || r.dns ? 0 : getPointsByPosition(r.position, participantsCount);
     const penaltyReason =
       penaltyPoints > 0 ? (r.penaltyReason ?? "").trim() : "";
 
@@ -112,13 +127,14 @@ export async function POST(req: NextRequest, { params }: Params) {
       );
       for (const row of enrichedResults) {
         const id = String(row.pilotId);
-        const league = (leagueById.get(id) as "pro" | "newbie") ?? "newbie";
         const fastestLapBonus =
           current.fastestLapBonusEnabled && row.bestLap && !row.dnf && !row.dns
             ? 1
             : 0;
         const base =
-          row.dnf || row.dns ? 0 : getPointsByPosition(row.position, league);
+          row.dnf || row.dns
+            ? 0
+            : getPointsByPosition(row.position, participantsCount);
         row.points = base + fastestLapBonus - (row.penaltyPoints ?? 0);
       }
     }
@@ -157,6 +173,11 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isCompletedAfter = racesCurrent.every(
     (r) => Array.isArray(r.results) && r.results.length > 0,
   );
+
+  // Round points to integer for storage/display as requested (calculations remain float)
+  enrichedResults.forEach((row) => {
+    row.points = Math.round(Number(row.points) || 0);
+  });
 
   const updateDoc: any = {
     $set: {

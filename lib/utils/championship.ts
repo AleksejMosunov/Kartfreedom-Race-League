@@ -14,13 +14,34 @@ export const POINTS_TABLE: Record<number, number> = {
   10: 1,
 };
 
+/**
+ * Get points for a finishing position.
+ * New formula (preferred): pass `participants` as the second argument (number).
+ *   first place = 1000 + participants
+ *   delta = 1000 / (participants - 1)
+ *   points(position) = first - (position-1) * delta
+ * Legacy fallback: if second arg is a string (league) or omitted, return POINTS_TABLE[position]
+ * Note: this function returns the raw (float) points. Rounding to integer is done when
+ * storing/displaying race results.
+ */
 export function getPointsByPosition(
   position: number,
-  league?: "pro" | "newbie",
+  participantsOrLeague?: number | "pro" | "newbie",
 ): number {
-  const base = POINTS_TABLE[position] ?? 0;
-  const multiplier = league === "pro" ? 2 : 1;
-  return base * multiplier;
+  // If caller provided a numeric participants count, use the new formula
+  if (typeof participantsOrLeague === "number") {
+    const participants = Math.max(1, Math.floor(participantsOrLeague));
+    if (position < 1) return 0;
+    // If only one participant, give them 1000 + participants
+    if (participants === 1) return 1000 + 1;
+    const first = 1000 + participants;
+    const delta = 1000 / Math.max(1, participants - 1);
+    const pts = first - (position - 1) * delta;
+    return pts;
+  }
+
+  // Legacy behavior: return fixed table value (no PRO x2 multiplier anymore)
+  return POINTS_TABLE[position] ?? 0;
 }
 
 /**
