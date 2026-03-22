@@ -27,9 +27,9 @@ export default async function AdminParticipantsPage() {
         <p className="text-zinc-400 mt-1">
           Оберіть активний чемпіонат, для якого хочете керувати складом учасників.
         </p>
-        <Link href="/admin/import" className="inline-flex mt-4 rounded-md border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-800 transition-colors">
+        {/* <Link href="/admin/import" className="inline-flex mt-4 rounded-md border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-800 transition-colors">
           Імпорт учасників з CSV
-        </Link>
+        </Link> */}
       </div>
 
       {active.length === 0 ? (

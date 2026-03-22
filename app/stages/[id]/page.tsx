@@ -120,8 +120,6 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
     };
   }, [id, championshipId, setParticipantsCount]);
 
-  console.log(participants);
-
   useEffect(() => {
     // build participants list from groups (preferred) or stage results
     try {
@@ -238,31 +236,34 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
       </section>
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/55 p-6 mb-8">
-        <h2 className="text-xl font-bold text-white">Список учасників</h2>
+      {!stage.isCompleted &&
+        (
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/55 p-6 mb-8">
+            <h2 className="text-xl font-bold text-white">Список учасників</h2>
 
-        <div className="mt-3">
-          {participants.length === 0 ? (
-            <p className="text-zinc-400 mt-2">Немає даних</p>
-          ) : (
-            <ul className="mt-3 max-h-48 overflow-y-auto divide-y divide-zinc-800 pr-2">
-              {participants.map((p) => (
-                <li key={p._id} className="flex items-center justify-between py-2 text-sm text-zinc-200">
-                  <div className="flex items-center gap-2">
-                    <span>{p.name ? formatPilotFullName(p.name, p.surname ?? "") : p._id}</span>
-                    {p.league && (
-                      <span className="inline-flex items-center rounded-full bg-zinc-800/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">
-                        {p.league === "pro" ? "PRO" : "ROOKIE"}
-                      </span>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+            <div className="mt-3">
+              {participants.length === 0 ? (
+                <p className="text-zinc-400 mt-2">Немає даних</p>
+              ) : (
+                <ul className="mt-3 max-h-48 overflow-y-auto divide-y divide-zinc-800 pr-2">
+                  {participants.map((p) => (
+                    <li key={p._id} className="flex items-center justify-between py-2 text-sm text-zinc-200">
+                      <div className="flex items-center gap-2">
+                        <span>{p.name ? formatPilotFullName(p.name, p.surname ?? "") : p._id}</span>
+                        {p.league && (
+                          <span className="inline-flex items-center rounded-full bg-zinc-800/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">
+                            {p.league === "pro" ? "PRO" : "ROOKIE"}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
-      </section>
+          </section>
+        )}
 
       {stage.isCompleted ? (
         <StageResultsTable stage={stage} />
@@ -290,27 +291,30 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* Sprint groups display */}
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/55 p-6 mt-8">
-        <h2 className="text-xl font-bold text-white mb-3">Розподіл по групах</h2>
-        {groupsLoading && <Loader />}
-        {!groupsLoading && groups && groups.length === 0 && (
-          <p className="text-zinc-400">Групи ще не сформовано для цього етапу.</p>
-        )}
-        {!groupsLoading && groups && groups.length > 0 && (
-          <div className="flex flex-wrap gap-4">
-            {groups.map((g) => (
-              <div key={g._id} className="w-full sm:w-auto min-w-[160px] rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
-                <h3 className="text-sm text-zinc-400 mb-2">Група {g.groupNumber}</h3>
-                <ul className="text-sm space-y-1">
-                  {g.pilots.map((p) => (
-                    <li key={p._id} className="text-zinc-200">#{p.number ?? "-"} — {p.name ? formatPilotFullName(p.name, p.surname ?? "") : p._id}</li>
-                  ))}
-                </ul>
+      {!stage.isCompleted &&
+        (
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/55 p-6 mt-8">
+            <h2 className="text-xl font-bold text-white mb-3">Розподіл по групах</h2>
+            {groupsLoading && <Loader />}
+            {!groupsLoading && groups && groups.length === 0 && (
+              <p className="text-zinc-400">Групи ще не сформовано для цього етапу.</p>
+            )}
+            {!groupsLoading && groups && groups.length > 0 && (
+              <div className="flex flex-wrap gap-4">
+                {groups.map((g) => (
+                  <div key={g._id} className="w-full sm:w-auto min-w-[160px] rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
+                    <h3 className="text-sm text-zinc-400 mb-2">Група {g.groupNumber}</h3>
+                    <ul className="text-sm space-y-1">
+                      {g.pilots.map((p) => (
+                        <li key={p._id} className="text-zinc-200">#{p.number ?? "-"} — {p.name ? formatPilotFullName(p.name, p.surname ?? "") : p._id}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </section>
         )}
-      </section>
     </main>
   );
 }

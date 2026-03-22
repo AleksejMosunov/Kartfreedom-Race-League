@@ -33,10 +33,29 @@ export async function GET(req: NextRequest) {
 
   // Prefer canonical `registrations[]` model: include pilots with per-championship
   // registrations or explicit registrations for any stage in this championship.
+  // Also include pilots who appear in stage results but may not have a
+  // registration record (results can be added manually). Collect all pilot
+  // ids referenced in the stages' races and include them in the query.
+  const pilotIdsFromResults = new Set<string>();
+  (stages as unknown as any[]).forEach((s) => {
+    (s.races ?? []).forEach((r: any) => {
+      (r.results ?? []).forEach((res: any) => {
+        const id =
+          res.pilotId !== null &&
+          typeof res.pilotId === "object" &&
+          "_id" in res.pilotId
+            ? String(res.pilotId._id)
+            : String(res.pilotId);
+        if (id) pilotIdsFromResults.add(id);
+      });
+    });
+  });
+
   const participants = await Pilot.find({
     $or: [
       { "registrations.championshipId": current._id },
       { "registrations.stageId": { $in: stageIds } },
+      { _id: { $in: Array.from(pilotIdsFromResults) } },
     ],
   })
     .sort({ number: 1 })
@@ -60,6 +79,8 @@ export async function GET(req: NextRequest) {
     mappedStages as unknown as IStageType[],
     champType,
   );
+
+  // log counts after completedStages is computed
 
   const completedStages = (mappedStages as unknown as IStageType[])
     .filter((stage) => stage.isCompleted)

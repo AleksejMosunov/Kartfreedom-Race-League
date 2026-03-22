@@ -23,6 +23,7 @@ export function ChampionshipTable({
   const { stages } = useStages(championshipId);
   const { current } = useChampionshipsCatalog({ enabled: !championshipId && !propChampionshipType });
 
+
   const [championshipTypeById, setChampionshipTypeById] = useState<ChampionshipType>("sprint");
   const [classFilter, setClassFilter] = useState<"all" | "pro" | "newbie">("all");
   const [teamFilter, setTeamFilter] = useState("");
@@ -32,6 +33,8 @@ export function ChampionshipTable({
     (championshipId
       ? championshipTypeById
       : current?.championshipType ?? "sprint");
+
+
 
   // derive effective filter: for sprint-pro championships the class filter
   // should always act as 'pro' without mutating user-controlled state

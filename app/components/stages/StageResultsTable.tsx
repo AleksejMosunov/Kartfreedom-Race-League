@@ -27,25 +27,17 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
     current?.championshipType === "sprint-pro"
       ? "sprint-pro"
       : "sprint";
-  const [leagueFilter, setLeagueFilter] = useState<"all" | "pro" | "newbie">(
-    championshipType === "sprint-pro" ? "pro" : "all",
-  );
-  const [statusFilter, setStatusFilter] = useState<"all" | "fin" | "dnf" | "dns">("all");
+  const [leagueFilter, setLeagueFilter] = useState<"all" | "pro" | "newbie">("all");
   const [teamFilter, setTeamFilter] = useState("");
-  // derive the effective championship type and league filter without
-  // forcing setState inside effects (prevents cascading renders)
+  // derive the effective championship type without forcing setState inside effects
   const effectiveChampionshipType = championshipTypeLocal ?? championshipType;
-  const effectiveLeagueFilter: "all" | "pro" | "newbie" =
-    effectiveChampionshipType === "sprint-pro" ? "pro" : leagueFilter;
+  const effectiveLeagueFilter: "all" | "pro" | "newbie" = leagueFilter;
 
   const races = (stage as any).races ?? [{ results: (stage as any).results ?? [] }];
 
   const filteredPerRace = (raceResults: any[]) => {
     const sorted = [...raceResults].sort((a, b) => a.position - b.position);
     return sorted.filter((result) => {
-      const status = result.dns ? "dns" : result.dnf ? "dnf" : "fin";
-      const statusMatch = statusFilter === "all" || statusFilter === status;
-
       const pilotObj =
         result.pilot ??
         (result.pilotId !== null &&
@@ -57,13 +49,13 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
       const search = teamFilter.trim().toLowerCase();
       const searchMatch = !search || title.includes(search);
 
-      // league filtering (applies to sprint / sprint-pro championships)
+      // league filtering
       let leagueMatch = true;
       const pilotLeague = (pilotObj as Pilot | null)?.league ?? "newbie";
       if (effectiveLeagueFilter === "pro") leagueMatch = pilotLeague === "pro";
       if (effectiveLeagueFilter === "newbie") leagueMatch = pilotLeague === "newbie";
 
-      return statusMatch && searchMatch && leagueMatch;
+      return searchMatch && leagueMatch;
     });
   };
 
@@ -104,16 +96,15 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
     <div className="space-y-4">
       <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="text-sm text-zinc-300">
-          Статус
+          Залік
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as "all" | "fin" | "dnf" | "dns")}
+            value={leagueFilter}
+            onChange={(e) => setLeagueFilter(e.target.value as "all" | "pro" | "newbie")}
             className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
           >
             <option value="all">Загальний</option>
-            <option value="fin">FIN</option>
-            <option value="dnf">DNF</option>
-            <option value="dns">DNS</option>
+            <option value="pro">PRO</option>
+            <option value="newbie">ROOKIE</option>
           </select>
         </label>
         <label className="text-sm text-zinc-300">Пілот
@@ -124,21 +115,6 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
             className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
           />
         </label>
-        {String(effectiveChampionshipType) !== "sprint-pro" && (
-          <label className="text-sm text-zinc-300">
-            Залік
-            <select
-              value={leagueFilter}
-              onChange={(e) => setLeagueFilter(e.target.value as "all" | "pro" | "newbie")}
-              className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
-              disabled={String(effectiveChampionshipType) === "sprint-pro"}
-            >
-              <option value="all">Загальний</option>
-              <option value="pro">PRO</option>
-              <option value="newbie">ROOKIE</option>
-            </select>
-          </label>
-        )}
       </div>
 
       {races.map((race: any, raceIdx: number) => {

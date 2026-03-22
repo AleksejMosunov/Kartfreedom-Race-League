@@ -5,7 +5,7 @@ import { LeagueSettings } from "@/lib/models/LeagueSettings";
 export async function getPublicChampionshipStatus() {
   await connectToDatabase();
 
-  const nowPlusTwoWeeks = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
+  const nowPlusTwoWeeks = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
 
   const [active, settings] = await Promise.all([
     Championship.find({

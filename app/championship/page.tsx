@@ -32,16 +32,20 @@ export default async function ChampionshipPage() {
   }
 
   if (active.length === 1) {
+    const championships = active.map((c) => ({
+      _id: String(c._id),
+      name: c.name,
+      championshipType: c.championshipType,
+    }));
+
     return (
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-black text-white">Таблиця чемпіонату</h1>
-          <p className="text-zinc-400 mt-1">
-            Загальний залік
-          </p>
+          <p className="text-zinc-400 mt-1">Загальний залік</p>
         </div>
         {/* <SponsorsSection /> */}
-        <ChampionshipTable />
+        <MultiChampionshipTabs championships={championships} />
       </main>
     );
   }
