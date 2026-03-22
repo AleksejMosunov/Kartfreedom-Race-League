@@ -347,12 +347,14 @@ function RegisterPageInner() {
                         className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
                       />
                       {swsError && <p className="text-red-400 text-xs mt-2">{swsError}</p>}
-                      <p className="text-zinc-500 text-xs mt-2">
+                      <p className="text-zinc-200 text-xs mt-2 ">
                         Якщо ви ще не SWS пілот — зареєструйтесь на сайті SWS.{' '}
                         <a href="https://www.sodiwseries.com/en-gb/become-sws-driver.html" target="_blank" rel="noreferrer" className="text-red-500">
                           Інструкція SWS
                         </a>
-                        . Для деталей звертайтесь до організатора: <a href="https://t.me/aleksej_mosunov" className="text-red-500">Telegram</a>.
+                        .
+                        <br />
+                        Для деталей звертайтесь до організатора: <a href="https://t.me/aleksej_mosunov" className="text-red-500">Telegram</a>.
                       </p>
                     </div>
 
@@ -384,7 +386,7 @@ function RegisterPageInner() {
                     {championshipMode === "sprint" && (
                       <div className="mt-4 bg-zinc-800 border border-zinc-700 rounded-md p-3">
                         <p className="text-zinc-200 text-sm font-medium">Інформація про етап</p>
-                        <p className="text-zinc-400 text-sm mt-1">
+                        <p className="text-zinc-500 text-xs mt-1">
                           Кожен етап складається з 2 гонок на треку KartFreedom.
                           <br />
                           Якщо ви берете участь в обох гонках етапу, діє спеціальна ціна.

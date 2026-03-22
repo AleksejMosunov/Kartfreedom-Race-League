@@ -1,4 +1,4 @@
- 
+
 
 "use client";
 
@@ -215,7 +215,7 @@ const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, i
           {cup.tag}
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="text-[9px] font-bold text-white/20 tracking-widest uppercase">
+          <div className="text-[9px] font-bold text-white/60 tracking-widest uppercase">
             {cup.id === 'endurance-cup' ? 'Endurance Marathon' : cup.isSprint ? 'Long Distance' : 'Classic + New Format'}
           </div>
         </div>
@@ -227,7 +227,7 @@ const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, i
 
       <div className="flex-grow flex flex-col relative z-10">
         <div className={`space-y-1 ${cup.id === 'endurance' ? 'mb-0 min-h-0' : 'mb-0 min-h-[140px]'}`}>
-          <div className="text-[9px] sm:text-[11px] font-bold text-white/20 uppercase tracking-widest">Формат</div>
+          <div className="text-[9px] sm:text-[11px] font-bold text-white/60 uppercase tracking-widest">Формат</div>
           <div className="text-[11px] sm:text-[12px] text-racing-muted leading-tight flex items-start gap-1.5">
             <div className="flex-1 space-y-1">
               {cup.stages.some(s => s.format) ? (
@@ -249,7 +249,7 @@ const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, i
           <div className={`space-y-0.5 border-t border-white/5 mb-5 ${cup.id === 'endurance' ? 'pt-0.5' : 'pt-0.5'}`}>
             {cup.tag !== 'Endurance' && (
               <>
-                <div className="text-[9px] sm:text-[11px] font-bold text-white/20 uppercase tracking-widest">
+                <div className="text-[9px] sm:text-[11px] font-bold text-white/60 uppercase tracking-widest">
                   {cup.tag === 'Sprint Pro' || cup.tag === 'Endurance' ? 'Нагорода' : 'Нагорода для заліку Rookie'}
                 </div>
                 <div className="text-[11px] sm:text-[12px] text-racing-muted leading-tight flex items-start gap-1.5 min-h-[18px]">
@@ -264,9 +264,9 @@ const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, i
             {cup.stages.map((stage: Stage, idx: number) => (
               <div
                 key={idx}
-                className={`bg-white/5 border border-white/5 rounded py-3 sm:py-4 px-4 sm:px-6 flex flex-col justify-start items-center text-center flex-1 min-w-[30px] relative group transition-all hover:border-white/20 hover:bg-white/10`}
+                className={`bg-white/5 border border-white/5 rounded py-3 sm:py-4 px-4 sm:px-6 flex flex-col justify-start items-center text-center flex-1 min-w-[30px] relative group transition-all hover:border-white/60 hover:bg-white/10`}
               >
-                <span className="block text-[8px] font-bold tracking-widest uppercase text-white/20 mb-0.5 mt-1">{stage.label}</span>
+                <span className="block text-[8px] font-bold tracking-widest uppercase text-white/60 mb-0.5 mt-1">{stage.label}</span>
                 <span style={{ color: (cup.colorVar as any) }} className={`font-display text-base sm:text-xl font-bold tracking-wider leading-none`}>{stage.date}</span>
 
                 {idx === cup.stages.length - 1 && (
