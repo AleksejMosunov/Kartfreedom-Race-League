@@ -38,7 +38,6 @@ function AdminPilotsPageContent() {
     : null;
 
   const championshipName = selectedChampionship?.name ?? "";
-  // championshipType removed — not used in this view
   const [deleteError, setDeleteError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState("");
@@ -48,7 +47,6 @@ function AdminPilotsPageContent() {
   const [groupsCount, setGroupsCount] = useState<number>(2);
   const [dnsSet] = useState<Set<string>>(() => new Set());
   const [creatingGroups, setCreatingGroups] = useState(false);
-  // `hasGroups` state removed — not read anywhere. Keep network checks but don't store state.
   const [deletingGroups, setDeletingGroups] = useState(false);
   const [copiedMap, setCopiedMap] = useState<Record<string, boolean>>({});
   const [fieldsMap, setFieldsMap] = useState<Record<string, { swsId: string; phone: string; }>>({});
@@ -64,21 +62,6 @@ function AdminPilotsPageContent() {
       // ignore
     }
   };
-
-  // check for existing sprint groups for the selected stage
-  useEffect(() => {
-    async function checkGroups() {
-      if (!selectedStageId) return;
-      try {
-        const res = await apiFetch(`/api/stages/${selectedStageId}/sprint-groups`, { cache: "no-store" });
-        if (!res.ok) return;
-        await res.json();
-      } catch {
-        // ignore errors for group check
-      }
-    }
-    checkGroups();
-  }, [selectedStageId]);
 
   useEffect(() => {
     const map: Record<string, { swsId: string; phone: string; }> = {};
@@ -99,9 +82,7 @@ function AdminPilotsPageContent() {
         { method: "DELETE" },
       );
       const body = (await res.json().catch(() => ({}))) as { error?: string; };
-      if (!res.ok) {
-        throw new Error(body.error ?? "Не вдалося видалити пілота");
-      }
+      if (!res.ok) throw new Error(body.error ?? "Не вдалося видалити пілота");
       await refresh();
     } catch (err) {
       setDeleteError((err as Error).message);
@@ -197,7 +178,7 @@ function AdminPilotsPageContent() {
                     setUpdatingId(pilot._id);
                     try {
                       const res = await apiFetch(
-                        `/api/pilots/${pilot._id}?championship=${encodeURIComponent(championshipId)}`,
+                        `/api/pilots/${pilot._id}?championship=${encodeURIComponent(championshipId ?? "")}`,
                         {
                           method: "PUT",
                           headers: { "Content-Type": "application/json" },
@@ -273,126 +254,6 @@ function AdminPilotsPageContent() {
               </div>
             </Card>
           ))}
-
-          {/* Sprint grouping tool (admin) */}
-          {pilots.length > 0 && (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-              <h2 className="text-white font-semibold mb-2">Sprint — розподіл груп</h2>
-              <div className="flex gap-2 items-center mb-2">
-                <label className="text-zinc-400 text-sm">Етап:</label>
-                <select
-                  value={selectedStageId ?? ""}
-                  onChange={(e) => setSelectedStageId(e.target.value || null)}
-                  className="bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1 text-white text-sm"
-                >
-                  <option value="">Обрати етап</option>
-                  {stages
-                    .filter((s) => !s.isCompleted)
-                    .map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.number} — {s.name}
-                      </option>
-                    ))}
-                </select>
-
-                <label className="text-zinc-400 text-sm">Кількість груп:</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={groupsCount}
-                  onChange={(e) => setGroupsCount(Number(e.target.value))}
-                  className="w-20 bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1 text-white text-sm"
-                />
-              </div>
-
-              <p className="text-zinc-400 text-sm mb-2">Позначте пілотів, які не їдуть на цьому етапі (будуть відмічені DNS):</p>
-              <div className="max-h-44 overflow-auto grid grid-cols-2 gap-2 mb-3">
-                {pilots.map((pilot) => (
-                  <label key={pilot._id} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      onChange={(e) => {
-                        if (e.target.checked) dnsSet.add(pilot._id);
-                        else dnsSet.delete(pilot._id);
-                      }}
-                    />
-                    <span className="text-zinc-300">{formatPilotFullName(pilot.name, pilot.surname)}</span>
-                  </label>
-                ))}
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={async () => {
-                    if (!championshipId) return;
-                    if (!selectedStageId) {
-                      setUpdateError("Оберіть етап");
-                      return;
-                    }
-                    setCreatingGroups(true);
-                    try {
-                      const res = await apiFetch(`/api/admin/sprint-groups`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          stageId: selectedStageId,
-                          groupsCount,
-                          pilotIds: pilots.map((p) => p._id),
-                          dnsPilotIds: Array.from(dnsSet),
-                        }),
-                      });
-                      const body = await res.json().catch(() => ({}));
-                      if (!res.ok) throw new Error(body.error ?? "Не вдалося створити групи");
-                      await refresh();
-                      setUpdateError("");
-                      alert("Групи створено успішно");
-                    } catch (err) {
-                      setUpdateError((err as Error).message);
-                    } finally {
-                      setCreatingGroups(false);
-                    }
-                  }}
-                  disabled={creatingGroups}
-                >
-                  {creatingGroups ? "Створення..." : "Створити групи"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={async () => {
-                    if (!championshipId) return;
-                    if (!selectedStageId) {
-                      setUpdateError("Оберіть етап");
-                      return;
-                    }
-                    if (!confirm("Видалити розподіл груп для цього етапу?")) return;
-                    setDeletingGroups(true);
-                    try {
-                      const res = await apiFetch(
-                        `/api/admin/sprint-groups?stageId=${encodeURIComponent(selectedStageId)}&clearDns=1`,
-                        { method: "DELETE" },
-                      );
-                      const body = await res.json().catch(() => ({}));
-                      if (!res.ok) throw new Error(body.error ?? "Не вдалося видалити групи");
-                      alert("Групи видалено");
-                    } catch (err) {
-                      setUpdateError((err as Error).message);
-                    } finally {
-                      setDeletingGroups(false);
-                    }
-                  }}
-                  disabled={deletingGroups}
-                >
-                  {deletingGroups ? "Видалення..." : "Видалити групи"}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => { dnsSet.clear(); setSelectedStageId(null); }}>
-                  Скинути
-                </Button>
-              </div>
-              {updateError && <p className="text-red-400 text-sm mt-2">{updateError}</p>}
-            </div>
-          )}
 
           {pilots.length === 0 && <p className="text-zinc-500">Пілоти ще не додані.</p>}
         </div>

@@ -48,7 +48,7 @@ export default function AdminStagesPage() {
     selectedChampionshipId || undefined,
     { enabled: Boolean(selectedChampionshipId) },
   );
-  const { pilots } = usePilots(selectedChampionshipId || undefined);
+  const { pilots, refresh: refreshPilots } = usePilots(selectedChampionshipId || undefined);
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [editingRaceIndex, setEditingRaceIndex] = useState<number>(0);
   // compute editable pilots: when editing a stage, limit to pilots registered for that stage/race
@@ -103,6 +103,60 @@ export default function AdminStagesPage() {
   const [hasDraftChanges, setHasDraftChanges] = useState(false);
   const [role, setRole] = useState<"organizer" | "marshal" | "editor" | null>(null);
   const [participantsMap, setParticipantsMap] = useState<Record<string, { total: number; byRacesCount: { 1: number; 2: number; }; }>>({});
+
+  // Sprint grouping UI state (moved from pilots admin)
+  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
+  const [groupsCount, setGroupsCount] = useState<number>(2);
+  const [dnsSet] = useState<Set<string>>(() => new Set());
+  const [creatingGroups, setCreatingGroups] = useState(false);
+  const [deletingGroups, setDeletingGroups] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+  const [selectedRaceIndex, setSelectedRaceIndex] = useState<number>(0);
+
+  const pilotsForGrouping = useMemo(() => {
+    if (!selectedStageId) return pilots;
+    const stageObj = stages.find((s) => s._id === selectedStageId) as any;
+    const race = (stageObj?.races ?? [])[selectedRaceIndex];
+    const raceId = race && race._id ? String(race._id) : undefined;
+
+    const pilotMatches = (p: any) => {
+      if (!Array.isArray(p.registrations)) return false;
+      for (const r of p.registrations) {
+        if (!r || !r.stageId) continue;
+        if (String(r.stageId) !== String(selectedStageId)) continue;
+        if (Array.isArray((r as any).raceIds) && (r as any).raceIds.length > 0) {
+          if (raceId && (r as any).raceIds.map(String).includes(raceId)) return true;
+          continue;
+        }
+        const useFirst = r.firstRace === undefined ? true : Boolean(r.firstRace);
+        const useSecond = r.secondRace === undefined ? false : Boolean(r.secondRace);
+        if (raceId && selectedRaceIndex === 0 && useFirst) return true;
+        if (raceId && selectedRaceIndex === 1 && useSecond) return true;
+        if (!raceId && r.racesCount === 2) return true;
+      }
+      return false;
+    };
+
+    const filtered = pilots.filter((p) => pilotMatches(p));
+    if (process.env.NODE_ENV !== "production") {
+      try {
+        console.log("[SprintGroups] pilotsForGrouping computed", {
+          selectedChampionshipId,
+          selectedStageId,
+          selectedRaceIndex,
+          stageName: stageObj?.name,
+          stageChampId: stageObj?.championshipId,
+          pilotsTotal: pilots.length,
+          matchedCount: filtered.length,
+          samplePilots: pilots.slice(0, 5).map((p) => ({ id: p._id, championshipId: p.championshipId })),
+          sampleMatched: filtered.slice(0, 5).map((p) => p._id),
+        });
+      } catch (e) {
+        // ignore logging errors
+      }
+    }
+    return filtered.length > 0 ? filtered : pilots;
+  }, [pilots, stages, selectedStageId, selectedRaceIndex]);
 
   const FORM_DRAFT_KEY = "admin:stages:form-draft:v1";
 
@@ -643,6 +697,199 @@ export default function AdminStagesPage() {
               {formError && <p className="text-red-400 text-sm">{formError}</p>}
             </div>
           </form>
+
+          {/* Sprint grouping tool (admin) - moved from pilots admin */}
+          {pilots.length > 0 && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mt-4">
+              <h2 className="text-white font-semibold mb-2">Sprint — розподіл груп</h2>
+              <div className="flex gap-2 items-center mb-2">
+                <label className="text-zinc-400 text-sm">Етап:</label>
+                <select
+                  value={selectedStageId ?? ""}
+                  onChange={(e) => setSelectedStageId(e.target.value || null)}
+                  className="bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1 text-white text-sm"
+                >
+                  <option value="">Обрати етап</option>
+                  {stages
+                    .filter((s) => !s.isCompleted)
+                    .map((s) => (
+                      <option key={s._id} value={s._id}>
+                        {s.number} — {s.name}
+                      </option>
+                    ))}
+                </select>
+
+                <label className="text-zinc-400 text-sm">Кількість груп:</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={groupsCount}
+                  onChange={(e) => setGroupsCount(Number(e.target.value))}
+                  className="w-20 bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1 text-white text-sm"
+                />
+                {selectedStageId && (() => {
+                  const stageObj = stages.find((s) => s._id === selectedStageId) as any;
+                  const racesCount = (stageObj?.races ?? []).length || 0;
+                  if (racesCount <= 1) return null;
+                  return (
+                    <div className="flex items-center gap-2">
+                      <label className="text-zinc-400 text-sm">Гонка:</label>
+                      {Array.from({ length: racesCount }).map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className={`px-3 py-1 rounded ${selectedRaceIndex === idx ? "bg-zinc-800 text-white" : "bg-zinc-900 text-zinc-400"}`}
+                          onClick={() => setSelectedRaceIndex(idx)}
+                        >
+                          Гонка {idx + 1}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <p className="text-zinc-400 text-sm mb-2">Позначте пілотів, які не їдуть на цій гонці (будуть відмічені DNS):</p>
+              <div className="max-h-44 overflow-auto grid grid-cols-2 gap-2 mb-3">
+                {pilotsForGrouping.map((pilot) => (
+                  <label key={pilot._id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={dnsSet.has(pilot._id)}
+                      onChange={(e) => {
+                        if (e.target.checked) dnsSet.add(pilot._id);
+                        else dnsSet.delete(pilot._id);
+                        // trigger re-render
+                        setUpdateError((s) => s);
+                      }}
+                    />
+                    <span className="text-zinc-300">{formatPilotFullName(pilot.name, pilot.surname)}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    if (!selectedChampionshipId) return;
+                    if (!selectedStageId) {
+                      setUpdateError("Оберіть етап");
+                      return;
+                    }
+                    setCreatingGroups(true);
+                    try {
+                      const stageObj = stages.find((s) => s._id === selectedStageId) as any;
+                      const stageChampId = stageObj?.championshipId ? String(stageObj.championshipId) : null;
+                      const pilotIdsRaw = pilotsForGrouping.map((p) => String(p._id)).filter(Boolean);
+                      const pilotIds = pilotIdsRaw.filter((id) => {
+                        const p = pilotsForGrouping.find((pp) => String(pp._id) === id) as any;
+                        if (!p) return false;
+                        if (!stageChampId) return true;
+                        // support multiple shapes: `championshipId`, or nested `championship._id`, or `championship`
+                        const pilotChamp = p.championshipId ?? (p.championship && (p.championship._id ?? p.championship));
+                        // if pilot record doesn't include championship info, include it (avoid false negatives)
+                        if (!pilotChamp) return true;
+                        return String(pilotChamp) === stageChampId;
+                      });
+                      if (pilotIds.length === 0) {
+                        if (process.env.NODE_ENV !== "production") {
+                          try {
+                            console.log("[SprintGroups] no pilotIds after filtering", {
+                              selectedChampionshipId,
+                              selectedStageId,
+                              stageChampId,
+                              pilotsForGroupingCount: pilotsForGrouping.length,
+                              pilotsForGroupingSample: pilotsForGrouping.slice(0, 10).map((p) => ({ id: p._id, championshipId: (p as any).championshipId })),
+                              pilotIdsRawCount: pilotIdsRaw.length,
+                              pilotIdsRawSample: pilotIdsRaw.slice(0, 10),
+                            });
+                          } catch (e) {
+                            // ignore
+                          }
+                        }
+                        setUpdateError("Немає доступних пілотів для обраного етапу/гонки (невідповідність чемпіонату)");
+                        setCreatingGroups(false);
+                        return;
+                      }
+
+                      if (process.env.NODE_ENV !== "production") {
+                        try {
+                          console.debug("[SprintGroups] creating groups payload", {
+                            stageId: selectedStageId,
+                            groupsCount,
+                            pilotIdsCount: pilotIds.length,
+                            pilotIdsSample: pilotIds.slice(0, 10),
+                            dnsPilotIds: Array.from(dnsSet),
+                            stageChampId,
+                          });
+                        } catch (e) {
+                          // ignore
+                        }
+                      }
+
+                      const res = await apiFetch(`/api/admin/sprint-groups`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          stageId: selectedStageId,
+                          groupsCount,
+                          pilotIds,
+                          dnsPilotIds: Array.from(dnsSet),
+                        }),
+                      });
+                      const body = await res.json().catch(() => ({}));
+                      if (!res.ok) throw new Error(body.error ?? "Не вдалося створити групи");
+                      // refresh pilots and stages
+                      await Promise.all([refreshPilots?.(), refresh?.()]);
+                      setUpdateError("");
+                      alert("Групи створено успішно");
+                    } catch (err) {
+                      setUpdateError((err as Error).message);
+                    } finally {
+                      setCreatingGroups(false);
+                    }
+                  }}
+                  disabled={creatingGroups}
+                >
+                  {creatingGroups ? "Створення..." : "Створити групи"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={async () => {
+                    if (!selectedChampionshipId) return;
+                    if (!selectedStageId) {
+                      setUpdateError("Оберіть етап");
+                      return;
+                    }
+                    if (!confirm("Видалити розподіл груп для цього етапу?")) return;
+                    setDeletingGroups(true);
+                    try {
+                      const res = await apiFetch(
+                        `/api/admin/sprint-groups?stageId=${encodeURIComponent(selectedStageId)}&clearDns=1`,
+                        { method: "DELETE" },
+                      );
+                      const body = await res.json().catch(() => ({}));
+                      if (!res.ok) throw new Error(body.error ?? "Не вдалося видалити групи");
+                      alert("Групи видалено");
+                    } catch (err) {
+                      setUpdateError((err as Error).message);
+                    } finally {
+                      setDeletingGroups(false);
+                    }
+                  }}
+                  disabled={deletingGroups}
+                >
+                  {deletingGroups ? "Видалення..." : "Видалити групи"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { dnsSet.clear(); setSelectedStageId(null); }}>
+                  Скинути
+                </Button>
+              </div>
+              {updateError && <p className="text-red-400 text-sm mt-2">{updateError}</p>}
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
