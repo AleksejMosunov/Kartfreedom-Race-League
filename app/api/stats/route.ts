@@ -5,6 +5,7 @@ import { Stage } from "@/lib/models/Stage";
 import { Team } from "@/lib/models/Team";
 import { Championship } from "@/lib/models/Championship";
 import { getCurrentChampionship } from "@/lib/championship/current";
+import { AUTH_COOKIE_NAME, isValidAdminSession } from "@/lib/auth";
 
 type Participant = {
   _id: string;
@@ -47,6 +48,11 @@ function calcStdDev(values: number[]) {
 
 export async function GET(req: NextRequest) {
   await connectToDatabase();
+
+  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const isAdmin = await isValidAdminSession(token);
+  if (!isAdmin)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const championshipId = req.nextUrl.searchParams.get("championship");
   const current = championshipId

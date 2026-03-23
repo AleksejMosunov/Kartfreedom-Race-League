@@ -386,14 +386,29 @@ function RegisterPageInner() {
                     {championshipMode === "sprint" && (
                       <div className="mt-4 bg-zinc-800 border border-zinc-700 rounded-md p-3">
                         <p className="text-zinc-200 text-sm font-medium">Інформація про етап</p>
-                        <p className="text-zinc-500 text-xs mt-1">
+                        <p className="text-zinc-300 text-xs mt-1">
                           Кожен етап складається з 2 гонок на треку KartFreedom.
                           <br />
-                          Якщо ви берете участь в обох гонках етапу, діє спеціальна ціна.
                           <br />
-                          Перша гонка напрямок стандарт, старт 9-00, вартість 2000 грн
+                          Перша гонка напрямок стандарт
                           <br />
-                          Друга гонка напрямок реверс, старт 12-00, вартість 2000 грн
+                          8.30 - 9.20 тренування
+                          <br />
+                          9.30 - брифінг
+                          <br />
+                          10.00 - старт гонки
+                          <br />
+                          Старт 9-00, вартість 2000 грн
+                          <br />
+                          <br />
+                          Друга гонка напрямок реверс
+                          <br />
+                          11.30 - 11.45 тренування
+                          <br />
+                          11.50 - брифінг
+                          <br />
+                          Старт 12-00, вартість 2000 грн
+                          <br />
                           <br />
                           Обидві гонки етапу (стандарт + реверс) за спеціальною ціною 3000 грн
                         </p>
@@ -431,6 +446,26 @@ function RegisterPageInner() {
                             <option value="both">Обидві гонки (спеціальна ціна 3000 грн)</option>
                           </select>
                         </div>
+                      </div>
+                    )}
+                    {championshipMode === "sprint-pro" && (
+                      <div className="mt-4 bg-zinc-800 border border-zinc-700 rounded-md p-3">
+                        <p className="text-zinc-200 text-sm font-medium">Інформація про етап</p>
+                        <p className="text-zinc-300 text-xs mt-1">
+                          Кожен етап складається з однієї гонки на треку KartFreedom.
+                          <br />
+                          <br />
+                          8.30-9.20 тренування (3 заїзди)
+                          <br />
+                          9.30 брифінг та жеребкування
+                          <br />
+                          9.50 кваліфікація
+                          <br />
+                          10.00 старт гонки
+                          <br />
+                          <br />
+                          Вартість участі в етапі  — 6000 грн.
+                        </p>
                       </div>
                     )}
                   </div>

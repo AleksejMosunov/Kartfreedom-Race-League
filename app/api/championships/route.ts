@@ -15,12 +15,19 @@ export async function GET() {
 
   const nowPlusTwoWeeks = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
 
-  const [active, archived, settings] = await Promise.all([
+  const [active, upcoming, archived, settings] = await Promise.all([
     Championship.find({
       status: "active",
       startedAt: { $lte: nowPlusTwoWeeks },
     })
       .sort({ startedAt: -1 })
+      .lean(),
+    // championships that are active but start later than the active window
+    Championship.find({
+      status: "active",
+      startedAt: { $gt: nowPlusTwoWeeks },
+    })
+      .sort({ startedAt: 1 })
       .lean(),
     Championship.find({ status: "archived" })
       .sort({ endedAt: -1, startedAt: -1 })
@@ -30,6 +37,7 @@ export async function GET() {
 
   return NextResponse.json({
     active,
+    upcoming,
     current: active[0] ?? null,
     archived,
     preseasonNews: settings?.preseasonNews ?? "",

@@ -28,11 +28,12 @@ export async function Footer() {
 
   const navLinks = [
     { href: "/", label: "Головна" },
-    { href: "/championship", label: "Чемпіонат" },
+    { href: "/championship", label: "Результати" },
+    { href: "/calendar", label: "Календар" },
     { href: "/stages", label: "Етапи" },
-    { href: "/pilots", label: "Учасники" },
+    // { href: "/pilots", label: "Учасники" },
     // { href: "/stats", label: "Статистика" },
-    { href: "/regulations", label: "Регламент" },
+    // { href: "/regulations", label: "Регламент" },
     { href: "/register", label: "Реєстрація" },
   ];
   // Разбиваем навигацию на максимум 3 колонки

@@ -9,6 +9,7 @@ import { Championship, RegulationSection, RegulationsContent } from "@/types";
 
 interface ChampionshipsResponse {
   active?: Championship[];
+  upcoming?: Championship[];
   current?: Championship | null;
   archived: Championship[];
   preseasonNews?: string;
@@ -26,6 +27,7 @@ function emptyRegulations(): RegulationsContent {
 
 export default function AdminChampionshipsPage() {
   const [active, setActive] = useState<Championship[]>([]);
+  const [upcoming, setUpcoming] = useState<Championship[]>([]);
   const [archived, setArchived] = useState<Championship[]>([]);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<"sprint" | "sprint-pro">("sprint");
@@ -61,7 +63,7 @@ export default function AdminChampionshipsPage() {
   ]);
   const [activePrizes, setActivePrizes] = useState<Record<string, { place: string; description: string; }[]>>({});
   const [expandedPrizesChampId, setExpandedPrizesChampId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"active" | "new" | "archive">("active");
+  const [activeTab, setActiveTab] = useState<"active" | "upcoming" | "new" | "archive">("active");
   const [hasDraftChanges, setHasDraftChanges] = useState(false);
 
   const DRAFT_KEY = "admin:championships:draft:v1";
@@ -74,6 +76,7 @@ export default function AdminChampionshipsPage() {
       const payload = (await res.json()) as ChampionshipsResponse;
       const activeList: Championship[] = payload.active ?? (payload.current ? [payload.current] : []);
       setActive(activeList);
+      setUpcoming(payload.upcoming ?? []);
       setArchived(payload.archived ?? []);
       setPreseasonNewsByType({
         sprint: payload.preseasonNewsByType?.sprint ?? payload.preseasonNews ?? "",
@@ -613,6 +616,7 @@ export default function AdminChampionshipsPage() {
             {(
               [
                 { key: "active", label: `Активні (${active.length})` },
+                { key: "upcoming", label: `Неактивні (${upcoming.length})` },
                 { key: "new", label: "Новий" },
                 { key: "archive", label: `Архів (${archived.length})` },
               ] as const
@@ -631,12 +635,12 @@ export default function AdminChampionshipsPage() {
             ))}
           </div>
 
-          {/* ── Active tab ── */}
-          {activeTab === "active" && (
+          {/* ── Active / Upcoming tab ── */}
+          {(activeTab === "active" || activeTab === "upcoming") && (
             <div className="space-y-4">
-              {active.length === 0 ? (
+              {(activeTab === "active" ? active : upcoming).length === 0 ? (
                 <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
-                  <p className="text-zinc-400 mb-3">Активних чемпіонатів немає.</p>
+                  <p className="text-zinc-400 mb-3">Чемпіонатів немає.</p>
                   <button
                     type="button"
                     onClick={() => setActiveTab("new")}
@@ -646,7 +650,7 @@ export default function AdminChampionshipsPage() {
                   </button>
                 </div>
               ) : (
-                active.map((item) => {
+                (activeTab === "active" ? active : upcoming).map((item) => {
                   const regulations = activeRegulations[item._id] ?? emptyRegulations();
                   const isExpanded = expandedRegChampId === item._id;
                   const isPrizesExpanded = expandedPrizesChampId === item._id;

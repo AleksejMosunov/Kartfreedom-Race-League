@@ -638,7 +638,8 @@ export async function POST(req: NextRequest) {
       const savedObj = (saved as any).toObject
         ? (saved as any).toObject()
         : saved;
-      return NextResponse.json({ pilot: savedObj, message }, { status: 200 });
+      const safePilot = sanitizeForAudit(savedObj as Record<string, unknown>);
+      return NextResponse.json({ pilot: safePilot, message }, { status: 200 });
     }
 
     const createDoc: Record<string, unknown> = {
@@ -763,8 +764,9 @@ export async function POST(req: NextRequest) {
     const pilotObj = (pilot as any).toObject
       ? (pilot as any).toObject()
       : pilot;
+    const safePilot = sanitizeForAudit(pilotObj as Record<string, unknown>);
     return NextResponse.json(
-      { pilot: pilotObj, message: "Реєстрацію успішно завершено" },
+      { pilot: safePilot, message: "Реєстрацію успішно завершено" },
       { status: 201 },
     );
   } catch (err: unknown) {

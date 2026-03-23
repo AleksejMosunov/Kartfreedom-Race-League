@@ -262,7 +262,17 @@ export async function POST(req: NextRequest) {
       if (!existingPilot.phone && phone) existingPilot.phone = phone;
 
       const saved = await existingPilot.save();
-      return NextResponse.json(saved, { status: 200 });
+      const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+      const isAdmin = await isValidAdminSession(token);
+      const savedObj = (saved as any).toObject
+        ? (saved as any).toObject()
+        : saved;
+      return NextResponse.json(
+        isAdmin
+          ? savedObj
+          : sanitizeForAudit(savedObj as Record<string, unknown>),
+        { status: 200 },
+      );
     }
 
     const createDoc: Record<string, unknown> = {
@@ -345,7 +355,17 @@ export async function POST(req: NextRequest) {
       console.error("Failed to write audit for admin pilot create:", err);
     }
 
-    return NextResponse.json(pilot, { status: 201 });
+    const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+    const isAdmin = await isValidAdminSession(token);
+    const pilotObj = (pilot as any).toObject
+      ? (pilot as any).toObject()
+      : pilot;
+    return NextResponse.json(
+      isAdmin
+        ? pilotObj
+        : sanitizeForAudit(pilotObj as Record<string, unknown>),
+      { status: 201 },
+    );
   } catch (err: unknown) {
     if (
       typeof err === "object" &&
