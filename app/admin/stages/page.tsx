@@ -129,7 +129,8 @@ export default function AdminStagesPage() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, { open: boolean; loading: boolean; groups?: any[]; }>>({});
 
   const pilotsForGrouping = useMemo(() => {
-    if (!selectedStageId) return pilots;
+    // don't show any pilots for grouping until a stage is selected
+    if (!selectedStageId) return [] as typeof pilots;
     const stageObj = stages.find((s) => s._id === selectedStageId) as any;
     const race = (stageObj?.races ?? [])[selectedRaceIndex];
     const raceId = race && race._id ? String(race._id) : undefined;
@@ -716,7 +717,7 @@ export default function AdminStagesPage() {
           {/* Sprint grouping tool (admin) - moved from pilots admin */}
           {pilots.length > 0 && (
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mt-4">
-              <h2 className="text-white font-semibold mb-2">Sprint — розподіл груп</h2>
+              <h2 className="text-white font-semibold mb-2">Sprint 20 min — розподіл груп</h2>
               <div className="flex flex-col gap-3 mb-2">
                 <div className="flex items-center gap-2">
                   <label className="text-zinc-400 text-sm">Етап:</label>
