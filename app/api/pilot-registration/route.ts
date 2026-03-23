@@ -153,14 +153,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const [duplicatePilot, duplicateTeam] = await Promise.all([
-    Pilot.findOne({ championshipId: current._id, phone })
-      .select({ _id: 1 })
-      .lean(),
-    Team.findOne({ championshipId: current._id, phone })
-      .select({ _id: 1 })
-      .lean(),
-  ]);
+  const duplicateTeam = await Team.findOne({
+    championshipId: current._id,
+    phone,
+  })
+    .select({ _id: 1 })
+    .lean();
 
   // If a team with same phone exists, keep existing behavior
   if (duplicateTeam) {

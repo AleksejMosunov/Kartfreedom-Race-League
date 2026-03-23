@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect } from "react";
 import { usePilots } from "@/app/hooks/usePilots";
 import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
-import { useStages } from "@/app/hooks/useStages";
 import { Button, Loader, Card } from "@/app/components/ui";
 import { apiFetch } from "@/app/services/api/request";
 import { formatPilotFullName } from "@/lib/utils/pilotName";
@@ -42,12 +41,7 @@ function AdminPilotsPageContent() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const { stages } = useStages(championshipId, { enabled: Boolean(championshipId) });
-  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
-  const [groupsCount, setGroupsCount] = useState<number>(2);
-  const [dnsSet] = useState<Set<string>>(() => new Set());
-  const [creatingGroups, setCreatingGroups] = useState(false);
-  const [deletingGroups, setDeletingGroups] = useState(false);
+  // stages and grouping UI removed from this view to avoid unused state
   const [copiedMap, setCopiedMap] = useState<Record<string, boolean>>({});
   const [fieldsMap, setFieldsMap] = useState<Record<string, { swsId: string; phone: string; }>>({});
   const [savedMap, setSavedMap] = useState<Record<string, boolean>>({});

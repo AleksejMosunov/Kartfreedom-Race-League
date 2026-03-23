@@ -21,7 +21,6 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
     : "/stages";
 
   const [groups, setGroups] = useState<{ _id: string; groupNumber: number; pilots: { _id: string; number?: number; name?: string; surname?: string; league?: string; }[]; }[] | null>(null);
-  const [groupsLoading, setGroupsLoading] = useState(false);
 
   const [participantsCount, setParticipantsCount] = useState<number>(0);
   const [participants, setParticipants] = useState<{ _id: string; number?: number; name?: string; surname?: string; league?: string; }[]>([]);
@@ -38,7 +37,6 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
   useEffect(() => {
     let cancelled = false;
     async function fetchGroups() {
-      setGroupsLoading(true);
       try {
         const url = `/api/stages/${id}/sprint-groups` + (championshipId ? `?championship=${encodeURIComponent(championshipId)}` : "");
         const res = await fetch(url);
@@ -65,7 +63,7 @@ export default function StageDetailPage({ params }: { params: Promise<{ id: stri
       } catch {
         if (!cancelled) setGroups([]);
       } finally {
-        if (!cancelled) setGroupsLoading(false);
+        // groups loading state intentionally omitted
       }
     }
     fetchGroups();

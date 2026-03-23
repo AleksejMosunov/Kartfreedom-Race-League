@@ -174,7 +174,7 @@ export default function AdminChampionshipsPage() {
       Boolean(preseasonNewsByType.sprint.trim()) ||
       Boolean(preseasonNewsByType.sprintPro.trim());
     setHasDraftChanges(isDirty);
-  }, [newName, newType, newFastestLapBonusEnabled, newPrizes, preseasonNewsByType]);
+  }, [newName, newType, newFastestLapBonusEnabled, newPrizes, preseasonNewsByType, newStartDate]);
 
   const startNewChampionship = async () => {
     setError("");

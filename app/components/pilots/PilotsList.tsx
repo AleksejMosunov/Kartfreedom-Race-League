@@ -4,15 +4,10 @@ import { usePilots } from "@/app/hooks/usePilots";
 import { PilotCard } from "@/app/components/pilots/PilotCard";
 import { Loader } from "@/app/components/ui/Loader";
 
-export function PilotsList({
-  championshipId,
-  championshipType,
-}: {
-  championshipId?: string;
-  championshipType?: "sprint" | "sprint-pro";
-}) {
+export function PilotsList({ championshipId, championshipType }: { championshipId?: string; championshipType?: "sprint" | "sprint-pro"; }) {
   const { pilots, isLoading, error } = usePilots(championshipId);
-  // `championshipType` not used directly here
+  // keep `championshipType` in the props for callers; mark as used to avoid unused-var warnings
+  void championshipType;
 
   if (isLoading) return <Loader />;
   if (error) return <p className="text-red-400 text-center py-8">{error}</p>;

@@ -1,4 +1,4 @@
-import { ChampionshipTable } from "@/app/components/championship/ChampionshipTable";
+// ChampionshipTable intentionally not used on this page
 import { NoActiveChampionshipBlock } from "@/app/components/championship/NoActiveChampionshipBlock";
 import { MultiChampionshipTabs } from "@/app/components/championship/MultiChampionshipTabs";
 import { getPublicChampionshipStatus } from "@/lib/championship/public";

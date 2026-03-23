@@ -3,6 +3,7 @@ import Link from "next/link";
 import { connectToDatabase } from "@/lib/mongodb";
 import { LeagueSettings } from "@/lib/models/LeagueSettings";
 import { normalizeSocialLinks, SOCIAL_LINK_META, SocialLinks } from "@/lib/socialLinks";
+import Image from "next/image";
 
 export async function Footer() {
   let socialLinks: SocialLinks = normalizeSocialLinks();
@@ -86,9 +87,11 @@ export async function Footer() {
       </svg>
     ),
     tiktok: (
-      <img
+      <Image
         src="https://img.freepik.com/premium-vector/tik-tok-logo_578229-290.jpg?w=360"
         alt="TikTok"
+        width={20}
+        height={20}
         className="w-5 h-5 object-cover rounded"
       />
     ),

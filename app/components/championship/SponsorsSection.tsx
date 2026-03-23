@@ -4,6 +4,7 @@ import { SPONSOR_CONTACT_URL } from "@/lib/config/sponsors";
 // Note: `Link` removed because this section uses external anchors
 import rbLogo from "@/assets/sponsors/rbLogo.svg";
 import Glogo from "@/assets/sponsors/2gLogo.png";
+import Image from "next/image";
 
 
 export default function SponsorsSection() {
@@ -29,11 +30,13 @@ export default function SponsorsSection() {
             rel="noopener noreferrer"
             className="rounded-xl border border-zinc-700 bg-zinc-900/60 p-4 flex items-center gap-3 hover:scale-102 transition-transform"
           >
-            <img src={(rbLogo as any).src ?? rbLogo}
+            <Image
+              src={(rbLogo as any).src ?? rbLogo}
               alt="Red Bull Logo"
+              width={48}
+              height={48}
               className="h-8 sm:h-12 w-auto object-contain opacity-100"
-              referrerPolicy="no-referrer"
-              crossOrigin="anonymous" />
+            />
             <div>
               <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-1">Партнер</p>
               <p className="text-white font-semibold">Red Bull</p>
@@ -46,12 +49,12 @@ export default function SponsorsSection() {
             rel="noopener noreferrer"
             className="rounded-xl border border-zinc-700 bg-zinc-900/60 p-4 flex items-center gap-3 hover:scale-102 transition-transform"
           >
-            <img
+            <Image
               src={(Glogo as any).src ?? Glogo}
               alt="2G Logo"
+              width={40}
+              height={28}
               className="h-6 sm:h-7 w-auto object-contain opacity-100"
-              referrerPolicy="no-referrer"
-              crossOrigin="anonymous"
             />
             <div>
               <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-1">Партнер</p>

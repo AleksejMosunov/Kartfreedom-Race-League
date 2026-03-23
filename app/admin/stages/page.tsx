@@ -167,12 +167,12 @@ export default function AdminStagesPage() {
           samplePilots: pilots.slice(0, 5).map((p) => ({ id: p._id, championshipId: p.championshipId })),
           sampleMatched: filtered.slice(0, 5).map((p) => p._id),
         });
-      } catch (e) {
+      } catch {
         // ignore logging errors
       }
     }
     return filtered.length > 0 ? filtered : pilots;
-  }, [pilots, stages, selectedStageId, selectedRaceIndex]);
+  }, [pilots, stages, selectedStageId, selectedRaceIndex, selectedChampionshipId]);
 
   const FORM_DRAFT_KEY = "admin:stages:form-draft:v1";
 
@@ -555,7 +555,6 @@ export default function AdminStagesPage() {
     setSubmitting(true);
     try {
       const enriched = resultsRows.map((r) => {
-        const pilot = editablePilots.find((p) => p._id === r.pilotId) || pilots.find((p) => p._id === r.pilotId);
         // participants = number of rows that are NOT DNS; fallback to editable/pilots
         const participants = Math.max(1, resultsRows.filter((x) => !x.dns).length || editablePilots.length || pilots.length);
         const base = r.dnf || r.dns ? 0 : getPointsByPosition(r.position, participants);
@@ -831,7 +830,7 @@ export default function AdminStagesPage() {
                               pilotIdsRawCount: pilotIdsRaw.length,
                               pilotIdsRawSample: pilotIdsRaw.slice(0, 10),
                             });
-                          } catch (e) {
+                          } catch {
                             // ignore
                           }
                         }
@@ -850,7 +849,7 @@ export default function AdminStagesPage() {
                             dnsPilotIds: Array.from(dnsSet),
                             stageChampId,
                           });
-                        } catch (e) {
+                        } catch {
                           // ignore
                         }
                       }
@@ -1018,7 +1017,7 @@ export default function AdminStagesPage() {
                       if (!res.ok) { setExpandedGroups((prev) => ({ ...prev, [stage._id]: { open: true, loading: false, groups: [] } })); return; }
                       const data = await res.json().catch(() => []);
                       setExpandedGroups((prev) => ({ ...prev, [stage._id]: { open: true, loading: false, groups: data } }));
-                    } catch (e) {
+                    } catch {
                       setExpandedGroups((prev) => ({ ...prev, [stage._id]: { open: true, loading: false, groups: [] } }));
                     }
                   }}>{expandedGroups[stage._id]?.open ? "Сховати групи" : "Групи"}</Button>

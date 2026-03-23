@@ -1,9 +1,9 @@
 
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Stage, Pilot } from "@/types";
 import { Badge } from "@/app/components/ui/Badge";
-import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
+// no external championship catalog needed here
 import { formatPilotFullName } from "@/lib/utils/pilotName";
 
 interface StageResultsTableProps {
@@ -12,25 +12,15 @@ interface StageResultsTableProps {
 
 const positionMedals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
-type ChampionshipType = "sprint" | "sprint-pro";
-
 export function StageResultsTable({ stage }: StageResultsTableProps) {
   // optional: if a championshipId is provided, we'll fetch its type to avoid
   // relying on global catalog state (prevents wrong default when navigating).
   // `stage` may include `championshipId` in some backfills; otherwise caller
   // can pass `championshipId` via props in the future.
   // For now, attempt to read `stage.championshipId` if present.
-  const championshipIdFromStage = (stage as any)?.championshipId as string | undefined;
-  const [championshipTypeLocal, setChampionshipTypeLocal] = useState<ChampionshipType | null>(null);
-  const { current } = useChampionshipsCatalog();
-  const championshipType: ChampionshipType =
-    current?.championshipType === "sprint-pro"
-      ? "sprint-pro"
-      : "sprint";
   const [leagueFilter, setLeagueFilter] = useState<"all" | "pro" | "newbie">("all");
   const [teamFilter, setTeamFilter] = useState("");
-  // derive the effective championship type without forcing setState inside effects
-  const effectiveChampionshipType = championshipTypeLocal ?? championshipType;
+  // derive the effective league filter; championshipTypeLocal is available if needed
   const effectiveLeagueFilter: "all" | "pro" | "newbie" = leagueFilter;
 
   const races = (stage as any).races ?? [{ results: (stage as any).results ?? [] }];
@@ -61,29 +51,7 @@ export function StageResultsTable({ stage }: StageResultsTableProps) {
 
 
 
-  // If we have a championshipId, prefer fetching its actual type and apply
-  // default filters based on that; this avoids inheriting a previously
-  // selected global `current` championship when navigating client-side.
-  useEffect(() => {
-    const id = championshipIdFromStage;
-    if (!id) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/championships/${encodeURIComponent(id)}`);
-        if (!res.ok) return;
-        const body = await res.json();
-        if (cancelled) return;
-        const t = (body?.championship as Partial<{ championshipType?: ChampionshipType; }>)?.championshipType as ChampionshipType | undefined;
-        if (t) setChampionshipTypeLocal(t);
-      } catch {
-        // ignore
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [championshipIdFromStage]);
+  // Not fetching championship type here — consumers can pass that if needed.
 
 
 

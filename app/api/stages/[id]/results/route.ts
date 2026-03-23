@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           .lean();
       }
     }
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { error: "Немає активного чемпіонату" },
       { status: 409 },
@@ -121,12 +121,9 @@ export async function POST(req: NextRequest, { params }: Params) {
       new Set(results.map((r) => String(r.pilotId))),
     ).filter(Boolean);
     if (pilotIds.length) {
-      const pilots = await Pilot.find({ _id: { $in: pilotIds } }).lean();
-      const leagueById = new Map(
-        pilots.map((p) => [String(p._id), p.league ?? "newbie"]),
-      );
+      await Pilot.find({ _id: { $in: pilotIds } }).lean();
+      // league adjustments intentionally omitted — keep computed defaults
       for (const row of enrichedResults) {
-        const id = String(row.pilotId);
         const fastestLapBonus =
           current.fastestLapBonusEnabled && row.bestLap && !row.dnf && !row.dns
             ? 1

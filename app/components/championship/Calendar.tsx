@@ -7,6 +7,7 @@ interface CupCardProps {
 }
 
 import React, { useState, useEffect, useRef } from 'react';
+import Image from "next/image";
 import { Trophy, Zap, Award, } from 'lucide-react';
 import { motion } from 'motion/react';
 import mainLogo from './logoKF.png';
@@ -165,14 +166,15 @@ const CALENDAR_DATA: Cup[] = [
 ];
 
 
+const SEASON_START = new Date(2026, 3, 5); // April 5
+
 const Countdown = () => {
   const [timeLeft, setTimeLeft] = useState('');
-  const seasonStart = new Date(2026, 3, 5); // April 5
 
   useEffect(() => {
     const update = () => {
       const now = new Date();
-      const diff = seasonStart.getTime() - now.getTime();
+      const diff = SEASON_START.getTime() - now.getTime();
       if (diff <= 0) {
         setTimeLeft('Сезон розпочато!');
         return;
@@ -289,6 +291,7 @@ const Calendar: React.FC = () => {
   const downloadCalendar = async () => {
     if (!calendarRef.current) return;
     setIsExporting(true);
+    setIsDownloading(true);
     try {
       const node = calendarRef.current;
       const htmlToImage: any = await import('html-to-image');
@@ -306,6 +309,7 @@ const Calendar: React.FC = () => {
       alert('Не вдалося експортувати зображення. Встановіть пакет html-to-image та спробуйте ще раз.');
     } finally {
       setIsExporting(false);
+      setIsDownloading(false);
     }
   };
 
@@ -321,13 +325,13 @@ const Calendar: React.FC = () => {
               <div className="w-8 h-px bg-gradient-to-l from-transparent to-[#ff3a2b]" />
             </div>
             <div className="flex justify-center mb-2 h-10 sm:h-14">
-              <img src={(mainLogo as any).src ?? mainLogo} alt="KartFreedom Logo" className="h-full w-auto object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+              <Image src={(mainLogo as any).src ?? mainLogo} alt="KartFreedom Logo" width={160} height={48} className="h-full w-auto object-contain" />
             </div>
             <div className="flex items-center justify-center gap-3">
               <div className="font-display text-base sm:text-2xl font-bold tracking-[0.2em] uppercase text-white -mt-1 opacity-80">
                 Race League 2026
               </div>
-              {/* {!isExporting &&
+              {!isExporting && (
                 <button
                   onClick={downloadCalendar}
                   disabled={isExporting}
@@ -336,7 +340,10 @@ const Calendar: React.FC = () => {
                 >
                   {isExporting ? 'Експорт...' : 'Завантажити'}
                 </button>
-              } */}
+              )}
+            </div>
+            <div className="mt-3 flex items-center justify-center">
+              <Countdown />
             </div>
 
             <div className="flex flex-wrap justify-center items-center gap-4 mt-2">
@@ -363,25 +370,9 @@ const Calendar: React.FC = () => {
               </div>
               <div className="hidden sm:block w-px h-4 bg-white/10" />
 
-              <img src={(rbLogo as any).src ?? rbLogo}
-                alt="Red Bull Logo"
-                className="h-8 sm:h-12 w-auto object-contain opacity-100"
-                referrerPolicy="no-referrer"
-                crossOrigin="anonymous" />
-              <img
-                src={(Glogo as any).src ?? Glogo}
-                alt="2G Logo"
-                className="h-6 sm:h-7 w-auto object-contain opacity-100"
-                referrerPolicy="no-referrer"
-                crossOrigin="anonymous"
-              />
-              <img
-                src={(swsLogo as any).src ?? swsLogo}
-                alt="SWS Logo"
-                className="h-6 sm:h-7 w-auto object-contain opacity-100"
-                referrerPolicy="no-referrer"
-                crossOrigin="anonymous"
-              />
+              <Image src={(rbLogo as any).src ?? rbLogo} alt="Red Bull Logo" width={48} height={48} className="h-8 sm:h-12 w-auto object-contain opacity-100" />
+              <Image src={(Glogo as any).src ?? Glogo} alt="2G Logo" width={40} height={28} className="h-6 sm:h-7 w-auto object-contain opacity-100" />
+              <Image src={(swsLogo as any).src ?? swsLogo} alt="SWS Logo" width={40} height={28} className="h-6 sm:h-7 w-auto object-contain opacity-100" />
 
 
             </div>
