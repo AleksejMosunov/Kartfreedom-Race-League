@@ -23,6 +23,9 @@ export const metadata: Metadata = {
     // `public/` is not part of the served path — use `/logo.png`
     icon: "/logo.png",
   },
+  verification: {
+    google: "JmADdpTRL6A7vhag36VxBOC5Dx6Db4cSsK6UZ4exHmc",
+  },
 };
 
 export default function RootLayout({
