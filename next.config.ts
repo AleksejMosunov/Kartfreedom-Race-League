@@ -3,6 +3,10 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  images: {
+    // Allowed external image hosts for next/image
+    domains: ["img.freepik.com"],
+  },
 };
 
 export default withSentryConfig(nextConfig, {

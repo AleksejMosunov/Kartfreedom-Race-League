@@ -77,6 +77,38 @@ function RegisterPageInner() {
     if (found) setStageId(stageFromUrl);
   }, [stageFromUrl, stages]);
 
+  // Load saved personal data from localStorage (if present)
+  useEffect(() => {
+    try {
+      const storedName = localStorage.getItem("registration:name");
+      const storedSurname = localStorage.getItem("registration:surname");
+      const storedPhone = localStorage.getItem("registration:phone");
+      const storedSws = localStorage.getItem("registration:swsId");
+      if (storedName) setName(storedName);
+      if (storedSurname) setSurname(storedSurname);
+      if (storedPhone) setPhone(storedPhone);
+      if (storedSws) setSwsId(storedSws);
+    } catch (e) {
+      // ignore localStorage errors
+    }
+  }, []);
+
+  // Persist personal data to localStorage when changed
+  useEffect(() => {
+    try {
+      if (name) localStorage.setItem("registration:name", name);
+      else localStorage.removeItem("registration:name");
+      if (surname) localStorage.setItem("registration:surname", surname);
+      else localStorage.removeItem("registration:surname");
+      if (phone) localStorage.setItem("registration:phone", phone);
+      else localStorage.removeItem("registration:phone");
+      if (swsId) localStorage.setItem("registration:swsId", swsId);
+      else localStorage.removeItem("registration:swsId");
+    } catch (e) {
+      // ignore localStorage errors
+    }
+  }, [name, surname, phone, swsId]);
+
 
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -280,10 +312,12 @@ function RegisterPageInner() {
                 </p>
               )}
 
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3" autoComplete="on">
                 <>
                   <input
                     type="text"
+                    name="given-name"
+                    autoComplete="given-name"
                     placeholder="Ім'я *"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -292,6 +326,8 @@ function RegisterPageInner() {
                   />
                   <input
                     type="text"
+                    name="family-name"
+                    autoComplete="family-name"
                     placeholder="Прізвище *"
                     value={surname}
                     onChange={(e) => setSurname(e.target.value)}
@@ -301,6 +337,8 @@ function RegisterPageInner() {
                   {/* Pilot number removed — no longer collected */}
                   <input
                     type="tel"
+                    name="phone"
+                    autoComplete="tel"
                     placeholder="Телефон +380XXXXXXXXX *"
                     value={phone}
                     onChange={(e) => {
@@ -341,6 +379,8 @@ function RegisterPageInner() {
                       <label className="text-sm text-zinc-400 block mb-2">SWS ID</label>
                       <input
                         type="text"
+                        name="sws-id"
+                        autoComplete="username"
                         placeholder="SWS ID або псевдонім"
                         value={swsId}
                         onChange={(e) => setSwsId(e.target.value)}
@@ -377,9 +417,6 @@ function RegisterPageInner() {
                           ))}
                           <option value="all">Реєстрація на всі етапи (без завершених)</option>
                         </select>
-                        <p className="text-zinc-500 text-xs mt-2">Опція «Реєстрація на всі етапи» не включає етапи, які вже позначені як завершені.</p>
-
-                        {/* debug info removed */}
                       </div>
                     )}
                     {/* For regular sprint stages: explain that a stage is two classic sprints and allow choosing 1 or 2 races */}
