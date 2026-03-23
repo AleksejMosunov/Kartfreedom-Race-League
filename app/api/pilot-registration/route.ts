@@ -363,6 +363,10 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Track which registration keys the client attempted to change, and whether any change actually occurs
+      const touchedKeys: string[] = [];
+      let anyRegChange = false;
+
       // Handle provided stage
       if (providedStageId === undefined) {
         // registering to all stages in this championship — clear per-stage registrations
@@ -379,10 +383,18 @@ export async function POST(req: NextRequest) {
         });
       } else {
         const key = `${String(current._id)}:${providedStageId}`;
+        touchedKeys.push(key);
         if (regMap.has(key)) {
           const prev = regMap.get(key);
           const mergedFirst = prev.firstRace || firstRace;
           const mergedSecond = prev.secondRace || secondRace;
+          // detect whether merging actually changes anything for this key
+          if (
+            Boolean(prev.firstRace) !== Boolean(mergedFirst) ||
+            Boolean(prev.secondRace) !== Boolean(mergedSecond)
+          ) {
+            anyRegChange = true;
+          }
           regMap.set(key, {
             championshipId: prev.championshipId ?? current._id,
             stageId: prev.stageId,
@@ -391,6 +403,7 @@ export async function POST(req: NextRequest) {
             racesCount: mergedFirst && mergedSecond ? 2 : 1,
           });
         } else {
+          anyRegChange = true;
           regMap.set(key, {
             championshipId: current._id,
             stageId: providedStageId,
@@ -411,18 +424,23 @@ export async function POST(req: NextRequest) {
             r.firstRace === undefined ? true : Boolean(r.firstRace);
           const prSecond =
             r.secondRace === undefined ? false : Boolean(r.secondRace);
+          touchedKeys.push(key);
           if (regMap.has(key)) {
             const prev = regMap.get(key);
+            const mergedFirst = Boolean(prev.firstRace) || prFirst;
+            const mergedSecond = Boolean(prev.secondRace) || prSecond;
+            if (
+              Boolean(prev.firstRace) !== Boolean(mergedFirst) ||
+              Boolean(prev.secondRace) !== Boolean(mergedSecond)
+            ) {
+              anyRegChange = true;
+            }
             regMap.set(key, {
               championshipId: prev.championshipId ?? champ,
               stageId: prev.stageId,
-              firstRace: Boolean(prev.firstRace) || prFirst,
-              secondRace: Boolean(prev.secondRace) || prSecond,
-              racesCount:
-                (Boolean(prev.firstRace) || prFirst) &&
-                (Boolean(prev.secondRace) || prSecond)
-                  ? 2
-                  : 1,
+              firstRace: mergedFirst,
+              secondRace: mergedSecond,
+              racesCount: mergedFirst && mergedSecond ? 2 : 1,
               raceIds:
                 (prev as any).raceIds && (prev as any).raceIds.length > 0
                   ? (prev as any).raceIds
@@ -431,6 +449,7 @@ export async function POST(req: NextRequest) {
                     : undefined,
             });
           } else {
+            anyRegChange = true;
             regMap.set(key, {
               championshipId: champ,
               stageId: r.stageId,
@@ -443,6 +462,14 @@ export async function POST(req: NextRequest) {
             });
           }
         }
+      }
+
+      // If client attempted to register but no effective change was detected, inform the client
+      if (touchedKeys.length > 0 && !anyRegChange) {
+        return NextResponse.json(
+          { error: "Ви вже зареєстровані на обрані гонки/етапи" },
+          { status: 409 },
+        );
       }
 
       const newRegs = Array.from(regMap.values()).map((r) => ({
@@ -467,6 +494,7 @@ export async function POST(req: NextRequest) {
 
       const saved = await existingPilot.save();
 
+      let changes: Change[] = [];
       try {
         const afterSnapshot = sanitizeForAudit({
           name: saved.name,
@@ -480,7 +508,7 @@ export async function POST(req: NextRequest) {
         });
 
         // compute human-friendly change list between before and after
-        const changes: Change[] = [];
+        changes = [];
 
         // name/surname/league changes
         if ((before.name as string) !== saved.name) {
@@ -596,7 +624,21 @@ export async function POST(req: NextRequest) {
         console.error("Failed to write pilot update audit:", err);
       }
 
-      return NextResponse.json(saved, { status: 200 });
+      // Build a human-friendly message for the client based on registration-related changes
+      const regChanges = (changes || []).filter(
+        (c) =>
+          c.type === "registered_stage" || c.type === "registration_updated",
+      );
+      const message =
+        regChanges.length > 0
+          ? regChanges.map((c) => c.message).join("; ")
+          : "Реєстрацію оновлено";
+
+      // Return pilot and message so client can display exact feedback
+      const savedObj = (saved as any).toObject
+        ? (saved as any).toObject()
+        : saved;
+      return NextResponse.json({ pilot: savedObj, message }, { status: 200 });
     }
 
     const createDoc: Record<string, unknown> = {
@@ -718,7 +760,13 @@ export async function POST(req: NextRequest) {
       console.error("Failed to write pilot registration audit:", err);
     }
 
-    return NextResponse.json(pilot, { status: 201 });
+    const pilotObj = (pilot as any).toObject
+      ? (pilot as any).toObject()
+      : pilot;
+    return NextResponse.json(
+      { pilot: pilotObj, message: "Реєстрацію успішно завершено" },
+      { status: 201 },
+    );
   } catch (err: unknown) {
     console.error("pilot-registration error:", err);
     if (

@@ -717,7 +717,9 @@ export default function AdminStagesPage() {
           {/* Sprint grouping tool (admin) - moved from pilots admin */}
           {pilots.length > 0 && (
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mt-4">
-              <h2 className="text-white font-semibold mb-2">Sprint 20 min — розподіл груп</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-white font-semibold mb-2">Sprint 20 min — розподіл груп</h2>
+              </div>
               <div className="flex flex-col gap-3 mb-2">
                 <div className="flex items-center gap-2">
                   <label className="text-zinc-400 text-sm">Етап:</label>

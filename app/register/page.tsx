@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
 import { NoActiveClientGate } from "@/app/components/championship/NoActiveClientGate";
@@ -10,7 +9,6 @@ import { useChampionshipsCatalog } from "@/app/hooks/useChampionshipsCatalog";
 import { useStages } from "@/app/hooks/useStages";
 import { getPreferredUiChampionshipId, sortSprintFirst } from "@/lib/utils/uiChampionship";
 import { Stage } from "@/types";
-import { SOCIAL_LINK_DEFAULTS } from "@/lib/socialLinks";
 
 type ChampionshipMode = "sprint" | "sprint-pro";
 type ActiveChampionship = {
@@ -229,9 +227,10 @@ function RegisterPageInner() {
       setBothRaces(false);
       setFirstRace(false);
       setSecondRace(false);
-      setSuccess("Реєстрацію успішно завершено. Можете зареєструватися на інший етап.");
+      setSuccess((body && (body.message as string)) || "Реєстрацію успішно завершено. Можете зареєструватися на інший етап.");
     } catch (err) {
-      setError((err as Error).message);
+      const msg = (err as Error).message;
+      setError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -320,6 +319,7 @@ function RegisterPageInner() {
                     required
                   />
                   {phoneError && <p className="text-red-400 text-xs mt-2">{phoneError}</p>}
+
                   <div className="sm:col-span-2">
                     {championshipMode === "sprint" && (
                       <>
@@ -443,8 +443,21 @@ function RegisterPageInner() {
                 </div>
               </form>
 
-              {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
+              {error &&
+                <>
+                  <p className="text-red-400 text-sm mt-4">{error}</p>
+                  <p className="text-zinc-500 text-xs mt-2">
+                    {error === 'Ви вже зареєстровані на обрані гонки/етапи' ? <a href="/check-registrations" className="text-red-500 hover:underline">Перевірити реєстрації</a> : null}
+                  </p>
+                </>
+              }
               {success && <p className="text-green-400 text-sm mt-4">{success}</p>}
+            </div>
+
+            <div className="text-zinc-500 text-xs mt-4">
+              Якщо у вас виникли питання або проблеми з реєстрацією, будь ласка, зв&apos;яжіться з організатором:
+              <br />
+              <a href="https://t.me/aleksej_mosunov" className="text-red-500 hover:underline">Telegram</a>
             </div>
           </>
         )}
@@ -452,7 +465,6 @@ function RegisterPageInner() {
     </NoActiveClientGate>
   );
 }
-
 export default function RegisterPage() {
   return (
     <Suspense fallback={<Loader />}>
