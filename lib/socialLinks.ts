@@ -11,8 +11,8 @@ export const SOCIAL_LINK_DEFAULTS: SocialLinks = {
   telegram: "https://t.me/kartfreedoms",
   instagram: "https://www.instagram.com/kartfreedom/",
   facebook: "https://www.facebook.com/kartfreedom",
-  youtube: "https://youtube.com/@kartfreedom?si=vv-5BG0lhaCuJBEX",
-  tiktok: "https://www.tiktok.com/@kartfreedom.com?_r=1&_t=ZS-94nFBCUGUMb",
+  youtube: "https://youtube.com/@kartfreedom",
+  tiktok: "https://www.tiktok.com/@kartfreedom.com",
 };
 
 export const SOCIAL_LINK_META: Array<{
