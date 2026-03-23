@@ -95,3 +95,20 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Local commands
+
+- Start development server: `npm run dev`
+- Run production build: `npm run build`
+- Lint: `npm run lint`
+
+## Calendar component notes
+
+- The calendar countdown now targets the season start at 05.04.2026 10:00 (local time).
+- Countdown UI uses fixed-width digits and vertically aligned separators to avoid jitter on updates.
+- Image export was temporarily disabled in the UI. To re-enable the "Download calendar" button and export functionality:
+  1.  Re-enable the button in `app/components/championship/Calendar.tsx` header.
+  2.  Install `html-to-image` (`npm i html-to-image`) and restore the `downloadCalendar` implementation.
+  3.  The export should wait for fonts to be ready and use a `pixelRatio` (2–4) for higher-quality PNGs.
+
+If you want, I can re-enable and improve the export flow (wait-for-fonts, cacheBust, DPR handling).

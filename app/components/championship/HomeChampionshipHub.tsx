@@ -90,7 +90,10 @@ export function HomeChampionshipHub({
   const prizes = selectedChampionship?.prizes ?? [];
   const hasPrizes = prizes.length > 0;
 
-  if (!active.length) {
+  // If there are no active championships and we're not in a loading/skeleton
+  // state, show the empty block. If we're still loading, render skeletons
+  // instead to avoid a flash of the empty state on first load.
+  if (!active.length && !loading) {
     return <NoActiveChampionshipBlock news={preseasonNews} />;
   }
 

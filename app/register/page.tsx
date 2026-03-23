@@ -88,7 +88,7 @@ function RegisterPageInner() {
       if (storedSurname) setSurname(storedSurname);
       if (storedPhone) setPhone(storedPhone);
       if (storedSws) setSwsId(storedSws);
-    } catch (e) {
+    } catch {
       // ignore localStorage errors
     }
   }, []);
@@ -104,7 +104,7 @@ function RegisterPageInner() {
       else localStorage.removeItem("registration:phone");
       if (swsId) localStorage.setItem("registration:swsId", swsId);
       else localStorage.removeItem("registration:swsId");
-    } catch (e) {
+    } catch {
       // ignore localStorage errors
     }
   }, [name, surname, phone, swsId]);

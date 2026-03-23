@@ -4,8 +4,15 @@ import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig: NextConfig = {
   output: "standalone",
   images: {
-    // Allowed external image hosts for next/image
-    domains: ["img.freepik.com"],
+    // Allowed external image hosts for next/image — use remotePatterns to
+    // mitigate malicious hostnames (recommended over `domains`).
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "img.freepik.com",
+        pathname: "/**",
+      },
+    ],
   },
 };
 

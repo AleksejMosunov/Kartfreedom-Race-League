@@ -31,7 +31,10 @@ export function useChampionshipsCatalog(
     active,
     current,
     preseasonNews,
-    isLoading,
+    // Expose a loading flag that's true until the catalog has loaded at least once.
+    // This avoids rendering empty/placeholder UI on first client render before the
+    // fetch effect runs.
+    isLoading: isLoading || !hasLoaded,
     error,
     hasLoaded,
     refresh: () => fetchCatalog(true),

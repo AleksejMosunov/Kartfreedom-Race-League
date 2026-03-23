@@ -11,9 +11,9 @@ import Image from "next/image";
 import { Trophy, Zap, Award, } from 'lucide-react';
 import { motion } from 'motion/react';
 import mainLogo from './logoKF.png';
-import rbLogo from "@/assets/sponsors/placeholder.svg";
-import Glogo from "@/assets/sponsors/placeholder.svg";
-import swsLogo from "@/assets/sponsors/placeholder.svg";
+import rbLogo from "@/assets/sponsors/rbLogo.svg";
+import Glogo from "@/assets/sponsors/2gLogo.png";
+import swsLogo from "@/assets/sponsors/swsLogoWhite.png";
 
 
 interface Stage {
@@ -166,37 +166,74 @@ const CALENDAR_DATA: Cup[] = [
 ];
 
 
-const SEASON_START = new Date(2026, 3, 5); // April 5
+// Season start: year, monthIndex (0-based), day, hour, minute
+// Set to 05.04.2026 10:00 local time
+const SEASON_START = new Date(2026, 3, 5, 10, 0, 0); // April 5, 10:00
 
 const Countdown = () => {
-  const [timeLeft, setTimeLeft] = useState('');
+  const [parts, setParts] = useState<{ days?: number; hrs?: number; mins?: number; secs?: number; started?: boolean; }>({});
 
   useEffect(() => {
     const update = () => {
       const now = new Date();
       const diff = SEASON_START.getTime() - now.getTime();
       if (diff <= 0) {
-        setTimeLeft('Сезон розпочато!');
+        setParts({ started: true });
         return;
       }
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hrs = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      setTimeLeft(`До старту: ${days}д ${hrs}г`);
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((diff % (1000 * 60)) / 1000);
+      setParts({ days, hrs, mins, secs });
     };
     update();
-    const timer = setInterval(update, 60000);
+    const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
   }, []);
 
+  const fmt = (n?: number) => (n == null ? '--' : String(n).padStart(2, '0'));
+
+  if (parts.started) {
+    return (
+      <div className="inline-flex items-center gap-3 px-2 py-1">
+        <div className="text-white font-bold">Сезон розпочато!</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-racing-sprint1/10 border border-racing-sprint1/25 rounded-full text-[13px] font-bold tracking-wider uppercase text-[#ff7a56]">
-      <div className="w-1.5 h-1.5 bg-racing-sprint1 rounded-full animate-pulse" />
-      <span>{timeLeft}</span>
+    <div className="inline-flex items-center gap-3 px-2 py-1">
+      <div className="flex items-center gap-3">
+        <div className="flex flex-col items-center">
+          <div className="text-2xl sm:text-4xl font-black text-white leading-none font-mono w-12 sm:w-16 text-center">{fmt(parts.days)}</div>
+          <div className="text-xs text-zinc-400 mt-1 uppercase tracking-wider">дн</div>
+        </div>
+
+        <div className="w-4 text-2xl sm:text-4xl text-zinc-500 font-black flex items-center justify-center leading-none -translate-y-2 sm:-translate-y-3">:</div>
+
+        <div className="flex flex-col items-center">
+          <div className="text-2xl sm:text-4xl font-black text-white leading-none font-mono w-12 sm:w-16 text-center">{fmt(parts.hrs)}</div>
+          <div className="text-xs text-zinc-400 mt-1 uppercase tracking-wider">год</div>
+        </div>
+
+        <div className="w-4 text-2xl sm:text-4xl text-zinc-500 font-black flex items-center justify-center leading-none -translate-y-2 sm:-translate-y-3">:</div>
+
+        <div className="flex flex-col items-center">
+          <div className="text-2xl sm:text-4xl font-black text-white leading-none font-mono w-12 sm:w-16 text-center">{fmt(parts.mins)}</div>
+          <div className="text-xs text-zinc-400 mt-1 uppercase tracking-wider">хв</div>
+        </div>
+
+        <div className="w-4 text-2xl sm:text-4xl text-zinc-500 font-black flex items-center justify-center leading-none -translate-y-2 sm:-translate-y-3">:</div>
+
+        <div className="flex flex-col items-center">
+          <div className="text-2xl sm:text-4xl font-black text-white leading-none font-mono w-12 sm:w-16 text-center">{fmt(parts.secs)}</div>
+          <div className="text-xs text-zinc-400 mt-1 uppercase tracking-wider">сек</div>
+        </div>
+      </div>
     </div>
   );
-
 };
-
 const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, isDownloading }) => {
   return (
     <motion.div
@@ -285,33 +322,9 @@ const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, i
 
 const Calendar: React.FC = () => {
   const calendarRef = useRef<HTMLDivElement>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isDownloading] = useState(false);
 
-  const downloadCalendar = async () => {
-    if (!calendarRef.current) return;
-    setIsExporting(true);
-    setIsDownloading(true);
-    try {
-      const node = calendarRef.current;
-      const htmlToImage: any = await import('html-to-image');
-      // pixelRatio controls output resolution. 3 = 3x device pixels (good quality)
-      const dataUrl = await htmlToImage.toPng(node, { pixelRatio: 3, backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-racing-bg') || '#0b0b0b' });
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = 'kartfreedom-calendar.png';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-
-      console.error('Export failed', err);
-      alert('Не вдалося експортувати зображення. Встановіть пакет html-to-image та спробуйте ще раз.');
-    } finally {
-      setIsExporting(false);
-      setIsDownloading(false);
-    }
-  };
+  // Export function removed — keep `isDownloading` for potential future use
 
   return (
     <div className="min-h-screen bg-racing-bg grid-texture text-racing-text font-sans selection:bg-red-500 selection:text-white">
@@ -331,7 +344,7 @@ const Calendar: React.FC = () => {
               <div className="font-display text-base sm:text-2xl font-bold tracking-[0.2em] uppercase text-white -mt-1 opacity-80">
                 Race League 2026
               </div>
-              {!isExporting && (
+              {/* {!isExporting && (
                 <button
                   onClick={downloadCalendar}
                   disabled={isExporting}
@@ -340,7 +353,7 @@ const Calendar: React.FC = () => {
                 >
                   {isExporting ? 'Експорт...' : 'Завантажити'}
                 </button>
-              )}
+              )} */}
             </div>
             <div className="mt-3 flex items-center justify-center">
               <Countdown />
@@ -372,7 +385,15 @@ const Calendar: React.FC = () => {
 
               <Image src={(rbLogo as any).src ?? rbLogo} alt="Red Bull Logo" width={48} height={48} className="h-8 sm:h-12 w-auto object-contain opacity-100" />
               <Image src={(Glogo as any).src ?? Glogo} alt="2G Logo" width={40} height={28} className="h-6 sm:h-7 w-auto object-contain opacity-100" />
-              <Image src={(swsLogo as any).src ?? swsLogo} alt="SWS Logo" width={40} height={28} className="h-6 sm:h-7 w-auto object-contain opacity-100" />
+              <Image
+                src={(swsLogo as any).src ?? swsLogo}
+                alt="SWS Logo"
+                width={80}
+                height={56}
+                quality={100}
+                unoptimized
+                className="h-6 sm:h-7 w-auto object-contain opacity-100"
+              />
 
 
             </div>
