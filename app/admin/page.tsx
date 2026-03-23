@@ -10,7 +10,8 @@ export const metadata = {
 
 export default async function AdminPage() {
   await connectToDatabase();
-  const nowPlusTwoWeeks = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+  const nowPlusTwoWeeks = new Date();
+  nowPlusTwoWeeks.setDate(nowPlusTwoWeeks.getDate() + 60);
   const [active, upcoming] = await Promise.all([
     Championship.find({ status: "active", startedAt: { $lte: nowPlusTwoWeeks } }).lean(),
     Championship.find({ status: "active", startedAt: { $gt: nowPlusTwoWeeks } }).lean(),

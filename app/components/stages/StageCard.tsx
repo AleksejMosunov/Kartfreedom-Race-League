@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Stage } from "@/types";
 import { Badge } from "@/app/components/ui/Badge";
 import { Pilot } from "@/types";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { usePilots } from "@/app/hooks/usePilots";
 
 interface StageCardProps {
@@ -33,25 +33,23 @@ export function StageCard({ stage, championshipId }: StageCardProps) {
     (stageDay.getTime() - todayDay.getTime()) / (1000 * 60 * 60 * 24),
   );
 
-  const [participantsCount, setParticipantsCount] = useState<number | null>(() => {
+  const { pilots } = usePilots(championshipId);
+
+  const participantsCount = useMemo(() => {
     const ids = ((stage as any).races ?? []).flatMap((r: any) => (r.results ?? []).map((res: any) => {
       if (res.pilot?._id) return String(res.pilot._id);
       if (res.pilotId !== null && typeof res.pilotId === "object" && "_id" in (res.pilotId as object)) return String((res.pilotId as any)._id);
       return String(res.pilotId);
     }));
     const s = new Set(ids.filter(Boolean));
-    return s.size || null;
-  });
+    const base = s.size || 0;
 
-  const { pilots } = usePilots(championshipId);
-
-  useEffect(() => {
     // derive participants count from centralized pilots store when available
-    if (!championshipId) return;
-    if (stage.isCompleted) return;
-    if (!Array.isArray(pilots) || pilots.length === 0) return;
+    if (!championshipId) return base;
+    if (stage.isCompleted) return base;
+    if (!Array.isArray(pilots) || pilots.length === 0) return base;
 
-    const count = pilots.filter((p: Pilot) => {
+    const derived = pilots.filter((p: Pilot) => {
       if (!Array.isArray(p.registrations)) return false;
       const regsForChamp = p.registrations.filter((r) =>
         String(r.championshipId ?? p.championshipId) === String(championshipId),
@@ -64,8 +62,9 @@ export function StageCard({ stage, championshipId }: StageCardProps) {
       return fr || sr;
     }).length;
 
-    if (count !== participantsCount) setParticipantsCount(count);
-  }, [pilots, championshipId, stage._id, stage.isCompleted, participantsCount]);
+    // prefer the derived count when available
+    return derived || base;
+  }, [stage, pilots, championshipId]);
 
   const countdownLabel =
     daysToStage > 1
