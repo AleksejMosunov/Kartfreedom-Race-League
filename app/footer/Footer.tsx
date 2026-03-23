@@ -163,7 +163,7 @@ export async function Footer() {
         </div>
 
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-zinc-600 text-xs">© 2025 KartFreedom. Всі права захищено.</p>
+          <p className="text-zinc-600 text-xs">© 2026 KartFreedom. Всі права захищено.</p>
           <p className="text-zinc-700 text-xs">Race League Platform</p>
         </div>
       </div>

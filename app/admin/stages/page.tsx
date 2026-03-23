@@ -48,6 +48,20 @@ export default function AdminStagesPage() {
     selectedChampionshipId || undefined,
     { enabled: Boolean(selectedChampionshipId) },
   );
+
+  const sortedStages = useMemo(() => {
+    if (!Array.isArray(stages)) return [];
+    return [...stages].sort((a: any, b: any) => {
+      // unfinished first, finished last
+      if (Boolean(a.isCompleted) === Boolean(b.isCompleted)) {
+        return (Number(a.number) || 0) - (Number(b.number) || 0);
+      }
+      return a.isCompleted ? 1 : -1;
+    });
+  }, [stages]);
+  const btnPrimary = "px-3 py-1 text-sm font-semibold";
+  const btnCompact = "px-2 py-0.5 text-xs";
+  const btnCompactAlt = "px-2 py-0.5 text-xs";
   const { pilots, refresh: refreshPilots } = usePilots(selectedChampionshipId || undefined);
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [editingRaceIndex, setEditingRaceIndex] = useState<number>(0);
@@ -112,6 +126,7 @@ export default function AdminStagesPage() {
   const [deletingGroups, setDeletingGroups] = useState(false);
   const [updateError, setUpdateError] = useState("");
   const [selectedRaceIndex, setSelectedRaceIndex] = useState<number>(0);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, { open: boolean; loading: boolean; groups?: any[]; }>>({});
 
   const pilotsForGrouping = useMemo(() => {
     if (!selectedStageId) return pilots;
@@ -577,7 +592,7 @@ export default function AdminStagesPage() {
       <Link href="/admin" className="text-zinc-500 hover:text-white text-sm mb-6 block transition-colors">
         ← Адмін-панель
       </Link>
-      <h1 className="text-3xl font-black text-white mb-8">Етапи</h1>
+      <h1 className="text-2xl font-black text-white mb-8">Етапи</h1>
       {hasDraftChanges ? (
         <p className="text-xs text-amber-300 mb-4">Є незбережені зміни (чернетка зберігається автоматично).</p>
       ) : null}
@@ -702,51 +717,60 @@ export default function AdminStagesPage() {
           {pilots.length > 0 && (
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mt-4">
               <h2 className="text-white font-semibold mb-2">Sprint — розподіл груп</h2>
-              <div className="flex gap-2 items-center mb-2">
-                <label className="text-zinc-400 text-sm">Етап:</label>
-                <select
-                  value={selectedStageId ?? ""}
-                  onChange={(e) => setSelectedStageId(e.target.value || null)}
-                  className="bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1 text-white text-sm"
-                >
-                  <option value="">Обрати етап</option>
-                  {stages
-                    .filter((s) => !s.isCompleted)
-                    .map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.number} — {s.name}
-                      </option>
-                    ))}
-                </select>
-
-                <label className="text-zinc-400 text-sm">Кількість груп:</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={groupsCount}
-                  onChange={(e) => setGroupsCount(Number(e.target.value))}
-                  className="w-20 bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1 text-white text-sm"
-                />
-                {selectedStageId && (() => {
-                  const stageObj = stages.find((s) => s._id === selectedStageId) as any;
-                  const racesCount = (stageObj?.races ?? []).length || 0;
-                  if (racesCount <= 1) return null;
-                  return (
-                    <div className="flex items-center gap-2">
-                      <label className="text-zinc-400 text-sm">Гонка:</label>
-                      {Array.from({ length: racesCount }).map((_, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          className={`px-3 py-1 rounded ${selectedRaceIndex === idx ? "bg-zinc-800 text-white" : "bg-zinc-900 text-zinc-400"}`}
-                          onClick={() => setSelectedRaceIndex(idx)}
-                        >
-                          Гонка {idx + 1}
-                        </button>
+              <div className="flex flex-col gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                  <label className="text-zinc-400 text-sm">Етап:</label>
+                  <select
+                    value={selectedStageId ?? ""}
+                    onChange={(e) => setSelectedStageId(e.target.value || null)}
+                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-white text-sm"
+                  >
+                    <option value="">Обрати етап</option>
+                    {stages
+                      .filter((s) => !s.isCompleted)
+                      .map((s) => (
+                        <option key={s._id} value={s._id}>
+                          {s.number} — {s.name}
+                        </option>
                       ))}
-                    </div>
-                  );
-                })()}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="text-zinc-400 text-sm">Кількість груп:</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={groupsCount}
+                    onChange={(e) => setGroupsCount(Number(e.target.value))}
+                    className="w-28 bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1 text-white text-sm"
+                  />
+
+                  {selectedStageId && (() => {
+                    const stageObj = stages.find((s) => s._id === selectedStageId) as any;
+                    const racesCount = (stageObj?.races ?? []).length || 0;
+                    if (racesCount <= 1) return null;
+                    return (
+                      <div className="flex items-center gap-2">
+                        <label className="text-zinc-400 text-sm">Гонка:</label>
+                        <div className="flex gap-2">
+                          {Array.from({ length: racesCount }).map((_, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              className={`px-3 py-1 rounded ${selectedRaceIndex === idx ? "bg-zinc-800 text-white" : "bg-zinc-900 text-zinc-400"}`}
+                              onClick={() => setSelectedRaceIndex(idx)}
+                            >
+                              Гонка {idx + 1}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+
               </div>
 
               <p className="text-zinc-400 text-sm mb-2">Позначте пілотів, які не їдуть на цій гонці (будуть відмічені DNS):</p>
@@ -901,36 +925,35 @@ export default function AdminStagesPage() {
       {error && <p className="text-red-400 mb-4">{error}</p>}
 
       <div className="space-y-4">
-        {stages.map((stage) => (
+        {sortedStages.map((stage) => (
           <Card key={stage._id} className="p-5">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-              <div className="min-w-0">
+            <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-zinc-500 text-sm font-mono">Етап {stage.number}</span>
-                  <span className="font-bold text-white break-words">{stage.name}</span>
+                  <span className="text-lg font-bold text-white break-words">{stage.name}</span>
                   <Badge variant={stage.isCompleted ? "success" : "warning"}>
                     {stage.isCompleted ? "Завершено" : "Очікується"}
                   </Badge>
                 </div>
-                <p className="text-zinc-500 text-sm mt-2">
-                  📅 {new Date(stage.date).toLocaleDateString("uk-UA")}
-                </p>
+                <p className="text-zinc-500 text-sm mt-2">📅 {new Date(stage.date).toLocaleDateString("uk-UA")}</p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <div className="hidden md:flex flex-col md:items-center md:justify-center text-sm text-zinc-300 w-44">
                 {participantsMap[stage._id] ? (
-                  <div className="text-sm text-zinc-300 mr-2 text-right">
-                    <div className="text-zinc-400 text-xs">Загальна кількість: {participantsMap[stage._id].total}</div>
-                    <div className="text-zinc-400 text-xs">Перша гонка: {participantsMap[stage._id].byRacesCount[1]} </div>
-                    <div className="text-zinc-400 text-xs">Друга гонка: {participantsMap[stage._id].byRacesCount[2]}</div>
-                    {participantsMap[stage._id].total > 0 && (
-                      <Link href={`/admin/stages/${stage._id}`} className="text-sm text-zinc-400 hover:text-white">Список пілотів</Link>
-                    )}
-                  </div>
+                  <>
+                    <div className="text-zinc-400 text-xs">Загальна кількість</div>
+                    <div className="text-white font-semibold mb-2">{participantsMap[stage._id].total}</div>
+                    <div className="text-zinc-400 text-xs">Перша гонка</div>
+                    <div className="text-white font-medium mb-1">{participantsMap[stage._id].byRacesCount[1]}</div>
+                    <div className="text-zinc-400 text-xs">Друга гонка</div>
+                    <div className="text-white font-medium mb-2">{participantsMap[stage._id].byRacesCount[2]}</div>
+                    <Link href={`/admin/stages/${stage._id}`} className="text-sm text-zinc-400 hover:text-white">Список пілотів</Link>
+                  </>
                 ) : (
-                  <div className="text-sm text-zinc-300 mr-2 text-right">
+                  <>
                     <div className="text-zinc-400 text-xs">Учасників</div>
-                    <div className="text-white font-semibold">{(() => {
+                    <div className="text-white font-semibold mb-2">{(() => {
                       const all = ((stage as any).races ?? []).flatMap((r: any) => (r.results ?? []).map((res: any) => {
                         if (res.pilot?._id) return String(res.pilot._id);
                         if (res.pilotId !== null && typeof res.pilotId === "object" && "_id" in (res.pilotId as object)) return String((res.pilotId as any)._id);
@@ -939,96 +962,96 @@ export default function AdminStagesPage() {
                       return new Set(all.filter(Boolean)).size;
                     })()}</div>
                     <Link href={`/admin/stages/${stage._id}`} className="text-sm text-zinc-400 hover:text-white">Список пілотів</Link>
-                  </div>
-                )}
-
-                {pilots.length > 0 && canEditResults && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="whitespace-nowrap"
-                    onClick={() => startEditResults(stage._id, 0, (stage as any).races?.[0]?.results)}
-                  >
-                    {stage.isCompleted ? "Редагувати результати" : "Внести результати"}
-                  </Button>
-                )}
-                {stage.isCompleted && canManageStages && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="whitespace-nowrap"
-                    onClick={() => void sendStageResultsToTelegram(stage._id)}
-                    disabled={sendingResultsStageId === stage._id}
-                  >
-                    {sendingResultsStageId === stage._id ? "Відправка..." : "Відправити результати етапу"}
-                  </Button>
-                )}
-                {/* {pilots.length > 0 && canEditResults && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="whitespace-nowrap"
-                    onClick={() => applyPreviousStageTemplate(stage._id)}
-                  >
-                    Копіювати попередній етап
-                  </Button>
-                )} */}
-                {!stage.isCompleted && canManageStages && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="whitespace-nowrap"
-                    onClick={() => updateStage(stage._id, { isCompleted: true })}
-                  >
-                    Завершити етап
-                  </Button>
-                )}
-                {canManageStages && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    className="whitespace-nowrap"
-                    onClick={() => deleteStage(stage._id)}
-                  >
-                    Видалити
-                  </Button>
-                )}
-                {canManageStages && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="whitespace-nowrap"
-                    onClick={() => {
-                      // populate top form for editing
-                      setEditingMetaStageId(stage._id);
-                      setStageName(stage.name ?? "");
-                      setStageNumber(String(stage.number ?? ""));
-                      setStageDate(new Date(stage.date).toISOString().slice(0, 10));
-                      const rawLinks = ((stage as any).races ?? []).map((r: any) => (r?.swsLink ?? ""));
-                      const desired = selectedChampionship?.championshipType === "sprint" ? 2 : 1;
-                      const links = rawLinks.length ? rawLinks.slice(0, desired) : Array(desired).fill("");
-                      while (links.length < desired) links.push("");
-                      setSwsLinks(links);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                  >
-                    Редагувати етап
-                  </Button>
-                )}
-                {canManageStages && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="whitespace-nowrap"
-                    onClick={() => void sendNewStageToTelegram(stage._id)}
-                    disabled={sendingNewsStageId === stage._id}
-                  >
-                    {sendingNewsStageId === stage._id ? "Відправка..." : "Відправити новину про етап"}
-                  </Button>
+                  </>
                 )}
               </div>
 
+              <div className="grid grid-cols-2 gap-2 justify-items-end items-start">
+                {pilots.length > 0 && canEditResults && (
+                  <Button variant="secondary" size="sm" className={`whitespace-nowrap ${stage.isCompleted ? btnCompact : btnPrimary} w-full max-w-xs`} onClick={() => startEditResults(stage._id, 0, (stage as any).races?.[0]?.results)}>
+                    {stage.isCompleted ? "Редагувати результати" : "Внести результати"}
+                  </Button>
+                )}
+
+                {stage.isCompleted && canManageStages && (
+                  <Button variant="secondary" size="sm" className={`whitespace-nowrap ${btnCompact} w-full max-w-xs`} onClick={() => void sendStageResultsToTelegram(stage._id)} disabled={sendingResultsStageId === stage._id}>
+                    {sendingResultsStageId === stage._id ? "Відправка..." : "Відправити результати етапу"}
+                  </Button>
+                )}
+
+                {!stage.isCompleted && canManageStages && (
+                  <Button variant="secondary" size="sm" className={`whitespace-nowrap ${btnCompact} w-full max-w-xs`} onClick={() => updateStage(stage._id, { isCompleted: true })}>
+                    Завершити етап
+                  </Button>
+                )}
+
+                {canManageStages && (
+                  <Button variant="danger" size="sm" className={`whitespace-nowrap ${btnCompact} w-full max-w-xs`} onClick={() => deleteStage(stage._id)}>Видалити</Button>
+                )}
+
+                {canManageStages && (
+                  <Button variant="secondary" size="sm" className={`whitespace-nowrap ${btnCompactAlt} w-full max-w-xs`} onClick={() => {
+                    setEditingMetaStageId(stage._id);
+                    setStageName(stage.name ?? "");
+                    setStageNumber(String(stage.number ?? ""));
+                    setStageDate(new Date(stage.date).toISOString().slice(0, 10));
+                    const rawLinks = ((stage as any).races ?? []).map((r: any) => (r?.swsLink ?? ""));
+                    const desired = selectedChampionship?.championshipType === "sprint" ? 2 : 1;
+                    const links = rawLinks.length ? rawLinks.slice(0, desired) : Array(desired).fill("");
+                    while (links.length < desired) links.push("");
+                    setSwsLinks(links);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}>Редагувати етап</Button>
+                )}
+
+                {canManageStages && !stage.isCompleted && (
+                  <Button variant="secondary" size="sm" className={`whitespace-nowrap ${btnCompact} w-full max-w-xs`} onClick={async () => {
+                    const cur = expandedGroups[stage._id];
+                    if (cur?.open) { setExpandedGroups((prev) => ({ ...prev, [stage._id]: { ...(cur || {}), open: false } })); return; }
+                    setExpandedGroups((prev) => ({ ...prev, [stage._id]: { ...(cur || {}), open: true, loading: true } }));
+                    try {
+                      const url = `/api/stages/${encodeURIComponent(stage._id)}/sprint-groups` + (selectedChampionshipId ? `?championship=${encodeURIComponent(selectedChampionshipId)}` : "");
+                      const res = await apiFetch(url, { cache: "no-store" });
+                      if (!res.ok) { setExpandedGroups((prev) => ({ ...prev, [stage._id]: { open: true, loading: false, groups: [] } })); return; }
+                      const data = await res.json().catch(() => []);
+                      setExpandedGroups((prev) => ({ ...prev, [stage._id]: { open: true, loading: false, groups: data } }));
+                    } catch (e) {
+                      setExpandedGroups((prev) => ({ ...prev, [stage._id]: { open: true, loading: false, groups: [] } }));
+                    }
+                  }}>{expandedGroups[stage._id]?.open ? "Сховати групи" : "Групи"}</Button>
+                )}
+
+                {canManageStages && !stage.isCompleted && (
+                  <Button variant="secondary" size="sm" className={`whitespace-nowrap ${btnCompact} w-full max-w-xs`} onClick={() => void sendNewStageToTelegram(stage._id)} disabled={sendingNewsStageId === stage._id}>{sendingNewsStageId === stage._id ? "Відправка..." : "Відправити новину про етап"}</Button>
+                )}
+              </div>
             </div>
+
+            {expandedGroups[stage._id]?.open && (
+              <div className="mt-4 border-t border-zinc-700 pt-4">
+                {expandedGroups[stage._id]?.loading ? (
+                  <p className="text-sm text-zinc-400">Завантаження груп...</p>
+                ) : (expandedGroups[stage._id]?.groups?.length ?? 0) > 0 ? (
+                  <div className="space-y-3">
+                    {expandedGroups[stage._id]?.groups?.map((g: any) => (
+                      <div key={g._id} className="rounded-md border border-zinc-700 p-3 bg-zinc-900">
+                        <h4 className="text-sm text-white font-semibold">Група {g.groupNumber}</h4>
+                        <div className="mt-2 text-sm text-zinc-300 space-y-1">
+                          {g.pilots?.map((p: any) => (
+                            <div key={p._id} className="flex gap-2 items-center">
+                              <span className="text-zinc-400 text-xs">{p.number ?? ""}</span>
+                              <span>{formatPilotFullName(p.name, p.surname)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-400">Групи не створені.</p>
+                )}
+              </div>
+            )}
 
             {editingStageId === stage._id && (
               <div className="mt-4 border-t border-zinc-700 pt-4">
