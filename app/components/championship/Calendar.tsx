@@ -235,6 +235,22 @@ const Countdown = () => {
   );
 };
 const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, isDownloading }) => {
+  // Helper: parse stage date strings like '05.04' into Date in the season year
+  const parseStageDate = (dateStr: string): Date => {
+    const parts = dateStr.split('.').map(p => parseInt(p, 10));
+    if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) {
+      return new Date(SEASON_START.getFullYear(), SEASON_START.getMonth(), SEASON_START.getDate(), 10, 0, 0);
+    }
+    const [day, month] = parts;
+    return new Date(SEASON_START.getFullYear(), month - 1, day, 10, 0, 0);
+  };
+
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+  const stageDates = cup.stages.map(s => parseStageDate(s.date));
+  // find first stage that is today or in future; fallback to last stage
+  let nextStageIndex = stageDates.findIndex(d => d.getTime() >= todayStart.getTime());
+  if (nextStageIndex === -1) nextStageIndex = cup.stages.length - 1;
   return (
     <motion.div
       initial={isDownloading ? false : { opacity: 0, y: 10 }}
@@ -300,19 +316,24 @@ const CupCard: React.FC<CupCardProps & { isDownloading?: boolean; }> = ({ cup, i
           </div>
 
           <div className="mt-auto flex flex-wrap gap-1 pl-[5px]">
-            {cup.stages.map((stage: Stage, idx: number) => (
-              <div
-                key={idx}
-                className={`bg-white/5 border border-white/5 rounded py-3 sm:py-4 px-4 sm:px-6 flex flex-col justify-start items-center text-center flex-1 min-w-[30px] relative group transition-all hover:border-white/60 hover:bg-white/10`}
-              >
-                <span className="block text-[8px] font-bold tracking-widest uppercase text-white/60 mb-0.5 mt-1">{stage.label}</span>
-                <span style={{ color: (cup.colorVar as any) }} className={`font-display text-base sm:text-xl font-bold tracking-wider leading-none`}>{stage.date}</span>
+            {cup.stages.map((stage: Stage, idx: number) => {
+              const dateObj = stageDates[idx];
+              const isPast = dateObj.getTime() < todayStart.getTime();
+              const isNext = idx === nextStageIndex;
+              return (
+                <div
+                  key={idx}
+                  className={`bg-white/5 border border-white/5 rounded py-3 sm:py-4 px-4 sm:px-6 flex flex-col justify-start items-center text-center flex-1 min-w-[30px] relative group transition-all hover:border-white/60 hover:bg-white/10 ${isPast ? 'opacity-60' : ''}`}
+                >
+                  <span className="block text-[8px] font-bold tracking-widest uppercase text-white/60 mb-0.5 mt-1">{stage.label}</span>
+                  <span style={{ color: (cup.colorVar as any) }} className={`stage-date font-display text-base sm:text-xl font-bold tracking-wider leading-none`}>{stage.date}</span>
 
-                {idx === cup.stages.length - 1 && (
-                  <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-[#ff3a2b] rounded-full shadow-[0_0_6px_rgba(255,58,43,0.5)]" />
-                )}
-              </div>
-            ))}
+                  {isNext && (
+                    <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-[#ff3a2b] rounded-full shadow-[0_0_6px_rgba(255,58,43,0.5)]" />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

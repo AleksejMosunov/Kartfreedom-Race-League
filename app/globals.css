@@ -68,3 +68,11 @@ body {
 .accent-red-600 {
   accent-color: var(--brand-primary) !important;
 }
+
+/* Reduce stage date font-size for very small screens (<350px) */
+@media (max-width: 350px) {
+  .stage-date {
+    font-size: 0.58rem; /* slightly smaller than text-base */
+    line-height: 1;
+  }
+}

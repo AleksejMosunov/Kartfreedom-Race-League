@@ -39,12 +39,12 @@ export async function POST(req: NextRequest) {
   // );
 
   const base = [
-    "📢 <b>Додано новий етап!</b>",
+    "🏎️ <b>Реєстрація відкрита!</b>",
     `Чемпіонат: <b>${escapeHtml(championship.name)}</b>`,
     `Етап ${stage.number}: <b>${escapeHtml(stage.name)}</b>`,
     `Дата: <b>${new Date(stage.date).toLocaleDateString("uk-UA")}</b>`,
     "",
-    "Реєстрація триває. До зустрічі на трасі! 🏎️",
+    "Встигни зайняти своє місце на старті ! 🔥",
     "",
     registrationLinkLine(String(stage.championshipId), String(stage._id)),
   ];
