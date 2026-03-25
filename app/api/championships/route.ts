@@ -13,7 +13,7 @@ const SETTINGS_KEY = "global";
 export async function GET() {
   await connectToDatabase();
 
-  const nowPlusTwoWeeks = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+  const nowPlusTwoWeeks = new Date(Date.now() + 40 * 24 * 60 * 60 * 1000);
 
   const [active, upcoming, archived, settings] = await Promise.all([
     Championship.find({
